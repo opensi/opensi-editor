@@ -22,7 +22,7 @@ pub struct Info {
 
 pub struct Round {
     name: String,
-    variant: String, // original name "type"
+    variant: String, // fixme: original name "type"
     info: Info, 
     themes: Vec<Theme>
 }
@@ -38,11 +38,11 @@ pub struct Question {
     scenario: Vec<Atom>, 
     right: Vec<String>, 
     wrong: Vec<String>, 
-    variant: String // original name "type"
+    variant: String // fixme: original name "type"
     info: Info
 }
 
 pub enum Atom {
     time: Option<f64>,
-    variant: String // original name "type"
+    variant: String // fixme: original name "type"
 }
