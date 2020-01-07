@@ -2,14 +2,20 @@ extern crate glutin_window;
 extern crate graphics;
 extern crate opengl_graphics;
 extern crate piston;
+mod state;
+mod main_menu;
 
 use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
-use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
+use piston::input::{RenderEvent, UpdateEvent};
 use piston::window::WindowSettings;
 
-pub struct App {
+use crate::state::StateManager;
+use crate::main_menu::MainMenu;
+
+
+struct App {
     gl: GlGraphics,
     window: GlutinWindow,
 
@@ -30,14 +36,16 @@ impl App {
 
     fn run(&mut self) {
         let mut events = Events::new(self.event_settings);
+        let mut state_manager = StateManager::new();
+        state_manager.forward::<MainMenu>();
 
         while let Some(event) = events.next(&mut self.window) {
-            if let Some(_args) = event.update_args() {
-                // update
+            if let Some(args) = event.update_args() {
+               state_manager.update(args.dt as f32);
             }
 
             if let Some(_args) = event.render_args() {
-                // render
+               state_manager.render();
             }
         }
     }
