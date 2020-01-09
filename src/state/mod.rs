@@ -1,3 +1,5 @@
+pub mod main_menu;
+
 /// Base trait for states that defines a life cycle.
 pub trait State {
     fn on_pause(&self) {}
