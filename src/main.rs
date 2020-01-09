@@ -3,7 +3,6 @@ extern crate graphics;
 extern crate opengl_graphics;
 extern crate piston;
 mod state;
-mod main_menu;
 
 use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -12,7 +11,7 @@ use piston::input::{RenderEvent, UpdateEvent};
 use piston::window::WindowSettings;
 
 use crate::state::StateManager;
-use crate::main_menu::MainMenu;
+use crate::state::main_menu::MainMenu;
 
 
 struct App {
@@ -44,7 +43,7 @@ impl App {
                state_manager.update(args.dt as f32);
             }
 
-            if let Some(_args) = event.render_args() {
+            if let Some(_) = event.render_args() {
                state_manager.render();
             }
         }
