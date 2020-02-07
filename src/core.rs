@@ -1,3 +1,14 @@
+#![cfg(feature = "serialize")]
+extern crate quick_xml;
+extern crate serde; 
+
+use PartialEq;
+use serde::Deserialize;
+// use quick_xml::DeError;
+use quick_xml::de::{from_str, DeError};
+// use quick_xml::se::to_string;
+
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct Package {
     id: String,
     name: String,
@@ -13,6 +24,7 @@ pub struct Package {
     info: Info
 }
 
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct Info {
     comments: String, 
     extension: String,
@@ -20,6 +32,7 @@ pub struct Info {
     sources: Vec<String>
 }
 
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct Round {
     name: String,
     variant: String, // fixme: original name "type"
@@ -27,22 +40,25 @@ pub struct Round {
     themes: Vec<Theme>
 }
 
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct Theme {
     name: String,
-    questions: Vec<Question>
+    questions: Vec<Question>,
     info: Info
 }
 
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct Question {
     price: usize, 
     scenario: Vec<Atom>, 
     right: Vec<String>, 
     wrong: Vec<String>, 
-    variant: String // fixme: original name "type"
+    variant: String, // fixme: original name "type"
     info: Info
 }
 
-pub enum Atom {
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Atom {
     time: Option<f64>,
     variant: String // fixme: original name "type"
 }
