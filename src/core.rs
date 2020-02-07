@@ -4,9 +4,7 @@ extern crate serde;
 
 use PartialEq;
 use serde::Deserialize;
-// use quick_xml::DeError;
 use quick_xml::de::{from_str, DeError};
-// use quick_xml::se::to_string;
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Package {
