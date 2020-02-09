@@ -2,9 +2,9 @@ extern crate quick_xml;
 extern crate serde;
 
 use std::fs::File;
-use std::path::Path;
 use std::io::prelude::*;
 use std::io::ErrorKind;
+use std::path::Path;
 use PartialEq;
 
 use quick_xml::de::{from_str, DeError};
@@ -12,59 +12,116 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Package {
-    id: String,
-    name: String,
-    version: String,
-    date: Option<String>,
-    difficulty: Option<u8>,
-    language: Option<String>,
-    logo: Option<String>,
-    publisher: Option<String>,
-    restriciton: Option<String>,
-    rounds: Vec<Round>,
-    tags: Vec<String>,
-    info: Info,
+    pub id: String,
+    pub name: Option<String>,
+    pub version: String,
+    pub date: Option<String>,
+    pub difficulty: Option<u8>,
+    pub language: Option<String>,
+    pub logo: Option<String>,
+    pub publisher: Option<String>,
+    pub restriciton: Option<String>,
+    pub rounds: Rounds,
+    pub tags: Option<Vec<String>>,
+    pub info: Info,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Info {
-    comments: String,
-    extension: String,
-    authors: Vec<String>,
-    sources: Vec<String>,
+    pub comments: Option<String>,
+    pub extension: Option<String>,
+    pub authors: Authors,
+    pub sources: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Authors {
+    #[serde(rename = "author", default)]
+    pub authors: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Rounds {
+    #[serde(rename = "round", default)]
+    pub rounds: Vec<Round>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Round {
-    name: String,
-    variant: String, // fixme: original name "type"
-    info: Info,
-    themes: Vec<Theme>,
+    pub name: String,
+    #[serde(rename = "type", default)]
+    pub variant: Option<String>,
+    pub info: Option<Info>,
+    pub themes: Themes,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Themes {
+    #[serde(rename = "theme", default)]
+    pub themes: Vec<Theme>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Theme {
-    name: String,
-    questions: Vec<Question>,
-    info: Info,
+    pub name: String,
+    pub questions: Questions,
+    pub info: Option<Info>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Questions {
+    #[serde(rename = "question", default)]
+    pub questions: Vec<Question>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Question {
-    price: usize,
-    scenario: Vec<Atom>,
-    right: Vec<String>,
-    wrong: Vec<String>,
-    variant: String, // fixme: original name "type"
-    info: Info,
+    pub price: usize,
+    pub scenario: Scenario,
+    pub right: Right,
+    pub wrong: Option<Wrong>,
+    #[serde(rename = "type", default)]
+    pub variant: Option<Variant>, 
+    pub info: Option<Info>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Variant {
+    pub name: String
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Scenario {
+    #[serde(rename = "atom", default)]
+    pub atoms: Vec<Atom>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Right {
+    #[serde(rename = "answer", default)]
+    pub answers: Vec<Answer>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Wrong {
+    #[serde(rename = "answer", default)]
+    pub answers: Vec<Answer>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct Answer {
+    #[serde(rename = "$value")]
+    pub body: Option<String>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Atom {
-    time: Option<f64>,
-    variant: String, // fixme: original name "type"
+    pub time: Option<f64>,
+    #[serde(rename = "type", default)]
+    pub variant: Option<String>,
+    #[serde(rename = "$value")]
+    pub body: Option<String>
 }
-
 
 impl Package {
     pub fn open(path: &Path) -> Result<Package, std::io::Error> {
