@@ -2,6 +2,9 @@ extern crate quick_xml;
 extern crate serde;
 
 use std::fs::File;
+use std::path::Path;
+use std::io::prelude::*;
+use std::io::ErrorKind;
 use PartialEq;
 
 use quick_xml::de::{from_str, DeError};
@@ -62,3 +65,26 @@ pub struct Atom {
     variant: String, // fixme: original name "type"
 }
 
+
+impl Package {
+    pub fn open(path: &Path) -> Result<Package, std::io::Error> {
+        let package_file = File::open(path)?;
+        let mut zip = zip::ZipArchive::new(package_file)?;
+        let mut xml = zip.by_name("content.xml")?;
+        let mut contents = String::new();
+        xml.read_to_string(&mut contents).unwrap();
+
+        match Package::parse(&contents) {
+            Ok(package) => Ok(package),
+            Err(e) => {
+                let error = std::io::Error::new(ErrorKind::InvalidData, e);
+                Err(error)
+            }
+        }
+    }
+
+    fn parse(xml: &String) -> Result<Package, DeError> {
+        let package: Package = from_str(xml)?;
+        return Result::Ok(package);
+    }
+}
