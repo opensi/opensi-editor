@@ -1,10 +1,11 @@
-#![cfg(feature = "serialize")]
 extern crate quick_xml;
-extern crate serde; 
+extern crate serde;
 
+use std::fs::File;
 use PartialEq;
-use serde::Deserialize;
+
 use quick_xml::de::{from_str, DeError};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Package {
@@ -19,44 +20,45 @@ pub struct Package {
     restriciton: Option<String>,
     rounds: Vec<Round>,
     tags: Vec<String>,
-    info: Info
+    info: Info,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Info {
-    comments: String, 
+    comments: String,
     extension: String,
     authors: Vec<String>,
-    sources: Vec<String>
+    sources: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Round {
     name: String,
     variant: String, // fixme: original name "type"
-    info: Info, 
-    themes: Vec<Theme>
+    info: Info,
+    themes: Vec<Theme>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Theme {
     name: String,
     questions: Vec<Question>,
-    info: Info
+    info: Info,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Question {
-    price: usize, 
-    scenario: Vec<Atom>, 
-    right: Vec<String>, 
-    wrong: Vec<String>, 
+    price: usize,
+    scenario: Vec<Atom>,
+    right: Vec<String>,
+    wrong: Vec<String>,
     variant: String, // fixme: original name "type"
-    info: Info
+    info: Info,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Atom {
     time: Option<f64>,
-    variant: String // fixme: original name "type"
+    variant: String, // fixme: original name "type"
 }
+
