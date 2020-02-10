@@ -10,9 +10,8 @@ use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderEvent, UpdateEvent};
 use piston::window::WindowSettings;
 
-use crate::state::StateManager;
 use crate::state::main_menu::MainMenu;
-
+use crate::state::StateManager;
 
 struct App {
     gl: GlGraphics,
@@ -40,11 +39,11 @@ impl App {
 
         while let Some(event) = events.next(&mut self.window) {
             if let Some(args) = event.update_args() {
-               state_manager.update(args.dt as f32);
+                state_manager.update(args.dt as f32);
             }
 
             if let Some(_) = event.render_args() {
-               state_manager.render();
+                state_manager.render();
             }
         }
     }
