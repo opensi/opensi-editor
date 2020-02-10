@@ -81,13 +81,13 @@ pub struct Question {
     pub right: Right,
     pub wrong: Option<Wrong>,
     #[serde(rename = "type", default)]
-    pub variant: Option<Variant>, 
+    pub variant: Option<Variant>,
     pub info: Option<Info>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Variant {
-    pub name: String
+    pub name: String,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -120,7 +120,7 @@ pub struct Atom {
     #[serde(rename = "type", default)]
     pub variant: Option<String>,
     #[serde(rename = "$value")]
-    pub body: Option<String>
+    pub body: Option<String>,
 }
 
 impl Package {
@@ -132,7 +132,7 @@ impl Package {
         xml.read_to_string(&mut contents).unwrap();
 
         return Package::parse(&contents)
-            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
+            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e));
     }
 
     fn parse(xml: &String) -> Result<Package, DeError> {
