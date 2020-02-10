@@ -124,7 +124,7 @@ pub struct Atom {
 }
 
 impl Package {
-    pub fn open(path: &Path) -> Result<Package, std::io::Error> {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Package, std::io::Error> {
         let package_file = File::open(path)?;
         let mut zip = zip::ZipArchive::new(package_file)?;
         let mut xml = zip.by_name("content.xml")?;
