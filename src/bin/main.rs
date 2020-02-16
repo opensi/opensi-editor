@@ -51,9 +51,6 @@ impl App {
 
 
 fn main() {
-    // let mut app = App::new(OpenGL::V2_1);
-    // app.run();
-    
-    let package = Package::open("tests/data/slamjam2.siq").expect("can't open file");
-    println!("{}", package.name.unwrap());
+    let mut app = App::new(OpenGL::V2_1);
+    app.run();
 }
