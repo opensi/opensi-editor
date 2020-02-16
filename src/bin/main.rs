@@ -2,7 +2,6 @@ extern crate glutin_window;
 extern crate graphics;
 extern crate opengl_graphics;
 extern crate piston;
-mod state;
 
 use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -10,8 +9,9 @@ use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderEvent, UpdateEvent};
 use piston::window::WindowSettings;
 
-use crate::state::main_menu::MainMenu;
-use crate::state::StateManager;
+use opensi::Package;
+use opensi::state::main_menu::MainMenu;
+use opensi::state::StateManager;
 
 struct App {
     gl: GlGraphics,
@@ -49,7 +49,11 @@ impl App {
     }
 }
 
+
 fn main() {
-    let mut app = App::new(OpenGL::V2_1);
-    app.run();
+    // let mut app = App::new(OpenGL::V2_1);
+    // app.run();
+    
+    let package = Package::open("tests/data/slamjam2.siq").expect("can't open file");
+    println!("{}", package.name.unwrap());
 }
