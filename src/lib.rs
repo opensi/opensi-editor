@@ -137,8 +137,8 @@ impl Package {
             .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
     }
 
-    fn parse(xml: &String) -> Result<Package, DeError> {
+    fn parse(xml: &str) -> Result<Package, DeError> {
         let package: Package = from_str(xml)?;
-        return Result::Ok(package);
+        Result::Ok(package)
     }
 }
