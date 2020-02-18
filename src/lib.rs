@@ -133,8 +133,8 @@ impl Package {
         let mut contents = String::new();
         xml.read_to_string(&mut contents).unwrap();
 
-        return Package::parse(&contents)
-            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e));
+        Package::parse(&contents)
+            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
     }
 
     fn parse(xml: &String) -> Result<Package, DeError> {
