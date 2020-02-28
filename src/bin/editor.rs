@@ -51,8 +51,6 @@ impl Widget for Win {
         window.set_property_default_width(640);
         window.set_property_default_height(480);
 
-        window.show_all();
-
         connect!(
             relm,
             window,
