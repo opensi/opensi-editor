@@ -3,9 +3,8 @@ use std::io;
 use gtk::prelude::*;
 use gtk::Orientation::Vertical;
 use gtk::{
-    prelude::GtkListStoreExtManual, CellLayoutExt, ContainerExt, GtkWindowExt, Inhibit,
-    TreeModelExt, TreeSelectionExt, TreeStore, TreeView, TreeViewExt, WidgetExt, Window,
-    WindowType,
+    CellLayoutExt, ContainerExt, GtkWindowExt, Inhibit, TreeStore, TreeView, TreeViewExt,
+    WidgetExt, Window, WindowType,
 };
 use relm::{connect, Relm, Update, Widget};
 use relm_derive::Msg;
@@ -42,16 +41,7 @@ impl Update for Win {
         match event {
             Msg::ItemSelect => {
                 let selection = self.tree_view.get_selection();
-                if let Some((list_model, iter)) = selection.get_selected() {
-                    // let round = list_model
-                    //     .get_value(&iter, VALUE_COL)
-                    //     .get::<String>()
-                    //     .ok()
-                    //     .and_then(|value| value)
-                    //     .expect("operation failed");
-
-                    // self.tree_view.set_model(Some(&list_model));
-                }
+                if let Some((list_model, iter)) = selection.get_selected() {}
             }
             Msg::Quit => gtk::main_quit(),
         }
@@ -80,10 +70,7 @@ impl Widget for Win {
         column.add_attribute(&cell, "text", 0);
         tree_view.append_column(&column);
 
-        let store_model = model
-            .package
-            .to_treestore()
-            .expect("create_and_fill_model failed");
+        let store_model = to_treestore(&model.package).expect("convert to TreeStore failed");
         tree_view.set_model(Some(&store_model));
 
         vbox.add(&tree_view);
@@ -106,34 +93,49 @@ impl Widget for Win {
         }
     }
 }
-// These two constants stand for the columns of the listmodel and the listview
-const VALUE_COL: i32 = 0;
-const INDEX_COL: i32 = 1;
 
-impl TreeStorable for opensi::Package {
-    fn to_treestore(&self) -> io::Result<TreeStore> {
-        let store = gtk::TreeStore::new(&[String::static_type(), i32::static_type()]);
+// ugly, need refactor
+fn to_treestore(package: &opensi::Package) -> io::Result<TreeStore> {
+    let store = gtk::TreeStore::new(&[String::static_type()]);
 
-        self.rounds.rounds.iter().enumerate().for_each(|(i, round)| {
-            store.insert_with_values(
-                None,
-                None,
-                &[VALUE_COL as u32, INDEX_COL as u32],
-                &[&round.name, &(i as u32)],
-            );
+    package.rounds.rounds.iter().for_each(|round| {
+        let round_parent = store.insert_with_values(None, None, &[0 as u32], &[&round.name]);
+
+        round.themes.themes.iter().for_each(|theme| {
+            let theme_parent =
+                store.insert_with_values(Some(&round_parent), None, &[0 as u32], &[&theme.name]);
+
+            theme.questions.questions.iter().for_each(|question| {
+                let atom = &question
+                    .scenario
+                    .atoms
+                    .first()
+                    .expect("failed to extract atom");
+                let title = atom.body.as_ref().expect("heh");
+                let title = format!("{} ({})", title, question.price);
+
+                let atom_store =
+                    store.insert_with_values(Some(&theme_parent), None, &[0 as u32], &[&title]);
+
+                let empty = String::from("");
+                let answers = &question
+                    .right
+                    .answers
+                    .iter()
+                    .map(|answer| answer.body.as_ref().unwrap_or(&empty).clone())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                store.insert_with_values(Some(&atom_store), None, &[0 as u32], &[&answers]);
+            })
         });
+    });
 
-        println!("{:?}", self);
-        Ok(store)
-    }
+    // add flag for printing only for debug version
+    println!("{:?}", package);
+    Ok(store)
 }
 
 fn main() {
     Win::run(()).expect("run failed");
-}
-
-/// Intended to convert Package parts to gtk::TreeStore
-trait TreeStorable {
-    // let store = gtk::TreeStore::new(&[String::static_type(), bool::static_type()]);
-    fn to_treestore(&self) -> io::Result<TreeStore>;
 }
