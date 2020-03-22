@@ -42,7 +42,9 @@ impl Update for Win {
         match event {
             Msg::ItemSelect => {
                 let selection = self.tree_view.get_selection();
-                if let Some((list_model, iter)) = selection.get_selected() {}
+                if let Some((list_model, iter)) = selection.get_selected() {
+                    // TODO: add action here 
+                }
             }
             Msg::Quit => gtk::main_quit(),
         }
