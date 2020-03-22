@@ -33,6 +33,7 @@ impl Update for Win {
 
     fn model(_: &Relm<Self>, _: ()) -> Model {
         Model {
+            // TODO: will be replaced with actual data in future
             package: opensi::Package::open("tests/data/slamjam2.siq").expect("cant't open package"),
         }
     }
