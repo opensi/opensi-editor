@@ -1,7 +1,7 @@
-use relm_derive::Msg;
-use relm::{connect, Relm, Update, Widget};
 use gtk::prelude::*;
-use gtk::{Window, Inhibit, CssProvider, StyleContext};
+use gtk::{CssProvider, Inhibit, StyleContext, Window};
+use relm::{connect, Relm, Update, Widget};
+use relm_derive::Msg;
 
 #[derive(Msg)]
 enum Msg {
@@ -45,13 +45,17 @@ impl Widget for Win {
 
     fn init_view(&mut self) {
         let provider = CssProvider::new();
-        provider.load_from_path("resource/client.css")
+        provider
+            .load_from_path("resource/client.css")
             .expect("Failed to load CSS");
 
         StyleContext::add_provider_for_screen(
-            &self.window.get_screen().expect("Error initializing application style"), 
-            &provider, 
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION
+            &self
+                .window
+                .get_screen()
+                .expect("Error initializing application style"),
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
     }
 
@@ -61,11 +65,16 @@ impl Widget for Win {
         let window: gtk::Window = builder.get_object("client").unwrap();
 
         // Connect the signal `delete_event` to send the `Quit` message.
-        connect!(relm, window, connect_delete_event(_, _), return (Some(Msg::Quit), Inhibit(false)));
+        connect!(
+            relm,
+            window,
+            connect_delete_event(_, _),
+            return (Some(Msg::Quit), Inhibit(false))
+        );
 
         window.show_all();
 
-        Win { model, window, }
+        Win { model, window }
     }
 }
 

@@ -21,9 +21,21 @@ sudo apt-get install libgtk-3-dev
 ### Fedora
 
 ```shell
-sudo dnf install gtk3-devel glib2-devel
+$ sudo dnf install gtk3-devel glib2-devel
 
 ### Fedora 21 and earlier
-sudo yum install gtk3-devel glib2-devel
+$ sudo yum install gtk3-devel glib2-devel
 
+```
+
+## Сборка и запуск
+
+Для клиента игры и для редактора существуют отдельные bin-конфигурации:
+
+```shell
+# Клиент
+$ cargo run --bin client
+
+# Редактор
+$ cargo run --bin editor
 ```
