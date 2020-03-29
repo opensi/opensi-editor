@@ -10,8 +10,6 @@ use PartialEq;
 use quick_xml::de::{from_str, DeError};
 use serde::Deserialize;
 
-pub mod state;
-
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Package {
     pub id: String,
