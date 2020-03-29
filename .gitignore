@@ -1,3 +1,6 @@
+Cargo.lock
 /target
 .vscode/
 **/*.rs.bk
+*.glade~
+

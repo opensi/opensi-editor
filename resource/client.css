@@ -1,0 +1,30 @@
+.main_menu {
+    background-image: url('main-menu.png');
+    background-size: cover;
+}
+.header {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+label.text {
+    color: #f5fffc;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+button {
+    color: #f5fffc;
+    font-size: 24px;
+    text-shadow: 1 2 rgba(0, 0, 0, 0.5);
+    background-image: linear-gradient(#aee5d4 20%, #5db1ad 80%);
+    /* border-width: 1px; */
+    /* border-radius: 30px; */
+    font-weight: 800;
+}
+button:hover {
+    background-image: linear-gradient(#d8f1dd 20%, #9cd5bf 80%);
+}
+button:active {
+    background-image: linear-gradient(#9acdc2 20%, #529e9e 80%);
+    color: #b2d1cd;
+}
