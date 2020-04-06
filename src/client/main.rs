@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{CssProvider, Inhibit, StyleContext, Window};
+use gtk::{ButtonExt, CssProvider, Inhibit, StyleContext, WidgetExt, Window};
 use relm::{connect, Relm, Update, Widget};
 use relm_derive::Msg;
 
@@ -9,9 +9,8 @@ enum Msg {
 }
 
 struct Model {
-    // 
+    //
 }
-
 
 struct Win {
     model: Model,
@@ -72,6 +71,19 @@ impl Widget for Win {
             connect_delete_event(_, _),
             return (Some(Msg::Quit), Inhibit(false))
         );
+
+        let profile_select: gtk::Widget = builder.get_object("profile_select").unwrap();
+        profile_select.connect_enter_notify_event(|widget, _| {
+            widget.get_style_context().set_state(gtk::StateFlags::PRELIGHT);
+            Inhibit(true)
+        });
+        profile_select.connect_leave_notify_event(|widget, _| {
+            widget.get_style_context().set_state(gtk::StateFlags::empty());
+            Inhibit(true)
+        });
+
+        let button_exit: gtk::Button = builder.get_object("button_exit").unwrap();
+        connect!(relm, button_exit, connect_clicked(_), Msg::Quit);
 
         window.show_all();
 

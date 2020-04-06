@@ -5,6 +5,14 @@
 .header {
     background-color: rgba(0, 0, 0, 0.3);
 }
+.profile-select:hover {
+    transition: 100ms linear;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.profile-select {
+    transition: 100ms linear;
+    background-color: rgba(0, 0, 0, 0);
+}
 
 label.text {
     color: #f5fffc;
