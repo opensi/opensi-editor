@@ -18,8 +18,7 @@ struct Win {
 }
 
 impl Update for Win {
-    type Model = Model;
-    type ModelParam = ();
+    type Model = Model; type ModelParam = ();
     type Msg = Msg;
 
     // Return the initial model.
@@ -33,8 +32,7 @@ impl Update for Win {
         match event {
             Msg::Quit => gtk::main_quit(),
         }
-    }
-}
+    } }
 
 impl Widget for Win {
     type Root = Window;
@@ -75,11 +73,16 @@ impl Widget for Win {
         let profile_select: gtk::Widget = builder.get_object("profile_select").unwrap();
         profile_select.connect_enter_notify_event(|widget, _| {
             widget.get_style_context().set_state(gtk::StateFlags::PRELIGHT);
-            Inhibit(true)
+            Inhibit(false)
         });
         profile_select.connect_leave_notify_event(|widget, _| {
             widget.get_style_context().set_state(gtk::StateFlags::empty());
-            Inhibit(true)
+            Inhibit(false)
+        });
+        let profile_list_revealer: gtk::Revealer = builder.get_object("profile_list_revealer").unwrap();
+        profile_select.connect_button_press_event(move |_, _| {
+            profile_list_revealer.set_reveal_child(!profile_list_revealer.get_reveal_child());
+            Inhibit(false)
         });
 
         let button_exit: gtk::Button = builder.get_object("button_exit").unwrap();
