@@ -1,6 +1,6 @@
 # opensi 
 
-![Rust](https://github.com/snpefk/opensi/workflows/Rust/badge.svg)
+![Rust](https://github.com/opensi/opensi/workflows/Rust/badge.svg)
 
 Open SI Game - реализация популярной телеигры на Rust
 
