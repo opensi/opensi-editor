@@ -1,5 +1,7 @@
-use std::io;
+#[path = "../core/lib.rs"]
+mod opensi;
 
+use std::io;
 use gtk::prelude::*;
 use gtk::Orientation::Vertical;
 use gtk::{
@@ -8,8 +10,6 @@ use gtk::{
 };
 use relm::{connect, Relm, Update, Widget};
 use relm_derive::Msg;
-
-use opensi;
 
 #[derive(Msg)]
 enum Msg {

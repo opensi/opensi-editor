@@ -9,8 +9,9 @@ enum Msg {
 }
 
 struct Model {
-    // …
+    // 
 }
+
 
 struct Win {
     model: Model,
