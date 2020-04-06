@@ -1,3 +1,6 @@
+#[path = "../src/core/lib.rs"]
+mod opensi;
+
 use opensi::Package;
 
 const PATH: &str = "tests/data/slamjam2.siq";
