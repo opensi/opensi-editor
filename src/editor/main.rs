@@ -1,24 +1,27 @@
 #[path = "../core/lib.rs"]
 mod opensi;
 
-use std::io;
 use gtk::prelude::*;
 use gtk::Orientation::Vertical;
 use gtk::{
-    CellLayoutExt, ContainerExt, GtkWindowExt, Inhibit, TreeStore, TreeView, TreeViewExt,
-    WidgetExt, Window, Builder,
+    Builder, CellLayoutExt, ContainerExt, GtkWindowExt, Inhibit, TreeStore, TreeView, TreeViewExt,
+    WidgetExt, Window,
 };
 use relm::{connect, Relm, Update, Widget};
 use relm_derive::Msg;
+use std::io;
+use std::path::PathBuf;
 
 #[derive(Msg)]
 enum Msg {
+    PackageSelect,
     ItemSelect,
     Quit,
 }
 
 struct Win {
     tree_view: TreeView,
+    file_chooser: gtk::FileChooserButton, 
     model: Model,
     window: Window,
 }
@@ -40,10 +43,19 @@ impl Update for Win {
 
     fn update(&mut self, event: Msg) {
         match event {
+            Msg::PackageSelect => {
+                let filename = self.file_chooser.get_filename().unwrap();
+                println!("{:?}", filename);
+
+                let package = opensi::Package::open(filename).unwrap();
+
+                let store_model = to_treestore(&package).expect("convert to TreeStore failed");
+                self.tree_view.set_model(Some(&store_model));
+            }
             Msg::ItemSelect => {
                 let selection = self.tree_view.get_selection();
                 if let Some((list_model, iter)) = selection.get_selected() {
-                    // TODO: add action here 
+                    // TODO: add action here
                 }
             }
             Msg::Quit => gtk::main_quit(),
@@ -63,12 +75,21 @@ impl Widget for Win {
         let bulider = Builder::new_from_string(source);
         let window: Window = bulider.get_object("editor").unwrap();
 
-        let store_model = to_treestore(&model.package).expect("convert to TreeStore failed");
         let tree_view: TreeView = bulider.get_object("tree").unwrap();
+        let file_chooser: gtk::FileChooserButton = bulider.get_object("file-chooser").unwrap();
+
+        // default model 
+        let store_model = to_treestore(&model.package).expect("convert to TreeStore failed");
         tree_view.set_model(Some(&store_model));
 
         window.show_all();
 
+        connect!(
+            relm,
+            file_chooser,
+            connect_file_set(_),
+            Msg::PackageSelect
+        );
         connect!(relm, tree_view, connect_cursor_changed(_), Msg::ItemSelect);
         connect!(
             relm,
@@ -79,6 +100,7 @@ impl Widget for Win {
 
         Win {
             tree_view,
+            file_chooser,
             model,
             window,
         }
