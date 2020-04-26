@@ -2,15 +2,9 @@
 mod opensi;
 
 use gtk::prelude::*;
-use gtk::Orientation::Vertical;
-use gtk::{
-    Builder, CellLayoutExt, ContainerExt, GtkWindowExt, Inhibit, TreeStore, TreeView, TreeViewExt,
-    WidgetExt, Window,
-};
 use relm::{connect, Relm, Update, Widget};
 use relm_derive::Msg;
 use std::io;
-use std::path::PathBuf;
 
 #[derive(Msg)]
 enum Msg {
@@ -20,10 +14,10 @@ enum Msg {
 }
 
 struct Win {
-    tree_view: TreeView,
-    file_chooser: gtk::FileChooserButton, 
+    window: gtk::Window,
+    file_chooser: gtk::FileChooserButton,
+    tree_view: gtk::TreeView,
     model: Model,
-    window: Window,
 }
 struct Model {
     package: opensi::Package,
@@ -45,8 +39,6 @@ impl Update for Win {
         match event {
             Msg::PackageSelect => {
                 let filename = self.file_chooser.get_filename().unwrap();
-                println!("{:?}", filename);
-
                 let package = opensi::Package::open(filename).unwrap();
 
                 let store_model = to_treestore(&package).expect("convert to TreeStore failed");
@@ -64,7 +56,7 @@ impl Update for Win {
 }
 
 impl Widget for Win {
-    type Root = Window;
+    type Root = gtk::Window;
 
     fn root(&self) -> Self::Root {
         self.window.clone()
@@ -72,24 +64,19 @@ impl Widget for Win {
 
     fn view(relm: &Relm<Self>, model: Self::Model) -> Self {
         let source = include_str!("editor.ui");
-        let bulider = Builder::new_from_string(source);
-        let window: Window = bulider.get_object("editor").unwrap();
+        let bulider = gtk::Builder::new_from_string(source);
+        let window: gtk::Window = bulider.get_object("editor").unwrap();
 
-        let tree_view: TreeView = bulider.get_object("tree").unwrap();
+        let tree_view: gtk::TreeView = bulider.get_object("tree").unwrap();
         let file_chooser: gtk::FileChooserButton = bulider.get_object("file-chooser").unwrap();
 
-        // default model 
+        // default model
         let store_model = to_treestore(&model.package).expect("convert to TreeStore failed");
         tree_view.set_model(Some(&store_model));
 
         window.show_all();
 
-        connect!(
-            relm,
-            file_chooser,
-            connect_file_set(_),
-            Msg::PackageSelect
-        );
+        connect!(relm, file_chooser, connect_file_set(_), Msg::PackageSelect);
         connect!(relm, tree_view, connect_cursor_changed(_), Msg::ItemSelect);
         connect!(
             relm,
@@ -99,16 +86,16 @@ impl Widget for Win {
         );
 
         Win {
-            tree_view,
-            file_chooser,
-            model,
             window,
+            file_chooser,
+            tree_view,
+            model,
         }
     }
 }
 
 // ugly, need refactor
-fn to_treestore(package: &opensi::Package) -> io::Result<TreeStore> {
+fn to_treestore(package: &opensi::Package) -> io::Result<gtk::TreeStore> {
     let store = gtk::TreeStore::new(&[String::static_type()]);
 
     package.rounds.rounds.iter().for_each(|round| {
