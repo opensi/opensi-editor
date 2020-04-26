@@ -6,7 +6,7 @@ use gtk::prelude::*;
 use gtk::Orientation::Vertical;
 use gtk::{
     CellLayoutExt, ContainerExt, GtkWindowExt, Inhibit, TreeStore, TreeView, TreeViewExt,
-    WidgetExt, Window, WindowType,
+    WidgetExt, Window, Builder,
 };
 use relm::{connect, Relm, Update, Widget};
 use relm_derive::Msg;
@@ -59,25 +59,13 @@ impl Widget for Win {
     }
 
     fn view(relm: &Relm<Self>, model: Self::Model) -> Self {
-        let window = gtk::Window::new(WindowType::Toplevel);
-        let vbox = gtk::Box::new(Vertical, 0);
-        let tree_view = gtk::TreeView::new();
-        let column = gtk::TreeViewColumn::new();
-        let cell = gtk::CellRendererText::new();
-
-        window.set_title("Package editor");
-        window.set_position(gtk::WindowPosition::Center);
-        window.set_default_size(350, 70);
-
-        column.pack_start(&cell, true);
-        column.add_attribute(&cell, "text", 0);
-        tree_view.append_column(&column);
+        let source = include_str!("editor.ui");
+        let bulider = Builder::new_from_string(source);
+        let window: Window = bulider.get_object("editor").unwrap();
 
         let store_model = to_treestore(&model.package).expect("convert to TreeStore failed");
+        let tree_view: TreeView = bulider.get_object("tree").unwrap();
         tree_view.set_model(Some(&store_model));
-
-        vbox.add(&tree_view);
-        window.add(&vbox);
 
         window.show_all();
 
