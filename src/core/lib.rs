@@ -10,7 +10,7 @@ use PartialEq;
 use quick_xml::de::{from_str, DeError};
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Package {
     pub id: String,
     pub name: Option<String>,
@@ -26,7 +26,7 @@ pub struct Package {
     pub info: Info,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Info {
     pub comments: Option<String>,
     pub extension: Option<String>,
@@ -34,19 +34,19 @@ pub struct Info {
     pub sources: Option<Vec<String>>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Authors {
     #[serde(rename = "author", default)]
     pub authors: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Rounds {
     #[serde(rename = "round", default)]
     pub rounds: Vec<Round>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Round {
     pub name: String,
     #[serde(rename = "type", default)]
@@ -55,26 +55,26 @@ pub struct Round {
     pub themes: Themes,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Themes {
     #[serde(rename = "theme", default)]
     pub themes: Vec<Theme>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Theme {
     pub name: String,
     pub questions: Questions,
     pub info: Option<Info>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Questions {
     #[serde(rename = "question", default)]
     pub questions: Vec<Question>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Question {
     pub price: usize,
     pub scenario: Scenario,
@@ -85,36 +85,36 @@ pub struct Question {
     pub info: Option<Info>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Variant {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Scenario {
     #[serde(rename = "atom", default)]
     pub atoms: Vec<Atom>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Right {
     #[serde(rename = "answer", default)]
     pub answers: Vec<Answer>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Wrong {
     #[serde(rename = "answer", default)]
     pub answers: Vec<Answer>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Answer {
     #[serde(rename = "$value")]
     pub body: Option<String>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Atom {
     pub time: Option<f64>,
     #[serde(rename = "type", default)]
