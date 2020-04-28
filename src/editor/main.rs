@@ -20,7 +20,7 @@ struct Win {
     model: Model,
 }
 struct Model {
-    package: opensi::Package,
+    chunks: Vec<opensi::Chunk>,
 }
 
 impl Update for Win {
@@ -29,26 +29,23 @@ impl Update for Win {
     type Msg = Msg;
 
     fn model(_: &Relm<Self>, _: ()) -> Model {
-        Model {
-            // TODO: will be replaced with actual data in future
-            package: opensi::Package::open("tests/data/slamjam2.siq").expect("cant't open package"),
-        }
+        Model { chunks: Vec::new() }
     }
 
     fn update(&mut self, event: Msg) {
         match event {
             Msg::PackageSelect => {
                 let filename = self.file_chooser.get_filename().unwrap();
-                let package = opensi::Package::open(filename).unwrap();
+                let package = opensi::Package::open(filename).expect("Failed to open file");
 
+                self.model.chunks = Vec::new();
                 let store_model = to_treestore(&package).expect("convert to TreeStore failed");
+
                 self.tree_view.set_model(Some(&store_model));
             }
             Msg::ItemSelect => {
                 let selection = self.tree_view.get_selection();
-                if let Some((list_model, iter)) = selection.get_selected() {
-                    // TODO: add action here
-                }
+                if let Some((model, iter)) = selection.get_selected() {}
             }
             Msg::Quit => gtk::main_quit(),
         }
@@ -69,10 +66,6 @@ impl Widget for Win {
 
         let tree_view: gtk::TreeView = bulider.get_object("tree").unwrap();
         let file_chooser: gtk::FileChooserButton = bulider.get_object("file-chooser").unwrap();
-
-        // default model
-        let store_model = to_treestore(&model.package).expect("convert to TreeStore failed");
-        tree_view.set_model(Some(&store_model));
 
         window.show_all();
 
@@ -96,43 +89,79 @@ impl Widget for Win {
 
 // ugly, need refactor
 fn to_treestore(package: &opensi::Package) -> io::Result<gtk::TreeStore> {
-    let store = gtk::TreeStore::new(&[String::static_type()]);
+    let store = gtk::TreeStore::new(&[String::static_type(), u32::static_type()]);
+    let columns = &[0u32, 1u32];
+    let mut chunks = Vec::new();
+    let mut i = 0u32;
+    let empty = String::new();
 
     package.rounds.rounds.iter().for_each(|round| {
-        let round_parent = store.insert_with_values(None, None, &[0 as u32], &[&round.name]);
+        let round_parent = store.insert_with_values(None, None, columns, &[&round.name, &i]);
+        i += 1;
+        chunks.push(opensi::Chunk::Round(round.clone()));
 
         round.themes.themes.iter().for_each(|theme| {
             let theme_parent =
-                store.insert_with_values(Some(&round_parent), None, &[0 as u32], &[&theme.name]);
+                store.insert_with_values(Some(&round_parent), None, columns, &[&theme.name, &i]);
+
+            i += 1;
+            chunks.push(opensi::Chunk::Theme(theme.clone()));
 
             theme.questions.questions.iter().for_each(|question| {
-                let atom = &question
-                    .scenario
-                    .atoms
-                    .first()
-                    .expect("failed to extract atom");
-                let title = atom.body.as_ref().expect("heh");
-                let title = format!("{} ({})", title, question.price);
+                let question_parent = store.insert_with_values(
+                    Some(&theme_parent),
+                    None,
+                    columns,
+                    &[&question.price.to_string(), &i],
+                );
 
-                let atom_store =
-                    store.insert_with_values(Some(&theme_parent), None, &[0 as u32], &[&title]);
+                i += 1;
+                chunks.push(opensi::Chunk::Question(question.clone()));
 
-                let empty = String::from("");
-                let answers = &question
-                    .right
-                    .answers
-                    .iter()
-                    .map(|answer| answer.body.as_ref().unwrap_or(&empty).clone())
-                    .collect::<Vec<String>>()
-                    .join(", ");
+                let question_title_parent = store.insert_with_values(
+                    Some(&question_parent),
+                    None,
+                    columns,
+                    &[&"вопрос".to_owned(), &0u32],
+                );
 
-                store.insert_with_values(Some(&atom_store), None, &[0 as u32], &[&answers]);
+                question.scenario.atoms.iter().for_each(|atom| {
+                    i += 1;
+                    chunks.push(opensi::Chunk::Atom(atom.clone()));
+
+                    let atom_store = store.insert_with_values(
+                        Some(&question_title_parent),
+                        None,
+                        columns,
+                        &[&atom.body.as_ref().unwrap(), &i],
+                    );
+                });
+
+                let answer_title_parent = store.insert_with_values(
+                    Some(&question_parent),
+                    None,
+                    columns,
+                    &[&"ответ".to_owned(), &0u32],
+                );
+
+
+                question.right.answers.iter().for_each(|answer| {
+                    i +=1; 
+                    chunks.push(opensi::Chunk::Answer(answer.clone()));
+
+                    let title = answer.body.as_ref().unwrap_or(&empty).clone();
+                    
+                    store.insert_with_values(
+                        Some(&answer_title_parent),
+                        None,
+                        columns,
+                        &[&title, &i],
+                    );
+                })
             })
         });
     });
 
-    // add flag for printing only for debug version
-    println!("{:?}", package);
     Ok(store)
 }
 
