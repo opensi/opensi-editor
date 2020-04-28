@@ -129,7 +129,7 @@ fn to_treestore(package: &opensi::Package) -> io::Result<gtk::TreeStore> {
                     i += 1;
                     chunks.push(opensi::Chunk::Atom(atom.clone()));
 
-                    let atom_store = store.insert_with_values(
+                    store.insert_with_values(
                         Some(&question_title_parent),
                         None,
                         columns,
