@@ -38,10 +38,88 @@ impl Update for Win {
                 let filename = self.file_chooser.get_filename().unwrap();
                 let package = opensi::Package::open(filename).expect("Failed to open file");
 
+                let store = gtk::TreeStore::new(&[String::static_type(), u32::static_type()]);
+                let columns = &[0u32, 1u32];
                 self.model.chunks = Vec::new();
-                let store_model = to_treestore(&package).expect("convert to TreeStore failed");
+                let mut i = 0u32;
+                let empty = String::new();
 
-                self.tree_view.set_model(Some(&store_model));
+                package.rounds.rounds.iter().for_each(|round| {
+                    let round_parent =
+                        store.insert_with_values(None, None, columns, &[&round.name, &i]);
+                    i += 1;
+                    self.model.chunks.push(opensi::Chunk::Round(round.clone()));
+
+                    round.themes.themes.iter().for_each(|theme| {
+                        let theme_parent = store.insert_with_values(
+                            Some(&round_parent),
+                            None,
+                            columns,
+                            &[&theme.name, &i],
+                        );
+
+                        i += 1;
+                        self.model.chunks.push(opensi::Chunk::Theme(theme.clone()));
+
+                        theme.questions.questions.iter().for_each(|question| {
+                            let question_parent = store.insert_with_values(
+                                Some(&theme_parent),
+                                None,
+                                columns,
+                                &[&question.price.to_string(), &i],
+                            );
+
+                            i += 1;
+                            self.model
+                                .chunks
+                                .push(opensi::Chunk::Question(question.clone()));
+
+                            let question_title_parent = store.insert_with_values(
+                                Some(&question_parent),
+                                None,
+                                columns,
+                                &[&"вопрос".to_owned(), &0u32],
+                            );
+
+                            question.scenario.atoms.iter().for_each(|atom| {
+                                i += 1;
+                                self.model.chunks.push(opensi::Chunk::Atom(atom.clone()));
+
+                                store.insert_with_values(
+                                    Some(&question_title_parent),
+                                    None,
+                                    columns,
+                                    &[&atom.body.as_ref().unwrap(), &i],
+                                );
+                            });
+
+                            let answer_title_parent = store.insert_with_values(
+                                Some(&question_parent),
+                                None,
+                                columns,
+                                &[&"ответ".to_owned(), &0u32],
+                            );
+
+                            question.right.answers.iter().for_each(|answer| {
+                                i += 1;
+                                self.model
+                                    .chunks
+                                    .push(opensi::Chunk::Answer(answer.clone()));
+
+                                let title = answer.body.as_ref().unwrap_or(&empty).clone();
+
+                                store.insert_with_values(
+                                    Some(&answer_title_parent),
+                                    None,
+                                    columns,
+                                    &[&title, &i],
+                                );
+                            })
+                        })
+                    });
+                });
+
+                self.tree_view.set_model(Some(&store));
             }
             Msg::ItemSelect => {
                 let selection = self.tree_view.get_selection();
@@ -85,84 +163,6 @@ impl Widget for Win {
             model,
         }
     }
-}
-
-// ugly, need refactor
-fn to_treestore(package: &opensi::Package) -> io::Result<gtk::TreeStore> {
-    let store = gtk::TreeStore::new(&[String::static_type(), u32::static_type()]);
-    let columns = &[0u32, 1u32];
-    let mut chunks = Vec::new();
-    let mut i = 0u32;
-    let empty = String::new();
-
-    package.rounds.rounds.iter().for_each(|round| {
-        let round_parent = store.insert_with_values(None, None, columns, &[&round.name, &i]);
-        i += 1;
-        chunks.push(opensi::Chunk::Round(round.clone()));
-
-        round.themes.themes.iter().for_each(|theme| {
-            let theme_parent =
-                store.insert_with_values(Some(&round_parent), None, columns, &[&theme.name, &i]);
-
-            i += 1;
-            chunks.push(opensi::Chunk::Theme(theme.clone()));
-
-            theme.questions.questions.iter().for_each(|question| {
-                let question_parent = store.insert_with_values(
-                    Some(&theme_parent),
-                    None,
-                    columns,
-                    &[&question.price.to_string(), &i],
-                );
-
-                i += 1;
-                chunks.push(opensi::Chunk::Question(question.clone()));
-
-                let question_title_parent = store.insert_with_values(
-                    Some(&question_parent),
-                    None,
-                    columns,
-                    &[&"вопрос".to_owned(), &0u32],
-                );
-
-                question.scenario.atoms.iter().for_each(|atom| {
-                    i += 1;
-                    chunks.push(opensi::Chunk::Atom(atom.clone()));
-
-                    store.insert_with_values(
-                        Some(&question_title_parent),
-                        None,
-                        columns,
-                        &[&atom.body.as_ref().unwrap(), &i],
-                    );
-                });
-
-                let answer_title_parent = store.insert_with_values(
-                    Some(&question_parent),
-                    None,
-                    columns,
-                    &[&"ответ".to_owned(), &0u32],
-                );
-
-
-                question.right.answers.iter().for_each(|answer| {
-                    i +=1; 
-                    chunks.push(opensi::Chunk::Answer(answer.clone()));
-
-                    let title = answer.body.as_ref().unwrap_or(&empty).clone();
-                    
-                    store.insert_with_values(
-                        Some(&answer_title_parent),
-                        None,
-                        columns,
-                        &[&title, &i],
-                    );
-                })
-            })
-        });
-    });
-
-    Ok(store)
 }
 
 fn main() {
