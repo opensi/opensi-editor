@@ -137,7 +137,7 @@ pub enum Chunk {
     Scenario(Scenario),
     Right(Right), 
     Wrong(Wrong), 
-    Anser(Answer),
+    Answer(Answer),
     Atom(Atom),
 }
 
