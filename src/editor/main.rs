@@ -123,7 +123,60 @@ impl Update for Win {
             }
             Msg::ItemSelect => {
                 let selection = self.tree_view.get_selection();
-                if let Some((model, iter)) = selection.get_selected() {}
+                if let Some((model, iter)) = selection.get_selected() {
+                    let index = model
+                        .get_value(&iter, 1)
+                        .get::<u32>()
+                        .ok()
+                        .and_then(|value| value)
+                        .expect("get_value.get<String> failed");
+
+                    let chunk = &self.model.chunks[index as usize];
+
+                    match chunk {
+                        opensi::Chunk::Package(x) => println!("{:?}", x),
+                        opensi::Chunk::Info(x) => println!("{:?}", x),
+                        opensi::Chunk::Authors(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Rounds(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Round(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Theme(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Themes(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Questions(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Question(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Variant(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Scenario(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Right(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Wrong(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Answer(x) => {
+                            println!("{:?}", x);
+                        }
+                        opensi::Chunk::Atom(x) => {
+                            println!("{:?}", x);
+                        }
+                    }
+                }
             }
             Msg::Quit => gtk::main_quit(),
         }
