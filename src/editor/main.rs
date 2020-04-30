@@ -4,7 +4,6 @@ mod opensi;
 use gtk::prelude::*;
 use relm::{connect, Relm, Update, Widget};
 use relm_derive::Msg;
-use std::io;
 
 #[derive(Msg)]
 enum Msg {
