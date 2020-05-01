@@ -16,6 +16,7 @@ struct Win {
     window: gtk::Window,
     file_chooser: gtk::FileChooserButton,
     tree_view: gtk::TreeView,
+    body_editor: gtk::Entry,
     model: Model,
 }
 struct Model {
@@ -133,7 +134,11 @@ impl Update for Win {
                     let chunk = &self.model.chunks[index as usize];
 
                     match chunk {
-                        opensi::Chunk::Package(x) => println!("{:?}", x),
+                        opensi::Chunk::Package(x) => {
+                            let package_name = x.name.as_ref().unwrap();
+                            self.body_editor.set_text(package_name);
+                            println!("{:?}", x)
+                        },
                         opensi::Chunk::Info(x) => println!("{:?}", x),
                         opensi::Chunk::Authors(x) => {
                             println!("{:?}", x);
@@ -142,9 +147,11 @@ impl Update for Win {
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Round(x) => {
+                            self.body_editor.set_text(&x.name);
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Theme(x) => {
+                            self.body_editor.set_text(&x.name);
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Themes(x) => {
@@ -154,6 +161,7 @@ impl Update for Win {
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Question(x) => {
+                            self.body_editor.set_text(&x.scenario.atoms.first().unwrap().body.as_ref().unwrap());
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Variant(x) => {
@@ -169,6 +177,7 @@ impl Update for Win {
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Answer(x) => {
+                            // self.body_editor.set_visible(false);
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Atom(x) => {
@@ -191,11 +200,12 @@ impl Widget for Win {
 
     fn view(relm: &Relm<Self>, model: Self::Model) -> Self {
         let source = include_str!("editor.ui");
-        let bulider = gtk::Builder::new_from_string(source);
-        let window: gtk::Window = bulider.get_object("editor").unwrap();
+        let builder = gtk::Builder::new_from_string(source);
+        let window: gtk::Window = builder.get_object("editor").unwrap();
 
-        let tree_view: gtk::TreeView = bulider.get_object("tree").unwrap();
-        let file_chooser: gtk::FileChooserButton = bulider.get_object("file-chooser").unwrap();
+        let tree_view: gtk::TreeView = builder.get_object("tree").unwrap();
+        let file_chooser: gtk::FileChooserButton = builder.get_object("file-chooser").unwrap();
+        let body_editor: gtk::Entry = builder.get_object("body-editor").unwrap();
 
         window.show_all();
 
@@ -212,6 +222,7 @@ impl Widget for Win {
             window,
             file_chooser,
             tree_view,
+            body_editor,
             model,
         }
     }
