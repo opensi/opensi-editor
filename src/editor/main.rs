@@ -17,6 +17,7 @@ struct Win {
     file_chooser: gtk::FileChooserButton,
     tree_view: gtk::TreeView,
     body_editor: gtk::Entry,
+    image_preview: gtk::Image,
     model: Model,
 }
 
@@ -95,6 +96,8 @@ impl Update for Win {
                 self.tree_view.set_model(Some(&store));
             }
             Msg::ItemSelect => {
+                self.image_preview.set_visible(false);
+
                 let selection = self.tree_view.get_selection();
                 if let Some((model, iter)) = selection.get_selected() {
                     let index = model
@@ -146,7 +149,10 @@ impl Update for Win {
 
                                 if let Some(resource) = Resource::new(body, variant) {
                                     let resource = get_resource_from_model(&self.model, resource);
-                                    // gtk::Image::new_from_file(resource)
+                                    if atom.variant.as_ref().unwrap().eq("image") { 
+                                        self.image_preview.set_from_file(&resource);
+                                        self.image_preview.set_visible(true);
+                                    }
                                     println!("{:?}", resource)
                                 }
                             });
@@ -194,6 +200,7 @@ impl Widget for Win {
         let tree_view: gtk::TreeView = builder.get_object("tree").unwrap();
         let file_chooser: gtk::FileChooserButton = builder.get_object("file-chooser").unwrap();
         let body_editor: gtk::Entry = builder.get_object("body-editor").unwrap();
+        let image_preview: gtk::Image = builder.get_object("image-preview-editor").unwrap();
 
         window.show_all();
 
@@ -211,6 +218,7 @@ impl Widget for Win {
             file_chooser,
             tree_view,
             body_editor,
+            image_preview,
             model,
         }
     }
@@ -236,7 +244,7 @@ impl Resource {
 
 const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS.add(b' ');
 
-fn get_resource_from_model(model: &Model, resource: Resource) -> std::fs::File {
+fn get_resource_from_model(model: &Model, resource: Resource) -> std::path::PathBuf {
     // костыль
     let path  = model.filename.as_ref().unwrap();
     let zipfile = std::fs::File::open(path).unwrap();
@@ -255,9 +263,9 @@ fn get_resource_from_model(model: &Model, resource: Resource) -> std::fs::File {
     // TODO: don't clutter into /tmp
     tmp_path.push(resource_file.name().split("/").last().unwrap()); 
 
-    let mut file = std::fs::File::create(tmp_path).expect("can't create tmp file");
+    let mut file = std::fs::File::create(&tmp_path).expect("can't create tmp file");
     std::io::copy(&mut resource_file, &mut file).unwrap();
-    file
+    tmp_path
 }
 
 fn main() {

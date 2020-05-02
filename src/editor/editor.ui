@@ -44,7 +44,7 @@
                 <child>
                   <object class="GtkTreeViewColumn" id="column">
                     <property name="resizable">True</property>
-                    <property name="title" translatable="yes">name</property>
+                    <property name="title" translatable="yes">Дерево пакета</property>
                     <child>
                       <object class="GtkCellRendererText"/>
                       <attributes>
@@ -67,6 +67,18 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkImage" id="image-preview-editor">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="stock">gtk-missing-image</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
             <child>
               <object class="GtkEntry" id="body-editor">
                 <property name="visible">True</property>
