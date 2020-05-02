@@ -19,8 +19,12 @@ struct Win {
     body_editor: gtk::Entry,
     model: Model,
 }
+
 struct Model {
     chunks: Vec<opensi::Chunk>,
+    // TODO: try CoW
+    zip: Option<zip::ZipArchive<std::fs::File>>,
+    filename: Option<std::path::PathBuf>,
 }
 
 impl Update for Win {
@@ -29,20 +33,31 @@ impl Update for Win {
     type Msg = Msg;
 
     fn model(_: &Relm<Self>, _: ()) -> Model {
-        Model { chunks: Vec::new() }
+        Model {
+            chunks: Vec::new(),
+            zip: None,
+            filename: None
+        }
     }
 
     fn update(&mut self, event: Msg) {
         match event {
             Msg::PackageSelect => {
                 let filename = self.file_chooser.get_filename().unwrap();
-                let package = opensi::Package::open(filename).expect("Failed to open file");
+                
+                let file = std::fs::File::open(&filename).unwrap();
+                let zip = zip::ZipArchive::new(file).unwrap();
+                self.model.zip = Some(zip);
+
+                let package = opensi::Package::open(&filename).expect("Failed to open file");
+
+                self.model.filename = Some(filename);
+
 
                 let store = gtk::TreeStore::new(&[String::static_type(), u32::static_type()]);
                 let columns = &[0u32, 1u32];
                 self.model.chunks = Vec::new();
                 let mut i = 0u32;
-                let empty = String::new();
 
                 package.rounds.rounds.iter().for_each(|round| {
                     let round_parent =
@@ -62,7 +77,7 @@ impl Update for Win {
                         self.model.chunks.push(opensi::Chunk::Theme(theme.clone()));
 
                         theme.questions.questions.iter().for_each(|question| {
-                            let question_parent = store.insert_with_values(
+                            store.insert_with_values(
                                 Some(&theme_parent),
                                 None,
                                 columns,
@@ -73,48 +88,6 @@ impl Update for Win {
                             self.model
                                 .chunks
                                 .push(opensi::Chunk::Question(question.clone()));
-
-                            let question_title_parent = store.insert_with_values(
-                                Some(&question_parent),
-                                None,
-                                columns,
-                                &[&"вопрос".to_owned(), &0u32],
-                            );
-
-                            question.scenario.atoms.iter().for_each(|atom| {
-                                i += 1;
-                                self.model.chunks.push(opensi::Chunk::Atom(atom.clone()));
-
-                                store.insert_with_values(
-                                    Some(&question_title_parent),
-                                    None,
-                                    columns,
-                                    &[&atom.body.as_ref().unwrap(), &i],
-                                );
-                            });
-
-                            let answer_title_parent = store.insert_with_values(
-                                Some(&question_parent),
-                                None,
-                                columns,
-                                &[&"ответ".to_owned(), &0u32],
-                            );
-
-                            question.right.answers.iter().for_each(|answer| {
-                                i += 1;
-                                self.model
-                                    .chunks
-                                    .push(opensi::Chunk::Answer(answer.clone()));
-
-                                let title = answer.body.as_ref().unwrap_or(&empty).clone();
-
-                                store.insert_with_values(
-                                    Some(&answer_title_parent),
-                                    None,
-                                    columns,
-                                    &[&title, &i],
-                                );
-                            })
                         })
                     });
                 });
@@ -138,7 +111,7 @@ impl Update for Win {
                             let package_name = x.name.as_ref().unwrap();
                             self.body_editor.set_text(package_name);
                             println!("{:?}", x)
-                        },
+                        }
                         opensi::Chunk::Info(x) => println!("{:?}", x),
                         opensi::Chunk::Authors(x) => {
                             println!("{:?}", x);
@@ -161,8 +134,22 @@ impl Update for Win {
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Question(x) => {
-                            self.body_editor.set_text(&x.scenario.atoms.first().unwrap().body.as_ref().unwrap());
                             println!("{:?}", x);
+
+                            self.body_editor.set_text(
+                                &x.scenario.atoms.first().unwrap().body.as_ref().unwrap(),
+                            );
+
+                            x.scenario.atoms.iter().for_each(|atom| {
+                                let body = atom.body.as_ref().unwrap();
+                                let variant = atom.variant.as_ref().unwrap();
+
+                                if let Some(resource) = Resource::new(body, variant) {
+                                    let resource = get_resource_from_model(&self.model, resource);
+                                    // gtk::Image::new_from_file(resource)
+                                    println!("{:?}", resource)
+                                }
+                            });
                         }
                         opensi::Chunk::Variant(x) => {
                             println!("{:?}", x);
@@ -178,6 +165,7 @@ impl Update for Win {
                         }
                         opensi::Chunk::Answer(x) => {
                             // self.body_editor.set_visible(false);
+
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Atom(x) => {
@@ -226,6 +214,50 @@ impl Widget for Win {
             model,
         }
     }
+}
+
+#[derive(Debug)]
+enum Resource {
+    Audio(String),
+    Video(String),
+    Image(String),
+}
+
+impl Resource {
+    fn new(body: &str, variant: &str) -> Option<Resource> {
+        match variant {
+            "voice" => Some(Resource::Audio(body[1..].to_string())),
+            "image" => Some(Resource::Image(body[1..].to_string())),
+            "video" => Some(Resource::Video(body[1..].to_string())),
+            _ => None,
+        }
+    }
+}
+
+const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS.add(b' ');
+
+fn get_resource_from_model(model: &Model, resource: Resource) -> std::fs::File {
+    // костыль
+    let path  = model.filename.as_ref().unwrap();
+    let zipfile = std::fs::File::open(path).unwrap();
+    let mut zip = zip::ZipArchive::new(zipfile).unwrap();
+
+    // since resource path may be url encoded we do this  
+    let resource_path = match resource {
+        Resource::Audio(path) => format!("Audio/{}", percent_encoding::utf8_percent_encode(&path, FRAGMENT)),
+        Resource::Video(path) => format!("Video/{}", percent_encoding::utf8_percent_encode(&path, FRAGMENT)),
+        Resource::Image(path) => format!("Images/{}", percent_encoding::utf8_percent_encode(&path, FRAGMENT)),
+    };
+
+    let mut resource_file = zip.by_name(&resource_path).expect("can't find resource in archive");
+
+    let mut tmp_path = std::path::PathBuf::from(std::env::temp_dir());
+    // TODO: don't clutter into /tmp
+    tmp_path.push(resource_file.name().split("/").last().unwrap()); 
+
+    let mut file = std::fs::File::create(tmp_path).expect("can't create tmp file");
+    std::io::copy(&mut resource_file, &mut file).unwrap();
+    file
 }
 
 fn main() {
