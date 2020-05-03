@@ -171,8 +171,6 @@ impl Update for Win {
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Answer(x) => {
-                            // self.body_editor.set_visible(false);
-
                             println!("{:?}", x);
                         }
                         opensi::Chunk::Atom(x) => {
