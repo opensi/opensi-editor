@@ -145,9 +145,9 @@ impl Update for Win {
 
                             x.scenario.atoms.iter().for_each(|atom| {
                                 let body = atom.body.as_ref().unwrap();
-                                let variant = atom.variant.as_ref().unwrap();
+                                if let Some(variant) = atom.variant.as_ref() {
 
-                                if let Some(resource) = Resource::new(body, variant) {
+                                if let Some(resource) = Resource::new(body, &variant) {
                                     let resource = get_resource_from_model(&self.model, resource);
                                     if atom.variant.as_ref().unwrap().eq("image") { 
                                         self.image_preview.set_from_file(&resource);
@@ -155,6 +155,7 @@ impl Update for Win {
                                     }
                                     println!("{:?}", resource)
                                 }
+                            }
                             });
                         }
                         opensi::Chunk::Variant(x) => {
