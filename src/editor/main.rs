@@ -19,6 +19,8 @@ struct Win {
     body_editor: gtk::Entry,
     body_container: gtk::Box,
     image_preview: gtk::Image,
+    answer_entry: gtk::Entry,
+    answer_container: gtk::Box,
     model: Model,
 }
 
@@ -86,9 +88,7 @@ impl Update for Win {
                             );
 
                             i += 1;
-                            self.model
-                                .chunks
-                                .push(Chunk::Question(question.clone()));
+                            self.model.chunks.push(Chunk::Question(question.clone()));
                         })
                     });
                 });
@@ -98,7 +98,8 @@ impl Update for Win {
             Msg::ItemSelect => {
                 self.image_preview.set_visible(false);
                 self.body_container.set_visible(false);
-
+                self.answer_container.set_visible(false);
+                
                 let selection = self.tree_view.get_selection();
                 if let Some((model, iter)) = selection.get_selected() {
                     let index = model
@@ -144,8 +145,14 @@ impl Update for Win {
                                     self.body_editor.set_text(body);
                                 }
                             });
+
+                            x.right.answers.iter().for_each(|answer|{
+                                self.answer_container.set_visible(true);
+                                if let Some(body) = answer.body.as_ref() {
+                                    self.answer_entry.set_text(body);
+                                }
+                            })
                         }
-                        
                     }
                 }
             }
@@ -172,6 +179,9 @@ impl Widget for Win {
         let image_preview: gtk::Image = builder.get_object("image-preview-editor").unwrap();
         let body_container: gtk::Box = builder.get_object("body-container").unwrap();
 
+        let answer_entry: gtk::Entry = builder.get_object("answer-entry").unwrap();
+        let answer_container: gtk::Box = builder.get_object("answer-container").unwrap();
+
         window.show();
 
         connect!(relm, file_chooser, connect_file_set(_), Msg::PackageSelect);
@@ -190,6 +200,8 @@ impl Widget for Win {
             body_editor,
             image_preview,
             body_container,
+            answer_entry,
+            answer_container,
             model,
         }
     }
