@@ -16,8 +16,9 @@ struct Win {
     window: gtk::Window,
     file_chooser: gtk::FileChooserButton,
     tree_view: gtk::TreeView,
-    body_editor: gtk::Entry,
     body_container: gtk::Box,
+    body_editor: gtk::Entry,
+    body_label: gtk::Label,
     image_preview: gtk::Image,
     answer_entry: gtk::Entry,
     answer_container: gtk::Box,
@@ -113,11 +114,17 @@ impl Update for Win {
 
                     match chunk {
                         Chunk::Round(x) => {
+                            self.body_container.set_visible(true);
                             self.body_editor.set_text(&x.name);
+                            self.body_label.set_text("раунд:");
+
                             println!("{:?}", x);
                         }
                         Chunk::Theme(x) => {
+                            self.body_container.set_visible(true);
                             self.body_editor.set_text(&x.name);
+                            self.body_label.set_text("тема:");
+
                             println!("{:?}", x);
                         }
                         Chunk::Question(x) => {
@@ -142,6 +149,7 @@ impl Update for Win {
                                     }
                                 } else {
                                     self.body_container.set_visible(true);
+                                    self.body_label.set_text("вопрос:");
                                     self.body_editor.set_text(body);
                                 }
                             });
@@ -178,6 +186,7 @@ impl Widget for Win {
         let body_editor: gtk::Entry = builder.get_object("body-editor").unwrap();
         let image_preview: gtk::Image = builder.get_object("image-preview-editor").unwrap();
         let body_container: gtk::Box = builder.get_object("body-container").unwrap();
+        let body_label: gtk::Label = builder.get_object("body-label").unwrap();
 
         let answer_entry: gtk::Entry = builder.get_object("answer-entry").unwrap();
         let answer_container: gtk::Box = builder.get_object("answer-container").unwrap();
@@ -200,6 +209,7 @@ impl Widget for Win {
             body_editor,
             image_preview,
             body_container,
+            body_label,
             answer_entry,
             answer_container,
             model,
