@@ -20,6 +20,7 @@ struct Win {
     body_editor: gtk::Entry,
     body_label: gtk::Label,
     image_preview: gtk::Image,
+    editor_container: gtk::Box,
     answer_entry: gtk::Entry,
     answer_container: gtk::Box,
     model: Model,
@@ -97,10 +98,6 @@ impl Update for Win {
                 self.tree_view.set_model(Some(&store));
             }
             Msg::ItemSelect => {
-                self.image_preview.set_visible(false);
-                self.body_container.set_visible(false);
-                self.answer_container.set_visible(false);
-                
                 let selection = self.tree_view.get_selection();
                 if let Some((model, iter)) = selection.get_selected() {
                     let index = model
@@ -137,15 +134,36 @@ impl Update for Win {
                             x.scenario.atoms.iter().for_each(|atom| {
                                 let body = atom.body.as_ref().unwrap();
 
+                                // empty variant means text atom
                                 if let Some(variant) = atom.variant.as_ref() {
                                     if let Some(resource) = Resource::new(body, &variant) {
                                         let resource =
                                             get_resource_from_model(&self.model, resource);
+
                                         if atom.variant.as_ref().unwrap().eq("image") {
-                                            self.image_preview.set_from_file(&resource);
+                                            let allocation = self.editor_container.get_allocation();
+                                            let mut pixbuf: gdk_pixbuf::Pixbuf =
+                                                gdk_pixbuf::Pixbuf::new_from_file(&resource)
+                                                    .unwrap();
+
+                                            if pixbuf.get_width() > allocation.width {
+                                                let new_width = allocation.width;
+                                                let ratio = allocation.width as f32 / pixbuf.get_width() as f32;
+                                                let new_height = ((pixbuf.get_height() as f32) * ratio).floor() as i32;
+
+                                                pixbuf = pixbuf
+                                                    .scale_simple(
+                                                        new_width,
+                                                        new_height,
+                                                        gdk_pixbuf::InterpType::Bilinear,
+                                                    )
+                                                    .unwrap();
+                                            }
+
+                                            self.image_preview
+                                                .set_from_pixbuf(Some(pixbuf.as_ref()));
                                             self.image_preview.set_visible(true);
                                         }
-                                        println!("{:?}", resource)
                                     }
                                 } else {
                                     self.body_container.set_visible(true);
@@ -154,7 +172,7 @@ impl Update for Win {
                                 }
                             });
 
-                            x.right.answers.iter().for_each(|answer|{
+                            x.right.answers.iter().for_each(|answer| {
                                 self.answer_container.set_visible(true);
                                 if let Some(body) = answer.body.as_ref() {
                                     self.answer_entry.set_text(body);
@@ -191,6 +209,8 @@ impl Widget for Win {
         let answer_entry: gtk::Entry = builder.get_object("answer-entry").unwrap();
         let answer_container: gtk::Box = builder.get_object("answer-container").unwrap();
 
+        let editor_container: gtk::Box = builder.get_object("editor-container").unwrap();
+
         window.show();
 
         connect!(relm, file_chooser, connect_file_set(_), Msg::PackageSelect);
@@ -210,6 +230,7 @@ impl Widget for Win {
             image_preview,
             body_container,
             body_label,
+            editor_container,
             answer_entry,
             answer_container,
             model,
