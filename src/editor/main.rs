@@ -17,6 +17,7 @@ struct Win {
     file_chooser: gtk::FileChooserButton,
     tree_view: gtk::TreeView,
     body_editor: gtk::Entry,
+    body_container: gtk::Box,
     image_preview: gtk::Image,
     model: Model,
 }
@@ -37,7 +38,7 @@ impl Update for Win {
         Model {
             chunks: Vec::new(),
             zip: None,
-            filename: None
+            filename: None,
         }
     }
 
@@ -45,7 +46,7 @@ impl Update for Win {
         match event {
             Msg::PackageSelect => {
                 let filename = self.file_chooser.get_filename().unwrap();
-                
+
                 let file = std::fs::File::open(&filename).unwrap();
                 let zip = zip::ZipArchive::new(file).unwrap();
                 self.model.zip = Some(zip);
@@ -53,7 +54,6 @@ impl Update for Win {
                 let package = opensi::Package::open(&filename).expect("Failed to open file");
 
                 self.model.filename = Some(filename);
-
 
                 let store = gtk::TreeStore::new(&[String::static_type(), u32::static_type()]);
                 let columns = &[0u32, 1u32];
@@ -97,6 +97,7 @@ impl Update for Win {
             }
             Msg::ItemSelect => {
                 self.image_preview.set_visible(false);
+                self.body_container.set_visible(false);
 
                 let selection = self.tree_view.get_selection();
                 if let Some((model, iter)) = selection.get_selected() {
@@ -145,17 +146,21 @@ impl Update for Win {
 
                             x.scenario.atoms.iter().for_each(|atom| {
                                 let body = atom.body.as_ref().unwrap();
-                                if let Some(variant) = atom.variant.as_ref() {
 
-                                if let Some(resource) = Resource::new(body, &variant) {
-                                    let resource = get_resource_from_model(&self.model, resource);
-                                    if atom.variant.as_ref().unwrap().eq("image") { 
-                                        self.image_preview.set_from_file(&resource);
-                                        self.image_preview.set_visible(true);
+                                if let Some(variant) = atom.variant.as_ref() {
+                                    if let Some(resource) = Resource::new(body, &variant) {
+                                        let resource =
+                                            get_resource_from_model(&self.model, resource);
+                                        if atom.variant.as_ref().unwrap().eq("image") {
+                                            self.image_preview.set_from_file(&resource);
+                                            self.image_preview.set_visible(true);
+                                        }
+                                        println!("{:?}", resource)
                                     }
-                                    println!("{:?}", resource)
+                                } else {
+                                    self.body_container.set_visible(true);
+                                    self.body_editor.set_text(body);
                                 }
-                            }
                             });
                         }
                         opensi::Chunk::Variant(x) => {
@@ -200,8 +205,9 @@ impl Widget for Win {
         let file_chooser: gtk::FileChooserButton = builder.get_object("file-chooser").unwrap();
         let body_editor: gtk::Entry = builder.get_object("body-editor").unwrap();
         let image_preview: gtk::Image = builder.get_object("image-preview-editor").unwrap();
+        let body_container: gtk::Box = builder.get_object("body-container").unwrap();
 
-        window.show_all();
+        window.show();
 
         connect!(relm, file_chooser, connect_file_set(_), Msg::PackageSelect);
         connect!(relm, tree_view, connect_cursor_changed(_), Msg::ItemSelect);
@@ -218,6 +224,7 @@ impl Widget for Win {
             tree_view,
             body_editor,
             image_preview,
+            body_container,
             model,
         }
     }
@@ -245,22 +252,33 @@ const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS.add(b'
 
 fn get_resource_from_model(model: &Model, resource: Resource) -> std::path::PathBuf {
     // костыль
-    let path  = model.filename.as_ref().unwrap();
+    let path = model.filename.as_ref().unwrap();
     let zipfile = std::fs::File::open(path).unwrap();
     let mut zip = zip::ZipArchive::new(zipfile).unwrap();
 
-    // since resource path may be url encoded we do this  
+    // since resource path may be url encoded we do this
     let resource_path = match resource {
-        Resource::Audio(path) => format!("Audio/{}", percent_encoding::utf8_percent_encode(&path, FRAGMENT)),
-        Resource::Video(path) => format!("Video/{}", percent_encoding::utf8_percent_encode(&path, FRAGMENT)),
-        Resource::Image(path) => format!("Images/{}", percent_encoding::utf8_percent_encode(&path, FRAGMENT)),
+        Resource::Audio(path) => format!(
+            "Audio/{}",
+            percent_encoding::utf8_percent_encode(&path, FRAGMENT)
+        ),
+        Resource::Video(path) => format!(
+            "Video/{}",
+            percent_encoding::utf8_percent_encode(&path, FRAGMENT)
+        ),
+        Resource::Image(path) => format!(
+            "Images/{}",
+            percent_encoding::utf8_percent_encode(&path, FRAGMENT)
+        ),
     };
 
-    let mut resource_file = zip.by_name(&resource_path).expect("can't find resource in archive");
+    let mut resource_file = zip
+        .by_name(&resource_path)
+        .expect("can't find resource in archive");
 
     let mut tmp_path = std::path::PathBuf::from(std::env::temp_dir());
     // TODO: don't clutter into /tmp
-    tmp_path.push(resource_file.name().split("/").last().unwrap()); 
+    tmp_path.push(resource_file.name().split("/").last().unwrap());
 
     let mut file = std::fs::File::create(&tmp_path).expect("can't create tmp file");
     std::io::copy(&mut resource_file, &mut file).unwrap();

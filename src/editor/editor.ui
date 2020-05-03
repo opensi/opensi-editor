@@ -68,8 +68,7 @@
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
+              <object class="GtkBox" id="body-container">
                 <property name="can_focus">False</property>
                 <property name="margin_top">8</property>
                 <child>
@@ -106,7 +105,6 @@
             </child>
             <child>
               <object class="GtkImage" id="image-preview-editor">
-                <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="stock">gtk-missing-image</property>
               </object>
