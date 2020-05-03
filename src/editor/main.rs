@@ -23,7 +23,7 @@ struct Win {
 }
 
 struct Model {
-    chunks: Vec<opensi::Chunk>,
+    chunks: Vec<Chunk>,
     // TODO: try CoW
     zip: Option<zip::ZipArchive<std::fs::File>>,
     filename: Option<std::path::PathBuf>,
@@ -64,7 +64,7 @@ impl Update for Win {
                     let round_parent =
                         store.insert_with_values(None, None, columns, &[&round.name, &i]);
                     i += 1;
-                    self.model.chunks.push(opensi::Chunk::Round(round.clone()));
+                    self.model.chunks.push(Chunk::Round(round.clone()));
 
                     round.themes.themes.iter().for_each(|theme| {
                         let theme_parent = store.insert_with_values(
@@ -75,7 +75,7 @@ impl Update for Win {
                         );
 
                         i += 1;
-                        self.model.chunks.push(opensi::Chunk::Theme(theme.clone()));
+                        self.model.chunks.push(Chunk::Theme(theme.clone()));
 
                         theme.questions.questions.iter().for_each(|question| {
                             store.insert_with_values(
@@ -88,7 +88,7 @@ impl Update for Win {
                             i += 1;
                             self.model
                                 .chunks
-                                .push(opensi::Chunk::Question(question.clone()));
+                                .push(Chunk::Question(question.clone()));
                         })
                     });
                 });
@@ -111,33 +111,15 @@ impl Update for Win {
                     let chunk = &self.model.chunks[index as usize];
 
                     match chunk {
-                        opensi::Chunk::Package(x) => {
-                            let package_name = x.name.as_ref().unwrap();
-                            self.body_editor.set_text(package_name);
-                            println!("{:?}", x)
-                        }
-                        opensi::Chunk::Info(x) => println!("{:?}", x),
-                        opensi::Chunk::Authors(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Rounds(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Round(x) => {
+                        Chunk::Round(x) => {
                             self.body_editor.set_text(&x.name);
                             println!("{:?}", x);
                         }
-                        opensi::Chunk::Theme(x) => {
+                        Chunk::Theme(x) => {
                             self.body_editor.set_text(&x.name);
                             println!("{:?}", x);
                         }
-                        opensi::Chunk::Themes(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Questions(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Question(x) => {
+                        Chunk::Question(x) => {
                             println!("{:?}", x);
 
                             self.body_editor.set_text(
@@ -163,24 +145,7 @@ impl Update for Win {
                                 }
                             });
                         }
-                        opensi::Chunk::Variant(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Scenario(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Right(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Wrong(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Answer(x) => {
-                            println!("{:?}", x);
-                        }
-                        opensi::Chunk::Atom(x) => {
-                            println!("{:?}", x);
-                        }
+                        
                     }
                 }
             }
@@ -228,6 +193,12 @@ impl Widget for Win {
             model,
         }
     }
+}
+#[derive(Debug)]
+pub enum Chunk {
+    Round(opensi::Round),
+    Theme(opensi::Theme),
+    Question(opensi::Question),
 }
 
 #[derive(Debug)]

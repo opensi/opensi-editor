@@ -123,24 +123,6 @@ pub struct Atom {
     pub body: Option<String>,
 }
 
-pub enum Chunk {
-    Package(Package),
-    Info(Info),
-    Authors(Authors), 
-    Rounds(Rounds), 
-    Round(Round),
-    Theme(Theme),
-    Themes(Themes),
-    Questions(Questions), 
-    Question(Question),
-    Variant(Variant),
-    Scenario(Scenario),
-    Right(Right), 
-    Wrong(Wrong), 
-    Answer(Answer),
-    Atom(Atom),
-}
-
 impl Package {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Package, std::io::Error> {
         let package_file = File::open(path)?;
