@@ -98,6 +98,10 @@ impl Update for Win {
                 self.tree_view.set_model(Some(&store));
             }
             Msg::ItemSelect => {
+                self.image_preview.set_visible(false);
+                self.body_container.set_visible(false);
+                self.answer_container.set_visible(false);
+                
                 let selection = self.tree_view.get_selection();
                 if let Some((model, iter)) = selection.get_selected() {
                     let index = model
@@ -146,6 +150,7 @@ impl Update for Win {
                                                 gdk_pixbuf::Pixbuf::new_from_file(&resource)
                                                     .unwrap();
 
+                                            // todo add height scaling 
                                             if pixbuf.get_width() > allocation.width {
                                                 let new_width = allocation.width;
                                                 let ratio = allocation.width as f32 / pixbuf.get_width() as f32;
