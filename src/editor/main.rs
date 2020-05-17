@@ -112,12 +112,9 @@ impl Update for Win {
                             draw_round(self, round);
                             println!("{:?}", round);
                         }
-                        Chunk::Theme(x) => {
-                            self.body_container.set_visible(true);
-                            self.body_editor.set_text(&x.name);
-                            self.body_label.set_text("тема:");
-
-                            println!("{:?}", x);
+                        Chunk::Theme(theme) => {
+                            draw_theme(self, theme);
+                            println!("{:?}", theme);
                         }
                         Chunk::Question(x) => {
                             println!("{:?}", x);
@@ -200,6 +197,12 @@ fn draw_round(win: &Win, round: &opensi::Round) {
     win.body_container.set_visible(true);
     win.body_editor.set_text(&round.name);
     win.body_label.set_text("раунд:");
+}
+
+fn draw_theme(win: &Win, theme: &opensi::Theme) {
+    win.body_container.set_visible(true);
+    win.body_editor.set_text(&theme.name);
+    win.body_label.set_text("тема:");
 }
 
 impl Widget for Win {
