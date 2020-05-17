@@ -108,12 +108,9 @@ impl Update for Win {
                     let chunk = &self.model.chunks[index as usize];
 
                     match chunk {
-                        Chunk::Round(x) => {
-                            self.body_container.set_visible(true);
-                            self.body_editor.set_text(&x.name);
-                            self.body_label.set_text("раунд:");
-
-                            println!("{:?}", x);
+                        Chunk::Round(round) => {
+                            draw_round(self, round);
+                            println!("{:?}", round);
                         }
                         Chunk::Theme(x) => {
                             self.body_container.set_visible(true);
@@ -197,6 +194,12 @@ fn draw_image(win: &Win, path: std::path::PathBuf) {
 
     win.image_preview.set_from_pixbuf(Some(pixbuf.as_ref()));
     win.image_preview.set_visible(true);
+}
+
+fn draw_round(win: &Win, round: &opensi::Round) { 
+    win.body_container.set_visible(true);
+    win.body_editor.set_text(&round.name);
+    win.body_label.set_text("раунд:");
 }
 
 impl Widget for Win {
