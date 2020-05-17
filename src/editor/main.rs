@@ -29,7 +29,6 @@ struct Win {
 struct Model {
     chunks: Vec<Chunk>,
     // TODO: try CoW
-    zip: Option<zip::ZipArchive<std::fs::File>>,
     filename: Option<std::path::PathBuf>,
 }
 
@@ -41,7 +40,6 @@ impl Update for Win {
     fn model(_: &Relm<Self>, _: ()) -> Model {
         Model {
             chunks: Vec::new(),
-            zip: None,
             filename: None,
         }
     }
@@ -50,12 +48,8 @@ impl Update for Win {
         match event {
             Msg::PackageSelect => {
                 let filename = self.file_chooser.get_filename().unwrap();
-
-                let file = std::fs::File::open(&filename).unwrap();
-                let zip = zip::ZipArchive::new(file).unwrap();
-                self.model.zip = Some(zip);
-
-                let package = opensi::Package::open(&filename).expect("Failed to open file");
+                let package =
+                    opensi::Package::open_with_extraction(&filename).expect("Failed to open file");
 
                 self.model.filename = Some(filename);
 
@@ -101,7 +95,7 @@ impl Update for Win {
                 self.image_preview.set_visible(false);
                 self.body_container.set_visible(false);
                 self.answer_container.set_visible(false);
-                
+
                 let selection = self.tree_view.get_selection();
                 if let Some((model, iter)) = selection.get_selected() {
                     let index = model
@@ -135,47 +129,64 @@ impl Update for Win {
                                 &x.scenario.atoms.first().unwrap().body.as_ref().unwrap(),
                             );
 
-                            x.scenario.atoms.iter().for_each(|atom| {
-                                let body = atom.body.as_ref().unwrap();
+                            x.scenario
+                                .atoms
+                                .iter()
+                                .filter(|atom| {
+                                    !atom
+                                        .variant
+                                        .as_ref()
+                                        .unwrap_or(&String::from("heh"))
+                                        .eq("marker")
+                                })
+                                .for_each(|atom| {
+                                    let body = dbg!(atom).body.as_ref().unwrap();
 
-                                // empty variant means text atom
-                                if let Some(variant) = atom.variant.as_ref() {
-                                    if let Some(resource) = Resource::new(body, &variant) {
-                                        let resource =
-                                            get_resource_from_model(&self.model, resource);
+                                    // empty variant means text atom
+                                    if let Some(variant) = atom.variant.as_ref() {
+                                        if let Some(resource) =
+                                            Resource::new(&self.model, body, &variant)
+                                        {
+                                            match resource {
+                                                Resource::Image(path) => {
+                                                    let allocation =
+                                                        self.editor_container.get_allocation();
+                                                    let mut pixbuf: gdk_pixbuf::Pixbuf =
+                                                        gdk_pixbuf::Pixbuf::new_from_file(path)
+                                                            .unwrap();
 
-                                        if atom.variant.as_ref().unwrap().eq("image") {
-                                            let allocation = self.editor_container.get_allocation();
-                                            let mut pixbuf: gdk_pixbuf::Pixbuf =
-                                                gdk_pixbuf::Pixbuf::new_from_file(&resource)
-                                                    .unwrap();
+                                                    // todo add height scaling
+                                                    if pixbuf.get_width() > allocation.width {
+                                                        let new_width = allocation.width;
+                                                        let ratio = allocation.width as f32
+                                                            / pixbuf.get_width() as f32;
+                                                        let new_height =
+                                                            ((pixbuf.get_height() as f32) * ratio)
+                                                                .floor()
+                                                                as i32;
 
-                                            // todo add height scaling 
-                                            if pixbuf.get_width() > allocation.width {
-                                                let new_width = allocation.width;
-                                                let ratio = allocation.width as f32 / pixbuf.get_width() as f32;
-                                                let new_height = ((pixbuf.get_height() as f32) * ratio).floor() as i32;
+                                                        pixbuf = pixbuf
+                                                            .scale_simple(
+                                                                new_width,
+                                                                new_height,
+                                                                gdk_pixbuf::InterpType::Bilinear,
+                                                            )
+                                                            .unwrap();
+                                                    }
 
-                                                pixbuf = pixbuf
-                                                    .scale_simple(
-                                                        new_width,
-                                                        new_height,
-                                                        gdk_pixbuf::InterpType::Bilinear,
-                                                    )
-                                                    .unwrap();
+                                                    self.image_preview
+                                                        .set_from_pixbuf(Some(pixbuf.as_ref()));
+                                                    self.image_preview.set_visible(true);
+                                                }
+                                                _ => {}
                                             }
-
-                                            self.image_preview
-                                                .set_from_pixbuf(Some(pixbuf.as_ref()));
-                                            self.image_preview.set_visible(true);
                                         }
+                                    } else {
+                                        self.body_container.set_visible(true);
+                                        self.body_label.set_text("вопрос:");
+                                        self.body_editor.set_text(body);
                                     }
-                                } else {
-                                    self.body_container.set_visible(true);
-                                    self.body_label.set_text("вопрос:");
-                                    self.body_editor.set_text(body);
-                                }
-                            });
+                                });
 
                             x.right.answers.iter().for_each(|answer| {
                                 self.answer_container.set_visible(true);
@@ -251,59 +262,36 @@ pub enum Chunk {
 
 #[derive(Debug)]
 enum Resource {
-    Audio(String),
-    Video(String),
-    Image(String),
+    Audio(std::path::PathBuf),
+    Video(std::path::PathBuf),
+    Image(std::path::PathBuf),
 }
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 
-impl Resource {
-    fn new(body: &str, variant: &str) -> Option<Resource> {
+impl<'a> Resource {
+    const FRAGMENT: &'a AsciiSet = &CONTROLS.add(b' ');
+
+    fn new(model: &Model, body: &str, variant: &str) -> Option<Resource> {
+        // Body a.k.a "resource name" as stated by the documentation begins
+        // with '@' in package to distinguish plain text and links to
+        // resources, thats why we need manually trim '@' from begining.
+        // It also percent-encoded so we need to decode this.
+        let resource_name = &utf8_percent_encode(&body, Self::FRAGMENT).to_string()[1..];
+        let filename = model
+            .filename.as_ref()
+            .and_then(|x| x.file_name())
+            .and_then(|x| x.to_str())?;
+
+        let tmp = std::env::temp_dir().join(filename);
         match variant {
-            "voice" => Some(Resource::Audio(body[1..].to_string())),
-            "image" => Some(Resource::Image(body[1..].to_string())),
-            "video" => Some(Resource::Video(body[1..].to_string())),
+            "voice" => Some(Resource::Audio(tmp.join("Audio").join(resource_name))),
+            "image" => Some(Resource::Image(tmp.join("Images").join(resource_name))),
+            "video" => Some(Resource::Video(tmp.join("Video").join(resource_name))),
             _ => None,
         }
     }
 }
 
-const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS.add(b' ');
-
-fn get_resource_from_model(model: &Model, resource: Resource) -> std::path::PathBuf {
-    // костыль
-    let path = model.filename.as_ref().unwrap();
-    let zipfile = std::fs::File::open(path).unwrap();
-    let mut zip = zip::ZipArchive::new(zipfile).unwrap();
-
-    // since resource path may be url encoded we do this
-    let resource_path = match resource {
-        Resource::Audio(path) => format!(
-            "Audio/{}",
-            percent_encoding::utf8_percent_encode(&path, FRAGMENT)
-        ),
-        Resource::Video(path) => format!(
-            "Video/{}",
-            percent_encoding::utf8_percent_encode(&path, FRAGMENT)
-        ),
-        Resource::Image(path) => format!(
-            "Images/{}",
-            percent_encoding::utf8_percent_encode(&path, FRAGMENT)
-        ),
-    };
-
-    let mut resource_file = zip
-        .by_name(&resource_path)
-        .expect("can't find resource in archive");
-
-    let mut tmp_path = std::path::PathBuf::from(std::env::temp_dir());
-    // TODO: don't clutter into /tmp
-    tmp_path.push(resource_file.name().split("/").last().unwrap());
-
-    let mut file = std::fs::File::create(&tmp_path).expect("can't create tmp file");
-    std::io::copy(&mut resource_file, &mut file).unwrap();
-    tmp_path
-}
-
 fn main() {
-    Win::run(()).expect("run failed");
+    Win::run(()).expect("Window failed to run");
 }
