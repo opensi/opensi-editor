@@ -7,8 +7,7 @@ use std::io::ErrorKind;
 use std::path::Path;
 use PartialEq;
 
-use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-use quick_xml::de::{from_reader, from_str, DeError};
+use quick_xml::de::{from_reader, from_str};
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -124,8 +123,6 @@ pub struct Atom {
     pub body: Option<String>,
 }
 
-const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ');
-
 impl Package {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Package, std::io::Error> {
         let package_file = File::open(path)?;
@@ -163,7 +160,7 @@ impl Package {
         for i in 0..zip.len() {
             let mut zipfile = zip.by_index(i)?;
             let mut zipfile_path = zipfile.sanitized_name();
-            let encoded_name = Self::encode_file_name(&zipfile_path);
+            let encoded_name = zipfile_path.file_name().unwrap().to_str().unwrap().to_string();
 
             if encoded_name.starts_with("@") {
                 zipfile_path.set_file_name(&encoded_name[1..]);
@@ -183,15 +180,5 @@ impl Package {
             std::io::copy(&mut zipfile, &mut fsfile)?;
         }
         Ok(tmp.join("content.xml"))
-    }
-
-    fn encode_file_name(path: &std::path::PathBuf) -> String {
-        return path
-            .file_name()
-            .unwrap()
-            .to_str()
-            .map(|filename| utf8_percent_encode(filename, FRAGMENT))
-            .unwrap()
-            .to_string();
     }
 }
