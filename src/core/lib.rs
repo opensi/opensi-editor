@@ -184,11 +184,11 @@ impl Package {
                     std::fs::create_dir_all(&absolute_parent_path).unwrap();
                 }
 
-                absolute_parent_path.push(encoded_name.to_string());
+                absolute_parent_path.push(encoded_name);
                 absolute_parent_path
             } else {
                 let mut absolute_path = std::path::PathBuf::from(&tmp);
-                absolute_path.push(encoded_name.to_string());
+                absolute_path.push(encoded_name);
                 absolute_path
             };
 
@@ -198,4 +198,5 @@ impl Package {
         let content = std::path::PathBuf::from("content.xml");
         Ok([tmp, content].iter().collect())
     }
+
 }
