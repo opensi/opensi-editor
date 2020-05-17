@@ -116,55 +116,9 @@ impl Update for Win {
                             draw_theme(self, theme);
                             println!("{:?}", theme);
                         }
-                        Chunk::Question(x) => {
-                            println!("{:?}", x);
-
-                            self.body_editor.set_text(
-                                &x.scenario.atoms.first().unwrap().body.as_ref().unwrap(),
-                            );
-
-                            x.scenario
-                                .atoms
-                                .iter()
-                                .filter(|atom| {
-                                    !atom
-                                        .variant
-                                        .as_ref()
-                                        .unwrap_or(&String::from("heh"))
-                                        .eq("marker")
-                                })
-                                .for_each(|atom| {
-                                    // empty variant means text atom
-                                    if atom.variant.is_none() {
-                                        let body = atom.body.as_ref().unwrap();
-                                        self.body_container.set_visible(true);
-                                        self.body_label.set_text("вопрос:");
-                                        self.body_editor.set_text(body);
-                                        return;
-                                    }
-
-                                    let path = self
-                                        .model
-                                        .filename
-                                        .as_ref()
-                                        .and_then(|x| x.file_name())
-                                        .and_then(|x| x.to_str())
-                                        .unwrap();
-                                    
-                                    if let Some(resource) = atom.get_resource(path) {
-                                        match resource {
-                                            opensi::Resource::Image(path) =>  draw_image(&self, path),
-                                            _ => {}
-                                        }
-                                    }
-                                });
-
-                            x.right.answers.iter().for_each(|answer| {
-                                self.answer_container.set_visible(true);
-                                if let Some(body) = answer.body.as_ref() {
-                                    self.answer_entry.set_text(body);
-                                }
-                            })
+                        Chunk::Question(question) => {
+                            println!("{:?}", question);
+                            draw_question(self, question);
                         }
                     }
                 }
@@ -193,7 +147,7 @@ fn draw_image(win: &Win, path: std::path::PathBuf) {
     win.image_preview.set_visible(true);
 }
 
-fn draw_round(win: &Win, round: &opensi::Round) { 
+fn draw_round(win: &Win, round: &opensi::Round) {
     win.body_container.set_visible(true);
     win.body_editor.set_text(&round.name);
     win.body_label.set_text("раунд:");
@@ -203,6 +157,62 @@ fn draw_theme(win: &Win, theme: &opensi::Theme) {
     win.body_container.set_visible(true);
     win.body_editor.set_text(&theme.name);
     win.body_label.set_text("тема:");
+}
+
+fn draw_question(win: &Win, question: &opensi::Question) {
+    let body = question
+        .scenario
+        .atoms
+        .first()
+        .unwrap()
+        .body
+        .as_ref()
+        .unwrap();
+    win.body_editor.set_text(body);
+
+    question
+        .scenario
+        .atoms
+        .iter()
+        .filter(|atom| {
+            !atom
+                .variant
+                .as_ref()
+                .unwrap_or(&String::from("heh"))
+                .eq("marker")
+        })
+        .for_each(|atom| {
+            // empty variant means text atom
+            if atom.variant.is_none() {
+                let body = atom.body.as_ref().unwrap();
+                win.body_container.set_visible(true);
+                win.body_label.set_text("вопрос:");
+                win.body_editor.set_text(body);
+                return;
+            }
+
+            let path = win
+                .model
+                .filename
+                .as_ref()
+                .and_then(|x| x.file_name())
+                .and_then(|x| x.to_str())
+                .unwrap();
+
+            if let Some(resource) = atom.get_resource(path) {
+                match resource {
+                    opensi::Resource::Image(path) => draw_image(&win, path),
+                    _ => {}
+                }
+            }
+        });
+
+    question.right.answers.iter().for_each(|answer| {
+        win.answer_container.set_visible(true);
+        if let Some(body) = answer.body.as_ref() {
+            win.answer_entry.set_text(body);
+        }
+    })
 }
 
 impl Widget for Win {
