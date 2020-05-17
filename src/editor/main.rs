@@ -27,9 +27,66 @@ struct Win {
 }
 
 struct Model {
-    chunks: Vec<Chunk>,
+    store: Option<GtkPackageStore>,
     // TODO: try CoW
     filename: Option<std::path::PathBuf>,
+}
+
+struct GtkPackageStore {
+    store: gtk::TreeStore,
+    chunks: Vec<Chunk>,
+}
+
+impl GtkPackageStore {
+    fn new(package: opensi::Package) -> GtkPackageStore {
+        let store = gtk::TreeStore::new(&[String::static_type(), u32::static_type()]);
+        let columns = &[0u32, 1u32];
+        let mut chunks = Vec::new();
+        let mut i = 0u32;
+
+        package.rounds.rounds.iter().for_each(|round| {
+            let round_parent = store.insert_with_values(None, None, columns, &[&round.name, &i]);
+            i += 1;
+            chunks.push(Chunk::Round(round.clone()));
+
+            round.themes.themes.iter().for_each(|theme| {
+                let theme_parent = store.insert_with_values(
+                    Some(&round_parent),
+                    None,
+                    columns,
+                    &[&theme.name, &i],
+                );
+
+                i += 1;
+                chunks.push(Chunk::Theme(theme.clone()));
+
+                theme.questions.questions.iter().for_each(|question| {
+                    store.insert_with_values(
+                        Some(&theme_parent),
+                        None,
+                        columns,
+                        &[&question.price.to_string(), &i],
+                    );
+
+                    i += 1;
+                    chunks.push(Chunk::Question(question.clone()));
+                })
+            });
+        });
+        GtkPackageStore { store, chunks }
+    }
+
+    fn get_chunk(&self, model: &gtk::TreeModel, iter: &gtk::TreeIter) -> Chunk {
+        let index = model
+            .get_value(&iter, 1)
+            .get::<u32>()
+            .ok()
+            .and_then(|value| value)
+            .expect("get_value.get<String> failed");
+
+        let chunk = &self.chunks[index as usize];
+        chunk.clone() // :^)
+    }
 }
 
 impl Update for Win {
@@ -39,7 +96,7 @@ impl Update for Win {
 
     fn model(_: &Relm<Self>, _: ()) -> Model {
         Model {
-            chunks: Vec::new(),
+            store: None,
             filename: None,
         }
     }
@@ -48,48 +105,14 @@ impl Update for Win {
         match event {
             Msg::PackageSelect => {
                 let filename = self.file_chooser.get_filename().unwrap();
-                let package =
-                    opensi::Package::open_with_extraction(&filename).expect("Failed to open file");
+                let gtkstore = opensi::Package::open_with_extraction(&filename)
+                    .map(|x| GtkPackageStore::new(x))
+                    .expect("Failed to create store");
 
                 self.model.filename = Some(filename);
-
-                let store = gtk::TreeStore::new(&[String::static_type(), u32::static_type()]);
-                let columns = &[0u32, 1u32];
-                self.model.chunks = Vec::new();
-                let mut i = 0u32;
-
-                package.rounds.rounds.iter().for_each(|round| {
-                    let round_parent =
-                        store.insert_with_values(None, None, columns, &[&round.name, &i]);
-                    i += 1;
-                    self.model.chunks.push(Chunk::Round(round.clone()));
-
-                    round.themes.themes.iter().for_each(|theme| {
-                        let theme_parent = store.insert_with_values(
-                            Some(&round_parent),
-                            None,
-                            columns,
-                            &[&theme.name, &i],
-                        );
-
-                        i += 1;
-                        self.model.chunks.push(Chunk::Theme(theme.clone()));
-
-                        theme.questions.questions.iter().for_each(|question| {
-                            store.insert_with_values(
-                                Some(&theme_parent),
-                                None,
-                                columns,
-                                &[&question.price.to_string(), &i],
-                            );
-
-                            i += 1;
-                            self.model.chunks.push(Chunk::Question(question.clone()));
-                        })
-                    });
-                });
-
-                self.tree_view.set_model(Some(&store));
+                self.tree_view.set_model::<gtk::TreeStore>(Some(&gtkstore.store.as_ref()));
+                self.model.store = Some(gtkstore);
+               
             }
             Msg::ItemSelect => {
                 self.image_preview.set_visible(false);
@@ -98,27 +121,21 @@ impl Update for Win {
 
                 let selection = self.tree_view.get_selection();
                 if let Some((model, iter)) = selection.get_selected() {
-                    let index = model
-                        .get_value(&iter, 1)
-                        .get::<u32>()
-                        .ok()
-                        .and_then(|value| value)
-                        .expect("get_value.get<String> failed");
-
-                    let chunk = &self.model.chunks[index as usize];
+                    let store = self.model.store.as_ref().unwrap();
+                    let chunk = store.get_chunk(&model, &iter);
 
                     match chunk {
                         Chunk::Round(round) => {
-                            draw_round(self, round);
+                            draw_round(self, &round);
                             println!("{:?}", round);
                         }
                         Chunk::Theme(theme) => {
-                            draw_theme(self, theme);
+                            draw_theme(self, &theme);
                             println!("{:?}", theme);
                         }
                         Chunk::Question(question) => {
                             println!("{:?}", question);
-                            draw_question(self, question);
+                            draw_question(self, &question);
                         }
                     }
                 }
@@ -266,7 +283,7 @@ impl Widget for Win {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Chunk {
     Round(opensi::Round),
     Theme(opensi::Theme),
