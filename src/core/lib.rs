@@ -167,36 +167,36 @@ impl Package {
 
         for i in 0..zip.len() {
             let mut zipfile = zip.by_index(i)?;
-            let relative_file_path = zipfile.sanitized_name();
-            let file_name = &relative_file_path.file_name().unwrap().to_str().unwrap();
-            let encoded_name = utf8_percent_encode(&file_name, FRAGMENT).to_string();
-            let encoded_name: &str = if encoded_name.starts_with("@") {
-                &encoded_name[1..]
+            let mut zipfile_path = zipfile.sanitized_name();
+            let encoded_name = Self::encode_file_name(&zipfile_path);
+
+            if encoded_name.starts_with("@") {
+                zipfile_path.set_file_name(&encoded_name[1..]);
             } else {
-                &encoded_name
+                zipfile_path.set_file_name(encoded_name)
             };
 
-            let absolute_file_path: std::path::PathBuf = if let Some(parent) =
-                relative_file_path.parent()
-            {
-                let mut absolute_parent_path: std::path::PathBuf = [&tmp, parent].iter().collect();
-                if !absolute_parent_path.exists() {
-                    std::fs::create_dir_all(&absolute_parent_path).unwrap();
+            if let Some(parent) = zipfile_path.parent() {
+                let parent_path = tmp.join(parent);
+                if !parent.exists() {
+                    std::fs::create_dir_all(&parent_path)?;
                 }
+            }
 
-                absolute_parent_path.push(encoded_name);
-                absolute_parent_path
-            } else {
-                let mut absolute_path = std::path::PathBuf::from(&tmp);
-                absolute_path.push(encoded_name);
-                absolute_path
-            };
-
-            let mut fsfile = std::fs::File::create(&absolute_file_path)?;
+            let path = &tmp.join(zipfile_path);
+            let mut fsfile = std::fs::File::create(&path)?;
             std::io::copy(&mut zipfile, &mut fsfile)?;
         }
-        let content = std::path::PathBuf::from("content.xml");
-        Ok([tmp, content].iter().collect())
+        Ok(tmp.join("content.xml"))
     }
 
+    fn encode_file_name(path: &std::path::PathBuf) -> String {
+        return path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .map(|filename| utf8_percent_encode(filename, FRAGMENT))
+            .unwrap()
+            .to_string();
+    }
 }
