@@ -140,51 +140,28 @@ impl Update for Win {
                                         .eq("marker")
                                 })
                                 .for_each(|atom| {
-                                    let body = dbg!(atom).body.as_ref().unwrap();
-
                                     // empty variant means text atom
-                                    if let Some(variant) = atom.variant.as_ref() {
-                                        if let Some(resource) =
-                                            Resource::new(&self.model, body, &variant)
-                                        {
-                                            match resource {
-                                                Resource::Image(path) => {
-                                                    let allocation =
-                                                        self.editor_container.get_allocation();
-                                                    let mut pixbuf: gdk_pixbuf::Pixbuf =
-                                                        gdk_pixbuf::Pixbuf::new_from_file(path)
-                                                            .unwrap();
-
-                                                    // todo add height scaling
-                                                    if pixbuf.get_width() > allocation.width {
-                                                        let new_width = allocation.width;
-                                                        let ratio = allocation.width as f32
-                                                            / pixbuf.get_width() as f32;
-                                                        let new_height =
-                                                            ((pixbuf.get_height() as f32) * ratio)
-                                                                .floor()
-                                                                as i32;
-
-                                                        pixbuf = pixbuf
-                                                            .scale_simple(
-                                                                new_width,
-                                                                new_height,
-                                                                gdk_pixbuf::InterpType::Bilinear,
-                                                            )
-                                                            .unwrap();
-                                                    }
-
-                                                    self.image_preview
-                                                        .set_from_pixbuf(Some(pixbuf.as_ref()));
-                                                    self.image_preview.set_visible(true);
-                                                }
-                                                _ => {}
-                                            }
-                                        }
-                                    } else {
+                                    if atom.variant.is_none() {
+                                        let body = atom.body.as_ref().unwrap();
                                         self.body_container.set_visible(true);
                                         self.body_label.set_text("вопрос:");
                                         self.body_editor.set_text(body);
+                                        return;
+                                    }
+
+                                    let path = self
+                                        .model
+                                        .filename
+                                        .as_ref()
+                                        .and_then(|x| x.file_name())
+                                        .and_then(|x| x.to_str())
+                                        .unwrap();
+                                    
+                                    if let Some(resource) = atom.get_resource(path) {
+                                        match resource {
+                                            opensi::Resource::Image(path) =>  draw_image(&self, path),
+                                            _ => {}
+                                        }
                                     }
                                 });
 
@@ -201,6 +178,25 @@ impl Update for Win {
             Msg::Quit => gtk::main_quit(),
         }
     }
+}
+
+fn draw_image(win: &Win, path: std::path::PathBuf) {
+    let allocation = win.editor_container.get_allocation();
+    let mut pixbuf: gdk_pixbuf::Pixbuf = gdk_pixbuf::Pixbuf::new_from_file(path).unwrap();
+
+    // todo add height scaling
+    if pixbuf.get_width() > allocation.width {
+        let new_width = allocation.width;
+        let ratio = allocation.width as f32 / pixbuf.get_width() as f32;
+        let new_height = ((pixbuf.get_height() as f32) * ratio).floor() as i32;
+
+        pixbuf = pixbuf
+            .scale_simple(new_width, new_height, gdk_pixbuf::InterpType::Bilinear)
+            .unwrap();
+    }
+
+    win.image_preview.set_from_pixbuf(Some(pixbuf.as_ref()));
+    win.image_preview.set_visible(true);
 }
 
 impl Widget for Win {
@@ -253,43 +249,12 @@ impl Widget for Win {
         }
     }
 }
+
 #[derive(Debug)]
 pub enum Chunk {
     Round(opensi::Round),
     Theme(opensi::Theme),
     Question(opensi::Question),
-}
-
-#[derive(Debug)]
-enum Resource {
-    Audio(std::path::PathBuf),
-    Video(std::path::PathBuf),
-    Image(std::path::PathBuf),
-}
-use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-
-impl<'a> Resource {
-    const FRAGMENT: &'a AsciiSet = &CONTROLS.add(b' ');
-
-    fn new(model: &Model, body: &str, variant: &str) -> Option<Resource> {
-        // Body a.k.a "resource name" as stated by the documentation begins
-        // with '@' in package to distinguish plain text and links to
-        // resources, thats why we need manually trim '@' from begining.
-        // It also percent-encoded so we need to decode this.
-        let resource_name = &utf8_percent_encode(&body, Self::FRAGMENT).to_string()[1..];
-        let filename = model
-            .filename.as_ref()
-            .and_then(|x| x.file_name())
-            .and_then(|x| x.to_str())?;
-
-        let tmp = std::env::temp_dir().join(filename);
-        match variant {
-            "voice" => Some(Resource::Audio(tmp.join("Audio").join(resource_name))),
-            "image" => Some(Resource::Image(tmp.join("Images").join(resource_name))),
-            "video" => Some(Resource::Video(tmp.join("Video").join(resource_name))),
-            _ => None,
-        }
-    }
 }
 
 fn main() {

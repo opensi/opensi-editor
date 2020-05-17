@@ -123,6 +123,37 @@ pub struct Atom {
     pub body: Option<String>,
 }
 
+#[derive(Debug)]
+pub enum Resource {
+    Audio(std::path::PathBuf),
+    Video(std::path::PathBuf),
+    Image(std::path::PathBuf),
+}
+
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+const FRAGMENT: & AsciiSet = &CONTROLS.add(b' ');
+
+impl Atom {
+    pub fn get_resource(&self, filename: &str) -> Option<Resource> { 
+        // Body a.k.a "resource name" as stated by the documentation begins
+        // with '@' in package to distinguish plain text and links to
+        // resources, thats why we need manually trim '@' from begining.
+        // It also percent-encoded so we need to decode this.
+        let body = self.body.as_ref()?;
+        let resource_name = &utf8_percent_encode(&body, FRAGMENT).to_string()[1..];
+        let tmp = std::env::temp_dir().join(filename); // костылик
+        let variant = self.variant.as_ref()?;
+        let variant: &str= &variant; // :)
+        
+        match variant {
+            "voice" => Some(Resource::Audio(tmp.join("Audio").join(resource_name))),
+            "image" => Some(Resource::Image(tmp.join("Images").join(resource_name))),
+            "video" => Some(Resource::Video(tmp.join("Video").join(resource_name))),
+            _ => None,
+        }
+    }
+}
+
 impl Package {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Package, std::io::Error> {
         let package_file = File::open(path)?;
