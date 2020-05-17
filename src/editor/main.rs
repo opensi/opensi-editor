@@ -28,7 +28,6 @@ struct Win {
 
 struct Model {
     store: Option<GtkPackageStore>,
-    // TODO: try CoW
     filename: Option<std::path::PathBuf>,
 }
 
