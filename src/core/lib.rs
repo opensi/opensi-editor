@@ -134,12 +134,7 @@ impl Package {
         let mut contents = String::new();
         xml.read_to_string(&mut contents).unwrap();
 
-        Package::parse(&contents).map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
-    }
-
-    fn parse(xml: &str) -> Result<Package, DeError> {
-        let package: Package = from_str(xml)?;
-        Result::Ok(package)
+        from_str(&contents).map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
     }
 
     pub fn open_with_extraction<P: AsRef<Path>>(path: P) -> Result<Package, std::io::Error> {
