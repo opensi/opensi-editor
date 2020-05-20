@@ -141,7 +141,7 @@ impl Update for Win {
                     }
                 }
             }
-            
+
             Msg::Quit => gtk::main_quit(),
         }
     }
@@ -189,16 +189,16 @@ fn draw_question(win: &Win, question: &opensi::Question) {
         .unwrap();
     win.body_editor.set_text(body);
 
-    question
+    let question_atom = question
         .scenario
         .atoms
         .iter()
-        .filter(|atom| {
-            !atom
+        .take_while (|atom| {
+            atom
                 .variant
                 .as_ref()
                 .unwrap_or(&String::from("heh"))
-                .eq("marker")
+                .ne("marker")
         })
         .for_each(|atom| {
             // empty variant means text atom
