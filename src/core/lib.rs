@@ -131,10 +131,10 @@ pub enum Resource {
 }
 
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-const FRAGMENT: & AsciiSet = &CONTROLS.add(b' ');
+const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ');
 
 impl Atom {
-    pub fn get_resource(&self, filename: &str) -> Option<Resource> { 
+    pub fn get_resource(&self, filename: &str) -> Option<Resource> {
         // Body a.k.a "resource name" as stated by the documentation begins
         // with '@' in package to distinguish plain text and links to
         // resources, thats why we need manually trim '@' from begining.
@@ -143,8 +143,8 @@ impl Atom {
         let resource_name = &utf8_percent_encode(&body, FRAGMENT).to_string()[1..];
         let tmp = std::env::temp_dir().join(filename); // костылик
         let variant = self.variant.as_ref()?;
-        let variant: &str= &variant; // :)
-        
+        let variant: &str = &variant; // :)
+
         match variant {
             "voice" => Some(Resource::Audio(tmp.join("Audio").join(resource_name))),
             "image" => Some(Resource::Image(tmp.join("Images").join(resource_name))),
@@ -191,7 +191,12 @@ impl Package {
         for i in 0..zip.len() {
             let mut zipfile = zip.by_index(i)?;
             let mut zipfile_path = zipfile.sanitized_name();
-            let encoded_name = zipfile_path.file_name().unwrap().to_str().unwrap().to_string();
+            let encoded_name = zipfile_path
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string();
 
             if encoded_name.starts_with("@") {
                 zipfile_path.set_file_name(&encoded_name[1..]);

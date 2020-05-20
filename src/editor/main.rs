@@ -40,6 +40,7 @@ impl GtkPackageStore {
     fn new(package: opensi::Package) -> GtkPackageStore {
         let store = gtk::TreeStore::new(&[String::static_type(), u32::static_type()]);
         let columns = &[0u32, 1u32];
+
         let mut chunks = Vec::new();
         let mut i = 0u32;
 
@@ -105,14 +106,15 @@ impl Update for Win {
             Msg::PackageSelect => {
                 let filename = self.file_chooser.get_filename().unwrap();
                 let gtkstore = opensi::Package::open_with_extraction(&filename)
-                    .map(|x| GtkPackageStore::new(x))
+                    .map(GtkPackageStore::new)
                     .expect("Failed to create store");
 
                 self.model.filename = Some(filename);
-                self.tree_view.set_model::<gtk::TreeStore>(Some(&gtkstore.store.as_ref()));
+                self.tree_view
+                    .set_model::<gtk::TreeStore>(Some(&gtkstore.store.as_ref()));
                 self.model.store = Some(gtkstore);
-               
             }
+
             Msg::ItemSelect => {
                 self.image_preview.set_visible(false);
                 self.body_container.set_visible(false);
@@ -126,19 +128,20 @@ impl Update for Win {
                     match chunk {
                         Chunk::Round(round) => {
                             draw_round(self, &round);
-                            println!("{:?}", round);
+                            dbg!(round);
                         }
                         Chunk::Theme(theme) => {
                             draw_theme(self, &theme);
-                            println!("{:?}", theme);
+                            dbg!(theme);
                         }
                         Chunk::Question(question) => {
-                            println!("{:?}", question);
                             draw_question(self, &question);
+                            dbg!(question);
                         }
                     }
                 }
             }
+            
             Msg::Quit => gtk::main_quit(),
         }
     }
