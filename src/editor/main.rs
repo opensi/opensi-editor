@@ -230,6 +230,8 @@ fn draw_question(win: &Win, question: &opensi::Question) {
         win.answer_container.set_visible(true);
         if let Some(body) = answer.body.as_ref() {
             win.answer_entry.set_text(body);
+        } else {
+            win.answer_entry.set_text("");
         }
     })
 }
