@@ -22,6 +22,7 @@ struct Win {
     image_preview: gtk::Image,
     editor_container: gtk::Box,
     answer_entry: gtk::Entry,
+    answer_image: gtk::Image,
     answer_container: gtk::Box,
     model: Model,
 }
@@ -119,6 +120,7 @@ impl Update for Win {
                 self.image_preview.set_visible(false);
                 self.body_container.set_visible(false);
                 self.answer_container.set_visible(false);
+                self.answer_image.set_visible(false);
 
                 let selection = self.tree_view.get_selection();
                 if let Some((model, iter)) = selection.get_selected() {
@@ -189,42 +191,76 @@ fn draw_question(win: &Win, question: &opensi::Question) {
         .unwrap();
     win.body_editor.set_text(body);
 
-    let question_atom = question
-        .scenario
-        .atoms
-        .iter()
-        .take_while (|atom| {
-            atom
-                .variant
-                .as_ref()
-                .unwrap_or(&String::from("heh"))
-                .ne("marker")
-        })
-        .for_each(|atom| {
-            // empty variant means text atom
-            if atom.variant.is_none() {
-                let body = atom.body.as_ref().unwrap();
-                win.body_container.set_visible(true);
-                win.body_label.set_text("вопрос:");
-                win.body_editor.set_text(body);
-                return;
+    let mut atoms_slices = question.scenario.atoms.split(|atom| {
+        atom.variant
+            .as_ref()
+            .unwrap_or(&String::from("heh"))
+            .eq("marker")
+    });
+
+    atoms_slices.next().unwrap().iter().for_each(|atom| {
+        // empty variant means text atom
+        if atom.variant.is_none() {
+            let body = atom.body.as_ref().unwrap();
+            win.body_container.set_visible(true);
+            win.body_label.set_text("вопрос:");
+            win.body_editor.set_text(body);
+            return;
+        }
+
+        let path = win
+            .model
+            .filename
+            .as_ref()
+            .and_then(|x| x.file_name())
+            .and_then(|x| x.to_str())
+            .unwrap();
+
+        if let Some(resource) = atom.get_resource(path) {
+            match resource {
+                opensi::Resource::Image(path) => draw_image(&win, path),
+                _ => {}
             }
+        }
+    });
 
-            let path = win
-                .model
-                .filename
-                .as_ref()
-                .and_then(|x| x.file_name())
-                .and_then(|x| x.to_str())
-                .unwrap();
-
-            if let Some(resource) = atom.get_resource(path) {
-                match resource {
-                    opensi::Resource::Image(path) => draw_image(&win, path),
-                    _ => {}
+    if let Some(atoms) = atoms_slices.next() {
+        if atoms.len() > 0 {
+        let atom = atoms.last().unwrap();
+            if atom.variant.is_some() {
+                let path = win
+                    .model
+                    .filename
+                    .as_ref()
+                    .and_then(|x| x.file_name())
+                    .and_then(|x| x.to_str())
+                    .unwrap();
+                if let Some(resource) = atom.get_resource(path) {
+                    match resource {
+                        opensi::Resource::Image(path) => {
+                            let allocation = win.editor_container.get_allocation();
+                            let mut pixbuf: gdk_pixbuf::Pixbuf = gdk_pixbuf::Pixbuf::new_from_file(path).unwrap();
+                        
+                            // todo add height scaling
+                            if pixbuf.get_width() > allocation.width {
+                                let new_width = allocation.width;
+                                let ratio = allocation.width as f32 / pixbuf.get_width() as f32;
+                                let new_height = ((pixbuf.get_height() as f32) * ratio).floor() as i32;
+                        
+                                pixbuf = pixbuf
+                                    .scale_simple(new_width, new_height, gdk_pixbuf::InterpType::Bilinear)
+                                    .unwrap();
+                            }
+                        
+                            win.answer_image.set_from_pixbuf(Some(pixbuf.as_ref()));
+                            win.answer_image.set_visible(true);
+                        }
+                        _ => {}
+                    }
                 }
             }
-        });
+        }
+    }
 
     question.right.answers.iter().for_each(|answer| {
         win.answer_container.set_visible(true);
@@ -257,6 +293,7 @@ impl Widget for Win {
 
         let answer_entry: gtk::Entry = builder.get_object("answer-entry").unwrap();
         let answer_container: gtk::Box = builder.get_object("answer-container").unwrap();
+        let answer_image: gtk::Image = builder.get_object("image-answer").unwrap();
 
         let editor_container: gtk::Box = builder.get_object("editor-container").unwrap();
 
@@ -281,6 +318,7 @@ impl Widget for Win {
             body_label,
             editor_container,
             answer_entry,
+            answer_image,
             answer_container,
             model,
         }
