@@ -151,13 +151,15 @@ impl Update for Win {
 
 fn draw_image(win: &Win, path: std::path::PathBuf) {
     let allocation = win.editor_container.get_allocation();
-    let mut pixbuf: gdk_pixbuf::Pixbuf = gdk_pixbuf::Pixbuf::new_from_file(path).unwrap();
+    let mut pixbuf = gdk_pixbuf::Pixbuf::new_from_file(path).unwrap();
 
-    // todo add height scaling
-    if pixbuf.get_width() > allocation.width {
-        let new_width = allocation.width;
-        let ratio = allocation.width as f32 / pixbuf.get_width() as f32;
-        let new_height = ((pixbuf.get_height() as f32) * ratio).floor() as i32;
+    if pixbuf.get_width() > allocation.width || pixbuf.get_height() > allocation.height {
+        let ratio_width = allocation.width as f32 / pixbuf.get_width() as f32;
+        let ratio_height = allocation.height as f32 / pixbuf.get_height() as f32;
+        let ratio = ratio_width.min(ratio_height);
+
+        let new_width = (pixbuf.get_width() as f32 * ratio).floor() as i32;
+        let new_height = (pixbuf.get_height() as f32 * ratio).floor() as i32;
 
         pixbuf = pixbuf
             .scale_simple(new_width, new_height, gdk_pixbuf::InterpType::Bilinear)
@@ -226,7 +228,7 @@ fn draw_question(win: &Win, question: &opensi::Question) {
 
     if let Some(atoms) = atoms_slices.next() {
         if atoms.len() > 0 {
-        let atom = atoms.last().unwrap();
+            let atom = atoms.last().unwrap();
             if atom.variant.is_some() {
                 let path = win
                     .model
@@ -239,19 +241,25 @@ fn draw_question(win: &Win, question: &opensi::Question) {
                     match resource {
                         opensi::Resource::Image(path) => {
                             let allocation = win.editor_container.get_allocation();
-                            let mut pixbuf: gdk_pixbuf::Pixbuf = gdk_pixbuf::Pixbuf::new_from_file(path).unwrap();
-                        
+                            let mut pixbuf: gdk_pixbuf::Pixbuf =
+                                gdk_pixbuf::Pixbuf::new_from_file(path).unwrap();
+
                             // todo add height scaling
                             if pixbuf.get_width() > allocation.width {
                                 let new_width = allocation.width;
                                 let ratio = allocation.width as f32 / pixbuf.get_width() as f32;
-                                let new_height = ((pixbuf.get_height() as f32) * ratio).floor() as i32;
-                        
+                                let new_height =
+                                    ((pixbuf.get_height() as f32) * ratio).floor() as i32;
+
                                 pixbuf = pixbuf
-                                    .scale_simple(new_width, new_height, gdk_pixbuf::InterpType::Bilinear)
+                                    .scale_simple(
+                                        new_width,
+                                        new_height,
+                                        gdk_pixbuf::InterpType::Bilinear,
+                                    )
                                     .unwrap();
                             }
-                        
+
                             win.answer_image.set_from_pixbuf(Some(pixbuf.as_ref()));
                             win.answer_image.set_visible(true);
                         }
