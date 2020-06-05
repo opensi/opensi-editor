@@ -130,15 +130,15 @@ impl Update for Win {
                     match chunk {
                         Chunk::Round(round) => {
                             draw_round(self, &round);
-                            dbg!(round);
+                            // dbg!(round);
                         }
                         Chunk::Theme(theme) => {
                             draw_theme(self, &theme);
-                            dbg!(theme);
+                            // dbg!(theme);
                         }
                         Chunk::Question(question) => {
                             draw_question(self, &question);
-                            dbg!(question);
+                            // dbg!(question);
                         }
                     }
                 }
@@ -149,25 +149,31 @@ impl Update for Win {
     }
 }
 
-fn draw_image(win: &Win, path: std::path::PathBuf) {
-    let allocation = win.editor_container.get_allocation();
+fn draw_image(image_widget: &gtk::Image, path: std::path::PathBuf) {
+    let parent = image_widget.get_parent().unwrap();
+    let allocation = parent.get_allocation();
     let mut pixbuf = gdk_pixbuf::Pixbuf::new_from_file(path).unwrap();
 
     if pixbuf.get_width() > allocation.width || pixbuf.get_height() > allocation.height {
-        let ratio_width = allocation.width as f32 / pixbuf.get_width() as f32;
-        let ratio_height = allocation.height as f32 / pixbuf.get_height() as f32;
-        let ratio = ratio_width.min(ratio_height);
-
-        let new_width = (pixbuf.get_width() as f32 * ratio).floor() as i32;
-        let new_height = (pixbuf.get_height() as f32 * ratio).floor() as i32;
-
-        pixbuf = pixbuf
-            .scale_simple(new_width, new_height, gdk_pixbuf::InterpType::Bilinear)
-            .unwrap();
+        pixbuf = scale_image(allocation, pixbuf).unwrap();
     }
 
-    win.image_preview.set_from_pixbuf(Some(pixbuf.as_ref()));
-    win.image_preview.set_visible(true);
+    image_widget.set_from_pixbuf(Some(pixbuf.as_ref()));
+    image_widget.set_visible(true);
+}
+
+fn scale_image(
+    allocation: gtk::Rectangle,
+    image: gdk_pixbuf::Pixbuf,
+) -> Option<gdk_pixbuf::Pixbuf> {
+    let ratio_width = allocation.width as f32 / image.get_width() as f32;
+    let ratio_height = allocation.height as f32 / image.get_height() as f32;
+    let ratio = ratio_width.min(ratio_height);
+
+    let new_width = (image.get_width() as f32 * ratio).floor() as i32;
+    let new_height = (image.get_height() as f32 * ratio).floor() as i32;
+
+    image.scale_simple(new_width, new_height, gdk_pixbuf::InterpType::Bilinear)
 }
 
 fn draw_round(win: &Win, round: &opensi::Round) {
@@ -220,7 +226,7 @@ fn draw_question(win: &Win, question: &opensi::Question) {
 
         if let Some(resource) = atom.get_resource(path) {
             match resource {
-                opensi::Resource::Image(path) => draw_image(&win, path),
+                opensi::Resource::Image(path) => draw_image(&win.image_preview, path),
                 _ => {}
             }
         }
@@ -240,28 +246,7 @@ fn draw_question(win: &Win, question: &opensi::Question) {
                 if let Some(resource) = atom.get_resource(path) {
                     match resource {
                         opensi::Resource::Image(path) => {
-                            let allocation = win.editor_container.get_allocation();
-                            let mut pixbuf: gdk_pixbuf::Pixbuf =
-                                gdk_pixbuf::Pixbuf::new_from_file(path).unwrap();
-
-                            // todo add height scaling
-                            if pixbuf.get_width() > allocation.width {
-                                let new_width = allocation.width;
-                                let ratio = allocation.width as f32 / pixbuf.get_width() as f32;
-                                let new_height =
-                                    ((pixbuf.get_height() as f32) * ratio).floor() as i32;
-
-                                pixbuf = pixbuf
-                                    .scale_simple(
-                                        new_width,
-                                        new_height,
-                                        gdk_pixbuf::InterpType::Bilinear,
-                                    )
-                                    .unwrap();
-                            }
-
-                            win.answer_image.set_from_pixbuf(Some(pixbuf.as_ref()));
-                            win.answer_image.set_visible(true);
+                            draw_image(&win.answer_image, path);
                         }
                         _ => {}
                     }
