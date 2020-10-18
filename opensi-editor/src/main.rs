@@ -1,6 +1,3 @@
-#[path = "../core/lib.rs"]
-mod opensi;
-
 use gtk::prelude::*;
 use relm::{connect, Relm, Update, Widget};
 use relm_derive::Msg;

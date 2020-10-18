@@ -34,8 +34,8 @@ $ sudo yum install gtk3-devel glib2-devel
 
 ```shell
 # Клиент
-$ cargo run --bin client
+$ cargo run --bin opensi-client
 
 # Редактор
-$ cargo run --bin editor
+$ cargo run --bin opensi-editor
 ```

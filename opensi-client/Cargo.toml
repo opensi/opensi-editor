@@ -1,0 +1,10 @@
+[package]
+name = "opensi-client"
+version = "0.1.0"
+authors = ["barsoosayque <shtoshich@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+opensi = { version = "*", path = "../opensi" }
+
+druid = "0.6.0"
