@@ -1,41 +1,21 @@
-# opensi 
+# opensi-editor 
 
 ![Rust](https://github.com/opensi/opensi/workflows/Rust/badge.svg)
 
-Open SI Game - реализация популярной телеигры на Rust
+Редактор вопросов для популярной реализации "Своей игры": [SiGame](https://vladimirkhil.com/si/game)
+
+Доступен в веб формате: [OpenSI Editor Web](opensi.github.io/opensi-editor).
 
 ## Пакеты с игрой
 
-opensi совместимыми пакетим формата `*.siq` из популярной реализации "Своей игры" - [SiGame](https://vladimirkhil.com/si/game)
-
-## Разработка
-
-Редактор зависит от GTK, поэтому перед разработкой стоит [установить](http://gtk-rs.org/docs/requirements.html) **GTK+**, **GLib** и **Cairo**
-
-### Debian & Ubuntu
-
-```shell
-sudo apt-get install libgtk-3-dev
-```
-
-### Fedora
-
-```shell
-$ sudo dnf install gtk3-devel glib2-devel
-
-### Fedora 21 and earlier
-$ sudo yum install gtk3-devel glib2-devel
-
-```
+OpenSI Editor совместим с пакетами формата `*.siq` из SIGame.
 
 ## Сборка и запуск
 
-Для клиента игры и для редактора существуют отдельные bin-конфигурации:
-
 ```shell
-# Клиент
-$ cargo run --bin opensi-client
+# Обычный запуск нативной версии
+$ cargo run opensi-editor
 
-# Редактор
-$ cargo run --bin opensi-editor
+# Запуск веб-версии (потребуется установка trunk)
+$ trunk serve crates/opensi-editor/index.html
 ```

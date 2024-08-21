@@ -1,5 +1,11 @@
+# Environment
+.vscode/
+.direnv
+
+# Rust
 Cargo.lock
 */target
 /target
-.vscode/
 
+# Trunk
+dist
