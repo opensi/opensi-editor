@@ -1,7 +1,7 @@
-#[path = "../src/core/lib.rs"]
-mod opensi;
+#[path = "../src/lib.rs"]
+mod opensi_core;
 
-use opensi::Package;
+use opensi_core::Package;
 
 const PATH: &str = "tests/data/slamjam2.siq";
 
@@ -13,7 +13,7 @@ fn open_pack() {
 
 #[test]
 fn read_package_name() {
-    let package = Package::open(PATH).expect("pack is not found"); 
+    let package = Package::open(PATH).expect("pack is not found");
     assert_eq!(package.name.is_some(), true);
     assert_eq!(package.name.unwrap(), "SLAM JAM 2".to_owned());
 }

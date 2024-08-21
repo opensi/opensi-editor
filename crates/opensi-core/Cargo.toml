@@ -1,0 +1,13 @@
+[package]
+name = "opensi-core"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { version = "1.0", features = [ "derive" ] }
+quick-xml = { version = "0.17", features = [ "serialize" ] }
+zip = { version = "0.5.4", default-features = false, features = ["deflate"] }
+percent-encoding = "2.1.0"
