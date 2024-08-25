@@ -73,9 +73,11 @@ impl eframe::App for EditorApp {
                     }
                     if ui.button("💾 Сохранить").clicked() {
                         let _result = tokio::spawn(async {
+                            let home_dir = home_dir().unwrap();
+
                             let file = AsyncFileDialog::new()
                                 .set_title("Сохранить выбранный пакет с вопросами")
-                                .set_directory("/")
+                                .set_directory(home_dir)
                                 .set_file_name("pack.siq")
                                 .save_file()
                                 .await?;
