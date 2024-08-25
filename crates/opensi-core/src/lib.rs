@@ -132,15 +132,22 @@ const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ');
 
 impl Atom {
     pub fn get_resource(&self, filename: &str) -> Option<Resource> {
-        // Body a.k.a "resource name" as stated by the documentation begins
+        // Atom xml content or ("resource name" as stated in official docs) begins
         // with '@' in package to distinguish plain text and links to
-        // resources, thats why we need manually trim '@' from begining.
-        // It also percent-encoded so we need to decode this.
+        // resources. This is how it looks like in package:
+        //
+        // ```xml
+        // <atom>Откуда данный опенинг ?</atom>
+        // <atom type="voice">@3.mp3</atom>
+        // ```
+        // All links is just a part of filename, so we want to trim '@' from
+        // beginning to make our life easier while working with files from the pack.
+        // It also percent-encoded so we need to decode links.
+
         let body = self.body.as_ref()?;
-        let resource_name = &utf8_percent_encode(&body, FRAGMENT).to_string()[1..];
-        let tmp = std::env::temp_dir().join(filename); // костылик
-        let variant = self.variant.as_ref()?;
-        let variant: &str = &variant; // :)
+        let resource_name = &utf8_percent_encode(body, FRAGMENT).to_string();
+        let tmp = std::env::temp_dir().join(filename);
+        let variant: &str = self.variant.as_ref()?;
 
         match variant {
             "voice" => Some(Resource::Audio(tmp.join("Audio").join(resource_name))),
