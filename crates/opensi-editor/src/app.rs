@@ -1,3 +1,4 @@
+use dirs::home_dir;
 use rfd::AsyncFileDialog;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -57,10 +58,11 @@ impl eframe::App for EditorApp {
                 ui.menu_button("Файл", |ui| {
                     if ui.button("⮩ Импорт").clicked() {
                         let _result = tokio::spawn(async {
+                            let home_dir = home_dir().unwrap();
                             let file = AsyncFileDialog::new()
                                 .set_title("Выбрать файл с вопросами для импорта")
                                 .add_filter("SIGame Pack", &["siq"])
-                                .set_directory("/")
+                                .set_directory(home_dir)
                                 .set_can_create_directories(false)
                                 .pick_file()
                                 .await?;
