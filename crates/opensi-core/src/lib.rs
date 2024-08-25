@@ -3,7 +3,6 @@
 use std::io::ErrorKind;
 use std::path::Path;
 use std::{fs::File, io::Read};
-use PartialEq;
 
 use quick_xml::de::from_str;
 use serde::Deserialize;
@@ -158,7 +157,7 @@ impl Package {
         let mut zip = zip::ZipArchive::new(package_file)?;
         let mut xml = zip.by_name("content.xml")?;
         let mut contents = String::new();
-        xml.read_to_string(&mut contents).unwrap();
+        xml.read_to_string(&mut contents)?;
 
         from_str(&contents).map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
     }
