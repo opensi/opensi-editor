@@ -1,11 +1,10 @@
 #![allow(dead_code)]
 
+use quick_xml::de::from_str;
+use serde::{Deserialize, Serialize};
 use std::io::ErrorKind;
 use std::path::Path;
-use std::{fs::File, io::Read};
-
-use quick_xml::de::from_str;
-use serde::Deserialize;
+use std::{fs::File, io, io::Read};
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Package {
