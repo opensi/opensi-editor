@@ -128,7 +128,7 @@ pub enum Resource {
 }
 
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ');
+const CONTROLS_ASCII_SET: &AsciiSet = &CONTROLS.add(b' ');
 
 impl Atom {
     pub fn get_resource(&self, filename: &str) -> Option<Resource> {
@@ -145,7 +145,7 @@ impl Atom {
         // It also percent-encoded so we need to decode links.
 
         let body = self.body.as_ref()?;
-        let resource_name = &utf8_percent_encode(body, FRAGMENT).to_string();
+        let resource_name = &utf8_percent_encode(body, CONTROLS_ASCII_SET).to_string();
         let tmp = std::env::temp_dir().join(filename);
         let variant: &str = self.variant.as_ref()?;
 
