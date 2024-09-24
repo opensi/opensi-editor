@@ -128,6 +128,9 @@ pub enum Resource {
 }
 
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+use serde::de::Error;
+use zip::ZipArchive;
+
 const CONTROLS_ASCII_SET: &AsciiSet = &CONTROLS.add(b' ');
 
 impl Atom {
@@ -159,14 +162,26 @@ impl Atom {
 }
 
 impl Package {
-    pub fn open(path: impl AsRef<Path>) -> Result<Package, std::io::Error> {
+
+    // Expecting byte array of zip file
+    pub fn from_zip_buffer(bytes: impl AsRef<[u8]>) -> Result<Package, io::Error> {
+        let cursor = io::Cursor::new(bytes);
+        Self::get_package_from_zip(cursor)
+    }
+
+    pub fn open_zip_file(path: impl AsRef<Path>) -> Result<Package, io::Error> {
         let package_file = File::open(path)?;
-        let mut zip = zip::ZipArchive::new(package_file)?;
-        let mut xml = zip.by_name("content.xml")?;
+        Self::get_package_from_zip(package_file)
+    }
+
+    fn get_package_from_zip<T: Read + io::Seek>(source: T) -> Result<Package, io::Error> {
+        let mut zip_archive = ZipArchive::new(source)?;
+
+        let mut xml = zip_archive.by_name("content.xml")?;
         let mut contents = String::new();
         xml.read_to_string(&mut contents)?;
 
-        from_str(&contents).map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
+        from_str(&contents).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
     }
 
     // TODO: figure out how to do extraction on wasm
