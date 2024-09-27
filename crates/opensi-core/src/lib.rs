@@ -22,6 +22,179 @@ pub struct Package {
     pub info: Info,
 }
 
+impl Package {
+    /// Get [`Round`] by index.
+    pub fn get_round(&self, index: usize) -> Option<&Round> {
+        self.rounds.rounds.get(index)
+    }
+
+    /// Get mutable [`Round`] by index.
+    pub fn get_round_mut(&mut self, index: usize) -> Option<&mut Round> {
+        self.rounds.rounds.get_mut(index)
+    }
+
+    /// Remove [`Round`] by index and return it.
+    pub fn remove_round(&mut self, index: usize) -> Option<Round> {
+        if index >= self.rounds.rounds.len() {
+            return None;
+        }
+        self.rounds.rounds.remove(index).into()
+    }
+
+    /// Push a new [`Round`] to the end of the package and
+    /// return a reference to it.
+    pub fn push_round(&mut self, round: Round) -> &mut Round {
+        self.rounds.rounds.push(round);
+        self.rounds.rounds.last_mut().unwrap()
+    }
+
+    /// Create a new default [`Round`], push it and return
+    /// a reference to it.
+    pub fn allocate_round(&mut self) -> &mut Round {
+        let round = Round { name: "Новый раунд".to_string(), ..Default::default() };
+        self.push_round(round)
+    }
+
+    /// Get [`Theme`] in [`Round`] by indices.
+    pub fn get_theme(&self, round_index: usize, index: usize) -> Option<&Theme> {
+        self.get_round(round_index).and_then(|round| round.themes.themes.get(index))
+    }
+
+    /// Get mutable [`Theme`] in [`Round`] by indices.
+    pub fn get_theme_mut(&mut self, round_index: usize, index: usize) -> Option<&mut Theme> {
+        self.get_round_mut(round_index).and_then(|round| round.themes.themes.get_mut(index))
+    }
+
+    /// Remove [`Theme`] in [`Round`] by indices.
+    pub fn remove_theme(&mut self, round_index: usize, index: usize) -> Option<Theme> {
+        let round = self.get_round_mut(round_index)?;
+        if index >= round.themes.themes.len() {
+            return None;
+        }
+        round.themes.themes.remove(index).into()
+    }
+
+    /// Push a new [`Theme`] to the end of the [`Round`] and
+    /// return a reference to it.
+    pub fn push_theme(&mut self, round_index: usize, theme: Theme) -> Option<&mut Theme> {
+        let round = self.get_round_mut(round_index)?;
+        round.themes.themes.push(theme);
+        round.themes.themes.last_mut().unwrap().into()
+    }
+
+    /// Create a new default [`Theme`], push it to the [`Round`]
+    /// and return a reference to it.
+    pub fn allocate_theme(&mut self, round_index: usize) -> Option<&mut Theme> {
+        let theme = Theme { name: "Новая тема".to_string(), ..Default::default() };
+        self.push_theme(round_index, theme)
+    }
+
+    /// Get [`Question`] in [`Theme`] in [`Round`] by indices.
+    pub fn get_question(
+        &self,
+        round_index: usize,
+        theme_index: usize,
+        index: usize,
+    ) -> Option<&Question> {
+        self.get_theme(round_index, theme_index)
+            .and_then(|theme| theme.questions.questions.get(index))
+    }
+
+    /// Get mutable [`Question`] in [`Theme`] in [`Round`] by indices.
+    pub fn get_question_mut(
+        &mut self,
+        round_index: usize,
+        theme_index: usize,
+        index: usize,
+    ) -> Option<&mut Question> {
+        self.get_theme_mut(round_index, theme_index)
+            .and_then(|theme| theme.questions.questions.get_mut(index))
+    }
+
+    /// Remove [`Question`] in [`Theme`] in [`Round`] by indices.
+    pub fn remove_question(
+        &mut self,
+        round_index: usize,
+        theme_index: usize,
+        index: usize,
+    ) -> Option<Question> {
+        let theme = self.get_theme_mut(round_index, theme_index)?;
+        if index >= theme.questions.questions.len() {
+            return None;
+        }
+        theme.questions.questions.remove(index).into()
+    }
+
+    /// Push a new [`Question`] to the end of the [`Theme`] in [`Round`]
+    /// and return a reference to it.
+    pub fn push_question(
+        &mut self,
+        round_index: usize,
+        theme_index: usize,
+        question: Question,
+    ) -> Option<&mut Question> {
+        let theme = self.get_theme_mut(round_index, theme_index)?;
+        theme.questions.questions.push(question);
+        theme.questions.questions.last_mut().unwrap().into()
+    }
+
+    /// Create a new default [`Question`], push it to the [`Theme`] in [`Round`]
+    /// and return a reference to it.
+    pub fn allocate_question(
+        &mut self,
+        round_index: usize,
+        theme_index: usize,
+    ) -> Option<&mut Question> {
+        let question = Question {
+            price: self.guess_next_question_price(round_index, theme_index),
+            ..Default::default()
+        };
+        self.push_question(round_index, theme_index, question)
+    }
+}
+
+impl Package {
+    /// Try to guess a price for the next question:
+    /// - Either a difference between the last two question prices;
+    /// - Or the last question's price plus 100;
+    ///
+    /// In case of no questions, the default price is 100.
+    pub fn guess_next_question_price(&self, round_index: usize, theme_index: usize) -> usize {
+        let Some(theme) = self.get_theme(round_index, theme_index) else {
+            return 100;
+        };
+        let questions = &theme.questions.questions;
+        let mut iter = questions.iter().rev();
+        match (iter.next(), iter.next()) {
+            (Some(last), Some(prev)) => {
+                let diff = last.price.abs_diff(prev.price);
+                last.price + diff
+            },
+            (Some(last), None) => last.price + 100,
+            _ => 100,
+        }
+    }
+}
+
+/// Package tree node which operates on indices and is easy to copy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum PackageNode {
+    Round { index: usize },
+    Theme { round_index: usize, index: usize },
+    Question { round_index: usize, theme_index: usize, index: usize },
+}
+
+impl PackageNode {
+    /// Get index of the node itself.
+    pub fn index(&self) -> usize {
+        match self {
+            &PackageNode::Round { index }
+            | &PackageNode::Theme { index, .. }
+            | &PackageNode::Question { index, .. } => index,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Info {
     pub comments: Option<String>,
@@ -42,7 +215,7 @@ pub struct Rounds {
     pub rounds: Vec<Round>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Round {
     pub name: String,
     #[serde(rename = "type", default)]
@@ -51,26 +224,26 @@ pub struct Round {
     pub themes: Themes,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Themes {
     #[serde(rename = "theme", default)]
     pub themes: Vec<Theme>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Theme {
     pub name: String,
     pub questions: Questions,
     pub info: Option<Info>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Questions {
     #[serde(rename = "question", default)]
     pub questions: Vec<Question>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Question {
     pub price: usize,
     pub scenario: Scenario,
@@ -81,36 +254,36 @@ pub struct Question {
     pub info: Option<Info>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Variant {
     pub name: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Scenario {
     #[serde(rename = "atom", default)]
     pub atoms: Vec<Atom>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Right {
     #[serde(rename = "answer", default)]
     pub answers: Vec<Answer>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Wrong {
     #[serde(rename = "answer", default)]
     pub answers: Vec<Answer>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Answer {
     #[serde(rename = "$value")]
     pub body: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Atom {
     pub time: Option<f64>,
     #[serde(rename = "type", default)]
@@ -127,7 +300,6 @@ pub enum Resource {
 }
 
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-use serde::de::Error;
 use zip::ZipArchive;
 
 const CONTROLS_ASCII_SET: &AsciiSet = &CONTROLS.add(b' ');
@@ -161,7 +333,6 @@ impl Atom {
 }
 
 impl Package {
-
     // Expecting byte array of zip file
     pub fn from_zip_buffer(bytes: impl AsRef<[u8]>) -> Result<Package, io::Error> {
         let cursor = io::Cursor::new(bytes);
