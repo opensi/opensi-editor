@@ -19,20 +19,21 @@ log = "0.4"
 rfd = "0.14.1"
 # https://github.com/emilk/egui/issues/4961
 web-sys = "=0.3.69"
+thiserror = "1.0.64"
 
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
-dirs = "5.0.1"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.10"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+dirs = "5.0.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }
-tokio_with_wasm = { version = "0.6.1", features = ["macros", "rt"] }
+tokio_with_wasm = { version = "0.6.1", features = ["macros", "rt", "sync"] }
 
 # to access the DOM (to hide the loading text)
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]

@@ -1,10 +1,7 @@
-use dirs::home_dir;
-use rfd::AsyncFileDialog;
-
-#[cfg(not(target_arch = "wasm32"))]
-use tokio;
-#[cfg(target_arch = "wasm32")]
-use tokio_with_wasm::alias as tokio;
+use crate::{
+    file_dialogs::{self, LoadingPackageReceiver},
+    package_tree::{self},
+};
 
 const FONT_REGULAR_ID: &'static str = "Regular";
 const FONT_ITALIC_ID: &'static str = "Italic";
@@ -13,7 +10,9 @@ const FONT_ITALIC_ID: &'static str = "Italic";
 /// Serialized fields are saved and restored.
 #[derive(serde::Deserialize, serde::Serialize, Default, Debug)]
 #[serde(default)]
-pub struct EditorApp {}
+pub struct EditorApp {
+    package_state: PackageState,
+}
 
 impl EditorApp {
     /// Called once before the first frame.
@@ -51,41 +50,24 @@ impl eframe::App for EditorApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.package_state.update();
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 egui::widgets::global_dark_light_mode_switch(ui);
                 ui.add_space(16.0);
                 ui.menu_button("Файл", |ui| {
                     if ui.button("⮩ Импорт").clicked() {
-                        let _result = tokio::spawn(async {
-                            let home_dir = home_dir().unwrap();
-                            let file = AsyncFileDialog::new()
-                                .set_title("Выбрать файл с вопросами для импорта")
-                                .add_filter("SIGame Pack", &["siq"])
-                                .set_directory(home_dir)
-                                .set_can_create_directories(false)
-                                .pick_file()
-                                .await?;
-
-                            Some(file.read().await)
-                        });
-                        // TODO
+                        let package_receiver = file_dialogs::import_dialog();
+                        self.package_state = PackageState::Loading(package_receiver);
+                        ui.close_menu();
                     }
                     if ui.button("💾 Сохранить").clicked() {
-                        let _result = tokio::spawn(async {
-                            let home_dir = home_dir().unwrap();
-
-                            let file = AsyncFileDialog::new()
-                                .set_title("Сохранить выбранный пакет с вопросами")
-                                .set_directory(home_dir)
-                                .set_file_name("pack.siq")
-                                .save_file()
-                                .await?;
-
-                            let data = [0];
-                            file.write(&data).await.ok()
-                        });
-                        // TODO
+                        let PackageState::Active(ref package) = self.package_state else {
+                            return;
+                        };
+                        file_dialogs::export_dialog(package);
+                        ui.close_menu();
                     }
 
                     if !cfg!(target_arch = "wasm32") {
@@ -95,7 +77,26 @@ impl eframe::App for EditorApp {
                         }
                     }
                 });
+                if let PackageState::Active(ref _package) = self.package_state {
+                    ui.menu_button("Пак", |ui| {
+                        if ui.button("❌Закрыть").clicked() {
+                            self.package_state = PackageState::None;
+                            ui.close_menu();
+                        }
+                    });
+                }
             });
+        });
+
+        egui::SidePanel::left("question-tree").min_width(200.0).show(ctx, |ui| {
+            match self.package_state {
+                PackageState::Active(ref mut package) => {
+                    package_tree::package_tree(package, ui);
+                },
+                _ => {
+                    ui.weak("Пак не выбран");
+                },
+            }
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -109,5 +110,33 @@ impl eframe::App for EditorApp {
                 },
             );
         });
+    }
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug)]
+enum PackageState {
+    #[default]
+    None,
+    #[serde(skip)]
+    Loading(LoadingPackageReceiver),
+    Active(opensi_core::Package),
+}
+
+impl PackageState {
+    fn update(&mut self) {
+        match self {
+            Self::Loading(receiver) => {
+                match receiver.try_recv() {
+                    Ok(Ok(package)) => {
+                        *self = Self::Active(package);
+                    },
+                    Ok(Err(_err)) => {
+                        // TODO: error handle
+                    },
+                    Err(_) => {},
+                }
+            },
+            _ => {},
+        }
     }
 }
