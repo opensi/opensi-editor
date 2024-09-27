@@ -14,6 +14,5 @@ fn open_pack() {
 #[test]
 fn read_package_name() {
     let package = Package::open_zip_file(PATH).expect("pack is not found");
-    assert_eq!(package.name.is_some(), true);
-    assert_eq!(package.name.unwrap(), "SLAM JAM 2".to_owned());
+    assert_eq!(package.name, "SLAM JAM 2".to_owned());
 }

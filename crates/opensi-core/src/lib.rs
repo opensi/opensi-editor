@@ -6,19 +6,20 @@ use std::io::ErrorKind;
 use std::path::Path;
 use std::{fs::File, io, io::Read};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Package {
     pub id: String,
-    pub name: Option<String>,
-    pub version: String,
-    pub date: Option<String>,
-    pub difficulty: Option<u8>,
-    pub language: Option<String>,
+    pub name: String,
+    pub version: f32,
+    pub date: String,
+    pub difficulty: u8,
+    pub language: String,
     pub logo: Option<String>,
-    pub publisher: Option<String>,
-    pub restriciton: Option<String>,
+    pub publisher: String,
+    pub restriciton: String,
     pub rounds: Rounds,
-    pub tags: Option<Vec<String>>,
+    pub tags: Vec<String>,
     pub info: Info,
 }
 
@@ -210,7 +211,8 @@ impl PackageNode {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Info {
     pub comments: Option<String>,
     pub extension: Option<String>,
@@ -218,19 +220,22 @@ pub struct Info {
     pub sources: Option<Vec<String>>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Authors {
     #[serde(rename = "author", default)]
     pub authors: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Rounds {
     #[serde(rename = "round", default)]
     pub rounds: Vec<Round>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Round {
     pub name: String,
     #[serde(rename = "type", default)]
@@ -240,12 +245,14 @@ pub struct Round {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Themes {
     #[serde(rename = "theme", default)]
     pub themes: Vec<Theme>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Theme {
     pub name: String,
     pub questions: Questions,
@@ -253,12 +260,14 @@ pub struct Theme {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Questions {
     #[serde(rename = "question", default)]
     pub questions: Vec<Question>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Question {
     pub price: usize,
     pub scenario: Scenario,
@@ -270,35 +279,41 @@ pub struct Question {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Variant {
     pub name: String,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Scenario {
     #[serde(rename = "atom", default)]
     pub atoms: Vec<Atom>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Right {
     #[serde(rename = "answer", default)]
     pub answers: Vec<Answer>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Wrong {
     #[serde(rename = "answer", default)]
     pub answers: Vec<Answer>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Answer {
     #[serde(rename = "$value")]
     pub body: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Atom {
     pub time: Option<f64>,
     #[serde(rename = "type", default)]
