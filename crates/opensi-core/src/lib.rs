@@ -177,7 +177,9 @@ impl Package {
 }
 
 /// Package tree node which operates on indices and is easy to copy.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    serde::Deserialize, serde::Serialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash,
+)]
 pub enum PackageNode {
     Round { index: usize },
     Theme { round_index: usize, index: usize },
@@ -185,12 +187,25 @@ pub enum PackageNode {
 }
 
 impl PackageNode {
+    /// Get parent of the node, unless it's a round node..
+    pub fn get_parent(&self) -> Option<PackageNode> {
+        match *self {
+            PackageNode::Round { .. } => None,
+            PackageNode::Theme { round_index, .. } => {
+                PackageNode::Round { index: round_index }.into()
+            },
+            PackageNode::Question { round_index, theme_index, .. } => {
+                PackageNode::Theme { round_index, index: theme_index }.into()
+            },
+        }
+    }
+
     /// Get index of the node itself.
     pub fn index(&self) -> usize {
-        match self {
-            &PackageNode::Round { index }
-            | &PackageNode::Theme { index, .. }
-            | &PackageNode::Question { index, .. } => index,
+        match *self {
+            PackageNode::Round { index }
+            | PackageNode::Theme { index, .. }
+            | PackageNode::Question { index, .. } => index,
         }
     }
 }
