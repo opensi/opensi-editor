@@ -11,7 +11,7 @@ pub fn workarea(package: &mut Package, selected: &mut Option<PackageNode>, ui: &
 
         ui.add_space(16.0);
 
-        ui.centered_and_justified(|ui| {
+        ui.vertical_centered_justified(|ui| {
             selected_tab(package, selected, ui);
         });
     });

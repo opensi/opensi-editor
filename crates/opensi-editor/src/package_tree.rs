@@ -8,10 +8,8 @@ use crate::utils::node_name;
 /// It can add new rounds, themes and questions, edit
 /// names/prices of existing ones and select them.
 pub fn package_tree(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-    let name = package.name.as_ref().map(|name| name.as_str()).unwrap_or("Новый пакет вопросов");
-
     ui.vertical_centered_justified(|ui| {
-        let text = egui::RichText::new(name).strong().heading();
+        let text = egui::RichText::new(&package.name).strong().heading();
         if ui.add(egui::Label::new(text).sense(egui::Sense::click()).selectable(false)).clicked() {
             *selected = None;
         }
