@@ -1,6 +1,9 @@
+use opensi_core::PackageNode;
+
 use crate::{
     file_dialogs::{self, LoadingPackageReceiver},
     package_tree::{self},
+    workarea,
 };
 
 const FONT_REGULAR_ID: &'static str = "Regular";
@@ -63,7 +66,7 @@ impl eframe::App for EditorApp {
                         ui.close_menu();
                     }
                     if ui.button("💾 Сохранить").clicked() {
-                        let PackageState::Active(ref package) = self.package_state else {
+                        let PackageState::Active { ref package, .. } = self.package_state else {
                             return;
                         };
                         file_dialogs::export_dialog(package);
@@ -77,7 +80,7 @@ impl eframe::App for EditorApp {
                         }
                     }
                 });
-                if let PackageState::Active(ref _package) = self.package_state {
+                if let PackageState::Active { .. } = self.package_state {
                     ui.menu_button("Пак", |ui| {
                         if ui.button("❌Закрыть").clicked() {
                             self.package_state = PackageState::None;
@@ -88,28 +91,31 @@ impl eframe::App for EditorApp {
             });
         });
 
-        egui::SidePanel::left("question-tree").min_width(200.0).show(ctx, |ui| {
-            match self.package_state {
-                PackageState::Active(ref mut package) => {
-                    package_tree::package_tree(package, ui);
-                },
-                _ => {
-                    ui.weak("Пак не выбран");
-                },
-            }
-        });
+        if let PackageState::Active { package, selected } = &mut self.package_state {
+            egui::SidePanel::left("question-tree").min_width(200.0).show(ctx, |ui| {
+                package_tree::package_tree(package, selected, ui);
+            });
+        }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.with_layout(
-                egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
-                |ui| {
-                    let text = egui::RichText::new("We're so back")
-                        .size(100.0)
-                        .color(ui.style().visuals.weak_text_color());
-                    ui.add(egui::Label::new(text));
-                },
-            );
-        });
+        egui::CentralPanel::default()
+            .frame(egui::Frame::central_panel(&ctx.style()).inner_margin(16.0))
+            .show(ctx, |ui| {
+                ui.with_layout(
+                    egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
+                    |ui| {
+                        if let PackageState::Active { package, selected } = &mut self.package_state
+                        {
+                            workarea::workarea(package, selected, ui);
+                        } else {
+                            let text = egui::RichText::new("OpenSI Editor")
+                                .italics()
+                                .size(64.0)
+                                .color(ui.style().visuals.weak_text_color());
+                            ui.add(egui::Label::new(text).selectable(false));
+                        }
+                    },
+                );
+            });
     }
 }
 
@@ -119,7 +125,10 @@ enum PackageState {
     None,
     #[serde(skip)]
     Loading(LoadingPackageReceiver),
-    Active(opensi_core::Package),
+    Active {
+        package: opensi_core::Package,
+        selected: Option<PackageNode>,
+    },
 }
 
 impl PackageState {
@@ -128,7 +137,7 @@ impl PackageState {
             Self::Loading(receiver) => {
                 match receiver.try_recv() {
                     Ok(Ok(package)) => {
-                        *self = Self::Active(package);
+                        *self = Self::Active { package, selected: None };
                     },
                     Ok(Err(_err)) => {
                         // TODO: error handle

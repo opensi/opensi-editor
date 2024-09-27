@@ -1,28 +1,34 @@
-use std::borrow::Cow;
-
 use egui::collapsing_header::CollapsingState;
 use opensi_core::{Package, PackageNode};
+
+use crate::utils::node_name;
 
 /// Ui for a whole [`Package`] in a form of a tree.
 ///
 /// It can add new rounds, themes and questions, edit
 /// names/prices of existing ones and select them.
-pub fn package_tree(package: &mut Package, ui: &mut egui::Ui) {
+pub fn package_tree(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
     let name = package.name.as_ref().map(|name| name.as_str()).unwrap_or("Новый пакет вопросов");
 
     ui.vertical_centered_justified(|ui| {
-        ui.heading(name);
+        let text = egui::RichText::new(name).strong().heading();
+        if ui.add(egui::Label::new(text).sense(egui::Sense::click()).selectable(false)).clicked() {
+            *selected = None;
+        }
     });
 
     ui.separator();
 
-    egui::ScrollArea::vertical().show(ui, |ui| {
-        tree_node_ui(package, None, ui);
-    });
+    egui::ScrollArea::vertical().show(ui, |ui| tree_node_ui(package, None, selected, ui));
 }
 
 /// Recursive [`PackageNode`] ui.
-fn tree_node_ui<'a>(package: &mut Package, node: Option<PackageNode>, ui: &mut egui::Ui) {
+fn tree_node_ui<'a>(
+    package: &mut Package,
+    node: Option<PackageNode>,
+    selected: &mut Option<PackageNode>,
+    ui: &mut egui::Ui,
+) {
     fn plus_button(ui: &mut egui::Ui) -> bool {
         ui.vertical_centered_justified(|ui| ui.button("➕").clicked()).inner
     }
@@ -145,7 +151,7 @@ fn tree_node_ui<'a>(package: &mut Package, node: Option<PackageNode>, ui: &mut e
                 ui.weak("Нет раундов");
             } else {
                 for index in 0..package.rounds.rounds.len() {
-                    tree_node_ui(package, Some(PackageNode::Round { index }), ui);
+                    tree_node_ui(package, Some(PackageNode::Round { index }), selected, ui);
                 }
             }
         });
@@ -157,11 +163,11 @@ fn tree_node_ui<'a>(package: &mut Package, node: Option<PackageNode>, ui: &mut e
 
     let id = egui::Id::new(node.index()).with(ui.id());
     match node {
-        node @ PackageNode::Round { index } => {
+        PackageNode::Round { index } => {
             CollapsingState::load_with_default_open(ui.ctx(), id, true)
                 .show_header(ui, |ui| {
                     if node_button(package, node, ui) {
-                        // TODO: selected round
+                        *selected = Some(node);
                     };
                 })
                 .body(|ui| {
@@ -173,6 +179,7 @@ fn tree_node_ui<'a>(package: &mut Package, node: Option<PackageNode>, ui: &mut e
                         tree_node_ui(
                             package,
                             Some(PackageNode::Theme { round_index: index, index: theme_index }),
+                            selected,
                             ui,
                         );
                     }
@@ -181,11 +188,11 @@ fn tree_node_ui<'a>(package: &mut Package, node: Option<PackageNode>, ui: &mut e
                     }
                 });
         },
-        node @ PackageNode::Theme { round_index, index } => {
+        PackageNode::Theme { round_index, index } => {
             CollapsingState::load_with_default_open(ui.ctx(), id, false)
                 .show_header(ui, |ui| {
                     if node_button(package, node, ui) {
-                        // TODO: selected theme
+                        *selected = Some(node);
                     };
                 })
                 .body(|ui| {
@@ -201,6 +208,7 @@ fn tree_node_ui<'a>(package: &mut Package, node: Option<PackageNode>, ui: &mut e
                                 theme_index: index,
                                 index: question_index,
                             }),
+                            selected,
                             ui,
                         );
                     }
@@ -211,28 +219,8 @@ fn tree_node_ui<'a>(package: &mut Package, node: Option<PackageNode>, ui: &mut e
         },
         PackageNode::Question { round_index, theme_index, index } => {
             if node_button(package, PackageNode::Question { round_index, theme_index, index }, ui) {
-                // TODO: selected question
+                *selected = Some(node);
             }
         },
-    }
-}
-
-/// Utility method to get a button name for a [`PackageNode`].
-fn node_name<'a>(node: PackageNode, package: &'a Package) -> Cow<'a, str> {
-    match node {
-        PackageNode::Round { index } => package
-            .get_round(index)
-            .map(|round| round.name.as_str())
-            .unwrap_or("<Неизвестный раунд>")
-            .into(),
-        PackageNode::Theme { round_index, index } => package
-            .get_theme(round_index, index)
-            .map(|theme| theme.name.as_str())
-            .unwrap_or("<Неизвестная тема>")
-            .into(),
-        PackageNode::Question { round_index, theme_index, index } => package
-            .get_question(round_index, theme_index, index)
-            .map(|question| format!("🗛 ({})", question.price).into())
-            .unwrap_or("<Неизвестный вопрос>".into()),
     }
 }
