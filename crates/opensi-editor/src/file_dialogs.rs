@@ -67,7 +67,7 @@ pub fn export_dialog(_package: &Package) {
 
 fn get_directory() -> impl AsRef<Path> {
     #[cfg(not(target_arch = "wasm32"))]
-    return dirs::home_dir().unwrap();
+    return dirs::home_dir().unwrap_or_default();
     #[cfg(target_arch = "wasm32")]
     return "/";
 }
