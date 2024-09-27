@@ -4,7 +4,7 @@
 
 Редактор вопросов для популярной реализации "Своей игры": [SiGame](https://vladimirkhil.com/si/game)
 
-Доступен в веб формате: [OpenSI Editor Web](opensi.github.io/opensi-editor).
+Доступен в веб формате: [OpenSI Editor Web](https://opensi.github.io/opensi-editor).
 
 ## Пакеты с игрой
 
