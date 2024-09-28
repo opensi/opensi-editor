@@ -135,6 +135,7 @@ fn package_rounds(package: &mut Package, selected: &mut Option<PackageNode>, ui:
                             }
                         });
                         row.col(|ui| {
+                            ui.add_space(4.0);
                             if ui.button("✏").on_hover_text("Редактировать").clicked()
                             {
                                 *selected = Some(PackageNode::Round { index });
