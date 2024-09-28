@@ -150,6 +150,6 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: opensi-editor-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
         asset_name: opensi-editor-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
-        tag: ${{ github.ref }}
+        tag: release-${{ github.ref }}
         prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
         overwrite: true
