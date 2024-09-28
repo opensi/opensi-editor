@@ -51,7 +51,7 @@ fn selected_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &
             }
         },
         None => {
-            package_tab::package_tab(package, ui);
+            package_tab::package_tab(package, selected, ui);
         },
     }
 }
@@ -72,8 +72,8 @@ fn breadcrumbs(package: &Package, selected: &mut Option<PackageNode>, ui: &mut e
         ui.add_space(8.0);
     }
 
-    fn root_breadcrumb(selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-        if breadcrumb("🏠", ui) {
+    fn root_breadcrumb(package: &Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
+        if breadcrumb(format!("🏠 {}", package.name), ui) {
             *selected = None;
         }
     }
@@ -91,7 +91,7 @@ fn breadcrumbs(package: &Package, selected: &mut Option<PackageNode>, ui: &mut e
     }
 
     ui.horizontal(|ui| {
-        root_breadcrumb(selected, ui);
+        root_breadcrumb(package, selected, ui);
 
         match *selected {
             Some(node @ PackageNode::Round { .. }) => {

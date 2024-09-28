@@ -142,21 +142,13 @@ fn tree_node_ui<'a>(
         if result.is_duplicated {
             match node {
                 PackageNode::Round { index } => {
-                    if let Some(round) = package.get_round(index).cloned() {
-                        package.push_round(round);
-                    }
+                    package.duplicate_round(index);
                 },
                 PackageNode::Theme { round_index, index } => {
-                    if let Some(theme) = package.get_theme(round_index, index).cloned() {
-                        package.push_theme(round_index, theme);
-                    }
+                    package.duplicate_theme(round_index, index);
                 },
                 PackageNode::Question { round_index, theme_index, index } => {
-                    if let Some(question) =
-                        package.get_question(round_index, theme_index, index).cloned()
-                    {
-                        package.push_question(round_index, theme_index, question);
-                    }
+                    package.duplicate_question(round_index, theme_index, index);
                 },
             }
         }
