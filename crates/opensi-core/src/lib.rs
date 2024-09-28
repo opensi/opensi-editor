@@ -4,7 +4,6 @@ use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use quick_xml::de::from_str;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::io::{Error, ErrorKind, Write};
 use std::path::Path;
 use std::{fs::File, io, io::Read};
@@ -412,10 +411,10 @@ pub enum Resource {
 impl Resource {
     fn extract_key(&self) -> &str {
         match self {
-            Resource::Audio(key) |
-            Resource::Video(key) |
-            Resource::Image(key) |
-            Resource::Texts(key) => key
+            Resource::Audio(key)
+            | Resource::Video(key)
+            | Resource::Image(key)
+            | Resource::Texts(key) => key,
         }
     }
 }
@@ -516,10 +515,10 @@ impl Package {
             Ok(Resource::Texts(filename.to_owned()))
         } else {
             Err(Error::new(ErrorKind::InvalidData, "Unknown resource type"))
-
         }
     }
-    fn to_bytes(self) -> Result<Vec<u8>, Error> {
+
+    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
         let buffer = Vec::new();
         let cursor = io::Cursor::new(buffer);
         let mut zip = ZipWriter::new(cursor);
