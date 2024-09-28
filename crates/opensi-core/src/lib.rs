@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use quick_xml::de::from_str;
 use serde::{Deserialize, Serialize};
@@ -444,9 +446,9 @@ impl Package {
             Ok(Resource::Texts(filename.to_owned()))
         } else {
             Err(Error::new(ErrorKind::InvalidData, "Unknown resource type"))
+
         }
     }
-
     fn to_bytes(self) -> Result<Vec<u8>, Error> {
         let buffer = Vec::new();
         let cursor = io::Cursor::new(buffer);
