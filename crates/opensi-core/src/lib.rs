@@ -2,6 +2,7 @@
 
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use quick_xml::de::from_str;
+use quick_xml::se::to_string;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Write};
@@ -11,20 +12,32 @@ use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
+#[serde(rename = "package")]
 pub struct Package {
-    pub id: String,
+    // attributes
+    #[serde(rename = "@name")]
     pub name: String,
+    #[serde(rename = "@version")]
     pub version: f32,
+    #[serde(rename = "@id")]
+    pub id: String,
+    #[serde(rename = "@date")]
     pub date: String,
-    pub difficulty: u8,
-    pub language: String,
-    pub logo: Option<String>,
+    #[serde(rename = "@publisher")]
     pub publisher: String,
-    pub restriciton: String,
-    pub rounds: Rounds,
-    pub tags: Vec<String>,
+    #[serde(rename = "@difficulty")]
+    pub difficulty: u8,
+    #[serde(rename = "@language")]
+    pub language: Option<String>,
+    #[serde(rename = "@logo")]
+    pub logo: Option<String>,
+    #[serde(rename = "@restriciton")]
+    pub restriciton: Option<String>,
+
+    // elements
     pub info: Info,
+    pub rounds: Rounds,
+    pub tags: Option<Vec<String>>,
 
     // resources
     #[serde(skip)]
@@ -290,7 +303,7 @@ impl PackageNode {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
+
 pub struct Info {
     pub comments: Option<String>,
     pub extension: Option<String>,
@@ -299,102 +312,107 @@ pub struct Info {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Authors {
-    #[serde(rename = "author", default)]
+    #[serde(rename = "author")]
     pub authors: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Rounds {
-    #[serde(rename = "round", default)]
+    #[serde(rename = "round")]
     pub rounds: Vec<Round>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Round {
+    #[serde(rename = "@name")]
     pub name: String,
-    #[serde(rename = "type", default)]
+    #[serde(rename = "@type")]
     pub variant: Option<String>,
+    #[serde(rename = "@info")]
     pub info: Option<Info>,
     pub themes: Themes,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Themes {
-    #[serde(rename = "theme", default)]
+    #[serde(rename = "theme")]
     pub themes: Vec<Theme>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Theme {
+    #[serde(rename = "@name")]
     pub name: String,
     pub questions: Questions,
+    #[serde(rename = "@info")]
     pub info: Option<Info>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Questions {
-    #[serde(rename = "question", default)]
+    #[serde(rename = "question")]
     pub questions: Vec<Question>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Question {
+    #[serde(rename = "@price")]
     pub price: usize,
     pub scenario: Scenario,
     pub right: Right,
     pub wrong: Option<Wrong>,
-    #[serde(rename = "type", default)]
+    #[serde(rename = "type")]
     pub variant: Option<Variant>,
+    #[serde(rename = "@info")]
     pub info: Option<Info>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Variant {
+    #[serde(rename = "@name")]
     pub name: String,
+    #[serde(rename = "param")]
+    pub params: Option<Vec<Param>>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
+pub struct Param {
+    #[serde(rename = "@name")]
+    pub name: String,
+    #[serde(rename = "$value")]
+    pub body: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Scenario {
-    #[serde(rename = "atom", default)]
+    #[serde(rename = "atom")]
     pub atoms: Vec<Atom>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Right {
-    #[serde(rename = "answer", default)]
+    #[serde(rename = "answer")]
     pub answers: Vec<Answer>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Wrong {
-    #[serde(rename = "answer", default)]
+    #[serde(rename = "answer")]
     pub answers: Vec<Answer>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Answer {
     #[serde(rename = "$value")]
     pub body: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
 pub struct Atom {
+    #[serde(rename = "@time")]
     pub time: Option<f64>,
-    #[serde(rename = "type", default)]
+    #[serde(rename = "@type")]
     pub variant: Option<String>,
     #[serde(rename = "$value")]
     pub body: Option<String>,
@@ -421,6 +439,7 @@ impl Resource {
 
 impl Package {
     const CONTENT_TYPE_FILE_CONTENT: &'static str = r#"<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="si/xml" /></Types>"""#;
+    const XML_VERSION_ENCODING: &'static str = r#"<?xml version="1.0" encoding="utf-8"?>"#;
     const CONTROLS_ASCII_SET: &'static AsciiSet = &CONTROLS.add(b' ');
 
     pub fn get_resource(&self, atom: &Atom) -> Option<&Vec<u8>> {
@@ -454,17 +473,17 @@ impl Package {
     }
 
     // Expecting byte array of zip file
-    pub fn from_zip_buffer(bytes: impl AsRef<[u8]>) -> Result<Package, io::Error> {
+    pub fn from_zip_buffer(bytes: impl AsRef<[u8]>) -> Result<Package, Error> {
         let cursor = io::Cursor::new(bytes);
         Self::get_package_from_zip(cursor)
     }
 
-    pub fn open_zip_file(path: impl AsRef<Path>) -> Result<Package, io::Error> {
+    pub fn open_zip_file(path: impl AsRef<Path>) -> Result<Package, Error> {
         let package_file = File::open(path)?;
         Self::get_package_from_zip(package_file)
     }
 
-    fn get_package_from_zip<T: Read + io::Seek>(source: T) -> Result<Package, io::Error> {
+    fn get_package_from_zip<T: Read + io::Seek>(source: T) -> Result<Package, Error> {
         let mut zip_archive = ZipArchive::new(source)?;
         let mut resources = HashMap::new();
 
@@ -500,7 +519,6 @@ impl Package {
         content_file.read_to_string(&mut contents)?;
 
         let package = from_str(&contents).map_err(|e| Error::new(ErrorKind::InvalidData, e));
-
         package.map(|p| Package { resource: resources, ..p })
     }
 
@@ -525,9 +543,9 @@ impl Package {
 
         // Define file options (e.g., compression method)
         let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
-        let xml = quick_xml::se::to_string(&self)
-            .map_err(|e| io::Error::new(ErrorKind::InvalidData, e))?;
+        let xml = to_string(&self).map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
         zip.start_file("content.xml", options)?;
+        zip.write_all(Self::XML_VERSION_ENCODING.as_ref())?;
         zip.write_all(&xml.into_bytes())?;
 
         zip.start_file("[Content_Types].xml", options)?;
