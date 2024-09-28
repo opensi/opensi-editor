@@ -49,9 +49,10 @@ async fn import_package() -> LoadingPackageResult {
 }
 
 /// Show a dialog for saving existing [`Package`] asynchronously.
-pub fn export_dialog(_package: &Package) {
-    // TODO: actuall data from package
-    let bytes = [0];
+pub fn export_dialog(package: &Package) {
+    let Ok(bytes) = package.clone().to_bytes() else {
+        return;
+    };
 
     let _handle = tokio::spawn(async move {
         let file = rfd::AsyncFileDialog::new()
