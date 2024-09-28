@@ -58,6 +58,22 @@ impl Package {
         self.rounds.rounds.last_mut().unwrap()
     }
 
+    /// Insert a new [`Round`] at position and return a
+    /// reference to it.
+    pub fn insert_round(&mut self, index: usize, round: Round) -> Option<&mut Round> {
+        if index > self.rounds.rounds.len() {
+            return None;
+        }
+        self.rounds.rounds.insert(index, round);
+        Some(&mut self.rounds.rounds[index])
+    }
+
+    /// Clone a [`Round`], push it afterwards and return
+    /// a reference to the new round.
+    pub fn duplicate_round(&mut self, index: usize) -> Option<&mut Round> {
+        self.get_round(index).cloned().and_then(|round| self.insert_round(index + 1, round))
+    }
+
     /// Create a new default [`Round`], push it and return
     /// a reference to it.
     pub fn allocate_round(&mut self) -> &mut Round {
@@ -90,6 +106,30 @@ impl Package {
         let round = self.get_round_mut(round_index)?;
         round.themes.themes.push(theme);
         round.themes.themes.last_mut().unwrap().into()
+    }
+
+    /// Insert a new [`Theme`] at position and return a
+    /// reference to it.
+    pub fn insert_theme(
+        &mut self,
+        round_index: usize,
+        index: usize,
+        theme: Theme,
+    ) -> Option<&mut Theme> {
+        let round = self.get_round_mut(round_index)?;
+        if index > round.themes.themes.len() {
+            return None;
+        }
+        round.themes.themes.insert(index, theme);
+        Some(&mut round.themes.themes[index])
+    }
+
+    /// Clone a [`Theme`], push it afterwards and return
+    /// a reference to the new theme.
+    pub fn duplicate_theme(&mut self, round_index: usize, index: usize) -> Option<&mut Theme> {
+        self.get_theme(round_index, index)
+            .cloned()
+            .and_then(|theme| self.insert_theme(round_index, index + 1, theme))
     }
 
     /// Create a new default [`Theme`], push it to the [`Round`]
@@ -146,6 +186,36 @@ impl Package {
         let theme = self.get_theme_mut(round_index, theme_index)?;
         theme.questions.questions.push(question);
         theme.questions.questions.last_mut().unwrap().into()
+    }
+
+    /// Insert a new [`Question`] at position and return a
+    /// reference to it.
+    pub fn insert_question(
+        &mut self,
+        round_index: usize,
+        theme_index: usize,
+        index: usize,
+        question: Question,
+    ) -> Option<&mut Question> {
+        let theme = self.get_theme_mut(round_index, theme_index)?;
+        if index > theme.questions.questions.len() {
+            return None;
+        }
+        theme.questions.questions.insert(index, question);
+        Some(&mut theme.questions.questions[index])
+    }
+
+    /// Clone a [`question`], push it afterwards and return
+    /// a reference to the new question.
+    pub fn duplicate_question(
+        &mut self,
+        round_index: usize,
+        theme_index: usize,
+        index: usize,
+    ) -> Option<&mut Question> {
+        self.get_question(round_index, theme_index, index).cloned().and_then(|question| {
+            self.insert_question(round_index, theme_index, index + 1, question)
+        })
     }
 
     /// Create a new default [`Question`], push it to the [`Theme`] in [`Round`]
