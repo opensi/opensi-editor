@@ -37,7 +37,8 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
                 ui.add(egui::DragValue::new(&mut package.difficulty).range(0..=10));
             });
             package_edit_row("Ограничения", &mut body, |ui| {
-                ui.text_edit_singleline(&mut package.restriciton);
+                let mut s = package.restriciton.clone().unwrap();
+                ui.text_edit_singleline(&mut s);
             });
             package_edit_row("Дата создания", &mut body, |ui| {
                 ui.text_edit_singleline(&mut package.date);
@@ -46,7 +47,8 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
                 ui.text_edit_singleline(&mut package.publisher);
             });
             package_edit_row("Язык", &mut body, |ui| {
-                ui.text_edit_singleline(&mut package.language);
+                let mut s = package.language.clone().unwrap();
+                ui.text_edit_singleline(&mut s);
             });
         });
 
