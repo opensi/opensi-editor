@@ -9,7 +9,7 @@ use crate::utils::node_name;
 /// names/prices of existing ones and select them.
 pub fn package_tree(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
     ui.vertical_centered_justified(|ui| {
-        let text = egui::RichText::new(&package.name).strong().heading();
+        let text = egui::RichText::new(&package.name).heading();
         if ui.add(egui::Label::new(text).sense(egui::Sense::click()).selectable(false)).clicked() {
             *selected = None;
         }
@@ -17,7 +17,9 @@ pub fn package_tree(package: &mut Package, selected: &mut Option<PackageNode>, u
 
     ui.separator();
 
-    egui::ScrollArea::vertical().show(ui, |ui| tree_node_ui(package, None, selected, ui));
+    egui::ScrollArea::vertical().show(ui, |ui| {
+        tree_node_ui(package, None, selected, ui);
+    });
 }
 
 /// Recursive [`PackageNode`] ui.
@@ -27,15 +29,18 @@ fn tree_node_ui<'a>(
     selected: &mut Option<PackageNode>,
     ui: &mut egui::Ui,
 ) {
-    fn plus_button(ui: &mut egui::Ui) -> bool {
-        ui.vertical_centered_justified(|ui| ui.button("➕").clicked()).inner
-    }
-
-    fn node_button(package: &mut Package, node: PackageNode, ui: &mut egui::Ui) -> bool {
+    fn node_button(
+        package: &mut Package,
+        node: PackageNode,
+        is_selected: bool,
+        ui: &mut egui::Ui,
+    ) -> bool {
         #[derive(Default)]
         struct Result {
             new_name: Option<String>,
             is_selected: bool,
+            is_duplicated: bool,
+            is_populated: bool,
             is_deleted: bool,
         }
         let id = match node {
@@ -74,9 +79,24 @@ fn tree_node_ui<'a>(
         } else {
             // regular button
             let node_name = node_name(node, package);
-            let response = ui.button(node_name.as_ref());
+            let button = egui::Button::new(node_name.as_ref())
+                .selected(is_selected)
+                .fill(egui::Color32::TRANSPARENT);
+            let response = ui.add(button);
 
             response.context_menu(|ui| {
+                if let Some(add_text) = match node {
+                    PackageNode::Round { .. } => Some("Добавить тему"),
+                    PackageNode::Theme { .. } => Some("Добавить вопрос"),
+                    PackageNode::Question { .. } => None,
+                } {
+                    if ui.button(format!("➕ {add_text}")).clicked() {
+                        result.is_populated = true;
+                        ui.close_menu();
+                    }
+                    ui.separator();
+                }
+
                 let change_text = if is_question {
                     "Изменить цену"
                 } else {
@@ -93,6 +113,11 @@ fn tree_node_ui<'a>(
                     response.request_focus();
                     ui.close_menu();
                 }
+                if ui.button("🗐 Дублировать").clicked() {
+                    result.is_duplicated = true;
+                    ui.close_menu();
+                }
+                ui.separator();
                 if ui.button("❌ Удалить").clicked() {
                     result.is_deleted = true;
                     ui.close_menu();
@@ -103,6 +128,38 @@ fn tree_node_ui<'a>(
             }
         }
 
+        if result.is_populated {
+            match node {
+                PackageNode::Round { index } => {
+                    package.allocate_theme(index);
+                },
+                PackageNode::Theme { round_index, index } => {
+                    package.allocate_question(round_index, index);
+                },
+                PackageNode::Question { .. } => {},
+            }
+        }
+        if result.is_duplicated {
+            match node {
+                PackageNode::Round { index } => {
+                    if let Some(round) = package.get_round(index).cloned() {
+                        package.push_round(round);
+                    }
+                },
+                PackageNode::Theme { round_index, index } => {
+                    if let Some(theme) = package.get_theme(round_index, index).cloned() {
+                        package.push_theme(round_index, theme);
+                    }
+                },
+                PackageNode::Question { round_index, theme_index, index } => {
+                    if let Some(question) =
+                        package.get_question(round_index, theme_index, index).cloned()
+                    {
+                        package.push_question(round_index, theme_index, question);
+                    }
+                },
+            }
+        }
         if result.is_deleted {
             match node {
                 PackageNode::Round { index } => {
@@ -153,18 +210,22 @@ fn tree_node_ui<'a>(
                 }
             }
         });
-        if plus_button(ui) {
-            package.allocate_round();
-        }
+        ui.allocate_response(ui.available_size(), egui::Sense::click()).context_menu(|ui| {
+            if ui.button(format!("➕ Добавить раунд")).clicked() {
+                package.allocate_round();
+                ui.close_menu();
+            }
+        });
         return;
     };
 
     let id = egui::Id::new(node.index()).with(ui.id());
+    let is_selected = selected.is_some_and(|selected| selected == node);
     match node {
         PackageNode::Round { index } => {
             CollapsingState::load_with_default_open(ui.ctx(), id, true)
                 .show_header(ui, |ui| {
-                    if node_button(package, node, ui) {
+                    if node_button(package, node, is_selected, ui) {
                         *selected = Some(node);
                     };
                 })
@@ -181,15 +242,12 @@ fn tree_node_ui<'a>(
                             ui,
                         );
                     }
-                    if plus_button(ui) {
-                        package.allocate_theme(index);
-                    }
                 });
         },
         PackageNode::Theme { round_index, index } => {
             CollapsingState::load_with_default_open(ui.ctx(), id, false)
                 .show_header(ui, |ui| {
-                    if node_button(package, node, ui) {
+                    if node_button(package, node, is_selected, ui) {
                         *selected = Some(node);
                     };
                 })
@@ -210,13 +268,15 @@ fn tree_node_ui<'a>(
                             ui,
                         );
                     }
-                    if plus_button(ui) {
-                        package.allocate_question(round_index, index);
-                    }
                 });
         },
         PackageNode::Question { round_index, theme_index, index } => {
-            if node_button(package, PackageNode::Question { round_index, theme_index, index }, ui) {
+            if node_button(
+                package,
+                PackageNode::Question { round_index, theme_index, index },
+                is_selected,
+                ui,
+            ) {
                 *selected = Some(node);
             }
         },

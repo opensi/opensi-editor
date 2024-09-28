@@ -92,7 +92,7 @@ impl eframe::App for EditorApp {
         });
 
         if let PackageState::Active { package, selected } = &mut self.package_state {
-            egui::SidePanel::left("question-tree").min_width(200.0).show(ctx, |ui| {
+            egui::SidePanel::left("question-tree").min_width(300.0).show(ctx, |ui| {
                 package_tree::package_tree(package, selected, ui);
             });
         }
