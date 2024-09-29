@@ -36,6 +36,8 @@ pub struct Package {
     pub logo: Option<String>,
     #[serde(rename = "@restriction", skip_serializing_if = "Option::is_none")]
     pub restriction: Option<String>,
+    #[serde(rename = "@xmlns")]
+    pub namespace: String,
 
     // elements
     pub info: Info,
@@ -367,7 +369,12 @@ pub struct Question {
     pub scenario: Vec<Atom>,
     #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_answer_list")]
     pub right: Vec<Answer>,
-    #[serde(deserialize_with = "unwrap_option_list", default, serialize_with = "wrap_option_answer_list", skip_serializing_if = "Option::is_none",)]
+    #[serde(
+        deserialize_with = "unwrap_option_list",
+        default,
+        serialize_with = "wrap_option_answer_list",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub wrong: Option<Vec<Answer>>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
