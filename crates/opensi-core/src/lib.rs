@@ -11,6 +11,9 @@ use std::{fs::File, io, io::Read};
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
+pub mod serde_utils;
+use serde_utils::*;
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename = "package")]
 pub struct Package {
@@ -36,7 +39,8 @@ pub struct Package {
 
     // elements
     pub info: Info,
-    pub rounds: Rounds,
+    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_round_list")]
+    pub rounds: Vec<Round>,
     pub tags: Option<Vec<String>>,
 
     // resources
@@ -47,37 +51,37 @@ pub struct Package {
 impl Package {
     /// Get [`Round`] by index.
     pub fn get_round(&self, index: usize) -> Option<&Round> {
-        self.rounds.rounds.get(index)
+        self.rounds.get(index)
     }
 
     /// Get mutable [`Round`] by index.
     pub fn get_round_mut(&mut self, index: usize) -> Option<&mut Round> {
-        self.rounds.rounds.get_mut(index)
+        self.rounds.get_mut(index)
     }
 
     /// Remove [`Round`] by index and return it.
     pub fn remove_round(&mut self, index: usize) -> Option<Round> {
-        if index >= self.rounds.rounds.len() {
+        if index >= self.rounds.len() {
             return None;
         }
-        self.rounds.rounds.remove(index).into()
+        self.rounds.remove(index).into()
     }
 
     /// Push a new [`Round`] to the end of the package and
     /// return a reference to it.
     pub fn push_round(&mut self, round: Round) -> &mut Round {
-        self.rounds.rounds.push(round);
-        self.rounds.rounds.last_mut().unwrap()
+        self.rounds.push(round);
+        self.rounds.last_mut().unwrap()
     }
 
     /// Insert a new [`Round`] at position and return a
     /// reference to it.
     pub fn insert_round(&mut self, index: usize, round: Round) -> Option<&mut Round> {
-        if index > self.rounds.rounds.len() {
+        if index > self.rounds.len() {
             return None;
         }
-        self.rounds.rounds.insert(index, round);
-        Some(&mut self.rounds.rounds[index])
+        self.rounds.insert(index, round);
+        Some(&mut self.rounds[index])
     }
 
     /// Clone a [`Round`], push it afterwards and return
@@ -95,29 +99,29 @@ impl Package {
 
     /// Get [`Theme`] in [`Round`] by indices.
     pub fn get_theme(&self, round_index: usize, index: usize) -> Option<&Theme> {
-        self.get_round(round_index).and_then(|round| round.themes.themes.get(index))
+        self.get_round(round_index).and_then(|round| round.themes.get(index))
     }
 
     /// Get mutable [`Theme`] in [`Round`] by indices.
     pub fn get_theme_mut(&mut self, round_index: usize, index: usize) -> Option<&mut Theme> {
-        self.get_round_mut(round_index).and_then(|round| round.themes.themes.get_mut(index))
+        self.get_round_mut(round_index).and_then(|round| round.themes.get_mut(index))
     }
 
     /// Remove [`Theme`] in [`Round`] by indices.
     pub fn remove_theme(&mut self, round_index: usize, index: usize) -> Option<Theme> {
         let round = self.get_round_mut(round_index)?;
-        if index >= round.themes.themes.len() {
+        if index >= round.themes.len() {
             return None;
         }
-        round.themes.themes.remove(index).into()
+        round.themes.remove(index).into()
     }
 
     /// Push a new [`Theme`] to the end of the [`Round`] and
     /// return a reference to it.
     pub fn push_theme(&mut self, round_index: usize, theme: Theme) -> Option<&mut Theme> {
         let round = self.get_round_mut(round_index)?;
-        round.themes.themes.push(theme);
-        round.themes.themes.last_mut().unwrap().into()
+        round.themes.push(theme);
+        round.themes.last_mut().unwrap().into()
     }
 
     /// Insert a new [`Theme`] at position and return a
@@ -129,11 +133,11 @@ impl Package {
         theme: Theme,
     ) -> Option<&mut Theme> {
         let round = self.get_round_mut(round_index)?;
-        if index > round.themes.themes.len() {
+        if index > round.themes.len() {
             return None;
         }
-        round.themes.themes.insert(index, theme);
-        Some(&mut round.themes.themes[index])
+        round.themes.insert(index, theme);
+        Some(&mut round.themes[index])
     }
 
     /// Clone a [`Theme`], push it afterwards and return
@@ -158,8 +162,7 @@ impl Package {
         theme_index: usize,
         index: usize,
     ) -> Option<&Question> {
-        self.get_theme(round_index, theme_index)
-            .and_then(|theme| theme.questions.questions.get(index))
+        self.get_theme(round_index, theme_index).and_then(|theme| theme.questions.get(index))
     }
 
     /// Get mutable [`Question`] in [`Theme`] in [`Round`] by indices.
@@ -170,7 +173,7 @@ impl Package {
         index: usize,
     ) -> Option<&mut Question> {
         self.get_theme_mut(round_index, theme_index)
-            .and_then(|theme| theme.questions.questions.get_mut(index))
+            .and_then(|theme| theme.questions.get_mut(index))
     }
 
     /// Remove [`Question`] in [`Theme`] in [`Round`] by indices.
@@ -181,10 +184,10 @@ impl Package {
         index: usize,
     ) -> Option<Question> {
         let theme = self.get_theme_mut(round_index, theme_index)?;
-        if index >= theme.questions.questions.len() {
+        if index >= theme.questions.len() {
             return None;
         }
-        theme.questions.questions.remove(index).into()
+        theme.questions.remove(index).into()
     }
 
     /// Push a new [`Question`] to the end of the [`Theme`] in [`Round`]
@@ -196,8 +199,8 @@ impl Package {
         question: Question,
     ) -> Option<&mut Question> {
         let theme = self.get_theme_mut(round_index, theme_index)?;
-        theme.questions.questions.push(question);
-        theme.questions.questions.last_mut().unwrap().into()
+        theme.questions.push(question);
+        theme.questions.last_mut().unwrap().into()
     }
 
     /// Insert a new [`Question`] at position and return a
@@ -210,11 +213,11 @@ impl Package {
         question: Question,
     ) -> Option<&mut Question> {
         let theme = self.get_theme_mut(round_index, theme_index)?;
-        if index > theme.questions.questions.len() {
+        if index > theme.questions.len() {
             return None;
         }
-        theme.questions.questions.insert(index, question);
-        Some(&mut theme.questions.questions[index])
+        theme.questions.insert(index, question);
+        Some(&mut theme.questions[index])
     }
 
     /// Clone a [`question`], push it afterwards and return
@@ -255,7 +258,7 @@ impl Package {
         let Some(theme) = self.get_theme(round_index, theme_index) else {
             return 100;
         };
-        let questions = &theme.questions.questions;
+        let questions = &theme.questions;
         let mut iter = questions.iter().rev();
         match (iter.next(), iter.next()) {
             (Some(last), Some(prev)) => {
@@ -330,12 +333,7 @@ pub struct Round {
     pub variant: Option<String>,
     #[serde(rename = "@info")]
     pub info: Option<Info>,
-    pub themes: Themes,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Themes {
-    #[serde(rename = "theme")]
+    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_theme_list")]
     pub themes: Vec<Theme>,
 }
 
@@ -343,7 +341,8 @@ pub struct Themes {
 pub struct Theme {
     #[serde(rename = "@name")]
     pub name: String,
-    pub questions: Questions,
+    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_question_list")]
+    pub questions: Vec<Question>,
     #[serde(rename = "@info")]
     pub info: Option<Info>,
 }
@@ -358,21 +357,30 @@ pub struct Questions {
 pub struct Question {
     #[serde(rename = "@price")]
     pub price: usize,
-    pub scenario: Scenario,
-    pub right: Right,
-    pub wrong: Option<Wrong>,
+    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_atom_list")]
+    pub scenario: Vec<Atom>,
+    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_answer_list")]
+    pub right: Vec<Answer>,
+    #[serde(deserialize_with = "unwrap_option_list", serialize_with = "wrap_option_answer_list", default)]
+    pub wrong: Option<Vec<Answer>>,
     #[serde(rename = "type")]
-    pub variant: Option<Variant>,
+    pub question_type: Option<QuestionType>,
     #[serde(rename = "@info")]
     pub info: Option<Info>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Variant {
+pub struct QuestionType {
     #[serde(rename = "@name")]
     pub name: String,
     #[serde(rename = "param")]
     pub params: Option<Vec<Param>>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+pub struct Answer {
+    #[serde(rename = "$value")]
+    pub body: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -381,30 +389,6 @@ pub struct Param {
     pub name: String,
     #[serde(rename = "$value")]
     pub body: String,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Scenario {
-    #[serde(rename = "atom")]
-    pub atoms: Vec<Atom>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Right {
-    #[serde(rename = "answer")]
-    pub answers: Vec<Answer>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Wrong {
-    #[serde(rename = "answer")]
-    pub answers: Vec<Answer>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Answer {
-    #[serde(rename = "$value")]
-    pub body: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]

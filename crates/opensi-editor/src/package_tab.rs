@@ -93,10 +93,10 @@ fn package_rounds(package: &mut Package, selected: &mut Option<PackageNode>, ui:
         frame.content_ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
             unselectable_heading(&round.name, ui);
             ui.separator();
-            let theme_names = if round.themes.themes.is_empty() {
+            let theme_names = if round.themes.is_empty() {
                 "Пусто".to_string()
             } else {
-                round.themes.themes.iter().map(|theme| &theme.name).join(", ")
+                round.themes.iter().map(|theme| &theme.name).join(", ")
             };
             unselectable_label(egui::RichText::new(theme_names).italics(), ui);
         });
@@ -126,7 +126,7 @@ fn package_rounds(package: &mut Package, selected: &mut Option<PackageNode>, ui:
                     .with_cross_align(egui::Align::Center),
             )
             .body(|mut body| {
-                for index in 0..package.rounds.rounds.len() {
+                for index in 0..package.rounds.len() {
                     body.row((button_size + 4.0) * 3.0, |mut row| {
                         row.col(|ui| {
                             let Some(round) = package.get_round_mut(index) else {

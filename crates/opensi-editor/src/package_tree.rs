@@ -194,10 +194,10 @@ fn tree_node_ui<'a>(
 
     let Some(node) = node else {
         ui.push_id(format!("package-tree"), |ui| {
-            if package.rounds.rounds.is_empty() {
+            if package.rounds.is_empty() {
                 ui.weak("Нет раундов");
             } else {
-                for index in 0..package.rounds.rounds.len() {
+                for index in 0..package.rounds.len() {
                     tree_node_ui(package, Some(PackageNode::Round { index }), selected, ui);
                 }
             }
@@ -224,7 +224,7 @@ fn tree_node_ui<'a>(
                 .body(|ui| {
                     for theme_index in 0..package
                         .get_round(index)
-                        .map(|round| round.themes.themes.len())
+                        .map(|round| round.themes.len())
                         .unwrap_or_default()
                     {
                         tree_node_ui(
@@ -246,7 +246,7 @@ fn tree_node_ui<'a>(
                 .body(|ui| {
                     for question_index in 0..package
                         .get_theme(round_index, index)
-                        .map(|theme| theme.questions.questions.len())
+                        .map(|theme| theme.questions.len())
                         .unwrap_or_default()
                     {
                         tree_node_ui(
