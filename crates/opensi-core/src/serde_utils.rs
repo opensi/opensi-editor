@@ -20,9 +20,8 @@ where
     D: Deserializer<'de>,
     T: Deserialize<'de> + Default,
 {
-    #[derive(Serialize, Deserialize)]
+    #[derive(Deserialize)]
     struct List<T> {
-        // #[serde(default)]
         #[serde(rename = "$value")]
         element: Option<Vec<T>>,
     }

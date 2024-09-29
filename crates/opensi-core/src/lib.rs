@@ -30,17 +30,18 @@ pub struct Package {
     pub publisher: String,
     #[serde(rename = "@difficulty")]
     pub difficulty: u8,
-    #[serde(rename = "@language")]
+    #[serde(rename = "@language", skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
-    #[serde(rename = "@logo")]
+    #[serde(rename = "@logo", skip_serializing_if = "Option::is_none")]
     pub logo: Option<String>,
-    #[serde(rename = "@restriction")]
+    #[serde(rename = "@restriction", skip_serializing_if = "Option::is_none")]
     pub restriction: Option<String>,
 
     // elements
     pub info: Info,
     #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_round_list")]
     pub rounds: Vec<Round>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
 
     // resources
@@ -307,9 +308,12 @@ impl PackageNode {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Info {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub comments: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
     pub authors: Authors,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sources: Option<Vec<String>>,
 }
 
@@ -329,9 +333,9 @@ pub struct Rounds {
 pub struct Round {
     #[serde(rename = "@name")]
     pub name: String,
-    #[serde(rename = "@type")]
+    #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
     pub variant: Option<String>,
-    #[serde(rename = "@info")]
+    #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
     #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_theme_list")]
     pub themes: Vec<Theme>,
@@ -343,7 +347,7 @@ pub struct Theme {
     pub name: String,
     #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_question_list")]
     pub questions: Vec<Question>,
-    #[serde(rename = "@info")]
+    #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
 }
 
@@ -357,15 +361,15 @@ pub struct Questions {
 pub struct Question {
     #[serde(rename = "@price")]
     pub price: usize,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub question_type: Option<QuestionType>,
     #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_atom_list")]
     pub scenario: Vec<Atom>,
     #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_answer_list")]
     pub right: Vec<Answer>,
-    #[serde(deserialize_with = "unwrap_option_list", serialize_with = "wrap_option_answer_list", default)]
+    #[serde(deserialize_with = "unwrap_option_list", default, serialize_with = "wrap_option_answer_list", skip_serializing_if = "Option::is_none",)]
     pub wrong: Option<Vec<Answer>>,
-    #[serde(rename = "type")]
-    pub question_type: Option<QuestionType>,
-    #[serde(rename = "@info")]
+    #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
 }
 
@@ -373,13 +377,13 @@ pub struct Question {
 pub struct QuestionType {
     #[serde(rename = "@name")]
     pub name: String,
-    #[serde(rename = "param")]
+    #[serde(rename = "param", skip_serializing_if = "Option::is_none")]
     pub params: Option<Vec<Param>>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Answer {
-    #[serde(rename = "$value")]
+    #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
     pub body: Option<String>,
 }
 
@@ -393,11 +397,11 @@ pub struct Param {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Atom {
-    #[serde(rename = "@time")]
+    #[serde(rename = "@time", skip_serializing_if = "Option::is_none")]
     pub time: Option<f64>,
-    #[serde(rename = "@type")]
+    #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
     pub variant: Option<String>,
-    #[serde(rename = "$value")]
+    #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
     pub body: Option<String>,
 }
 
