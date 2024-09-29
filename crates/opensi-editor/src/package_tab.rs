@@ -37,7 +37,7 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
                 ui.add(egui::DragValue::new(&mut package.difficulty).range(0..=10));
             });
             package_edit_row("Ограничения", &mut body, |ui| {
-                let mut s = package.restriciton.clone().unwrap();
+                let mut s = package.restriction.clone().unwrap();
                 ui.text_edit_singleline(&mut s);
             });
             package_edit_row("Дата создания", &mut body, |ui| {

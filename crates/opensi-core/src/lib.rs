@@ -31,8 +31,8 @@ pub struct Package {
     pub language: Option<String>,
     #[serde(rename = "@logo")]
     pub logo: Option<String>,
-    #[serde(rename = "@restriciton")]
-    pub restriciton: Option<String>,
+    #[serde(rename = "@restriction")]
+    pub restriction: Option<String>,
 
     // elements
     pub info: Info,
@@ -303,7 +303,6 @@ impl PackageNode {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-
 pub struct Info {
     pub comments: Option<String>,
     pub extension: Option<String>,
