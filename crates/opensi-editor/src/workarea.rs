@@ -21,12 +21,7 @@ pub fn workarea(package: &mut Package, selected: &mut Option<PackageNode>, ui: &
 fn selected_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
     match selected {
         &mut Some(PackageNode::Round { index }) => {
-            if let Some(round) = package.get_round_mut(index) {
-                round_tab::round_tab(round, ui);
-            } else {
-                let error = format!("Невозможно найти раунд с индексом {index}");
-                error_label(error, ui);
-            }
+            round_tab::round_tab(package, index, selected, ui);
         },
         &mut Some(PackageNode::Theme { round_index, index }) => {
             if let Some(theme) = package.get_theme_mut(round_index, index) {

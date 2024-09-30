@@ -59,3 +59,52 @@ pub fn unselectable_heading(text: impl Into<String>, ui: &mut egui::Ui) -> egui:
 pub fn unselectable_label(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) -> egui::Response {
     ui.add(egui::Label::new(text).selectable(false))
 }
+
+pub fn string_list(id: impl Into<egui::Id>, list: &mut Vec<String>, ui: &mut egui::Ui) {
+    ui.push_id(id.into(), |ui| {
+        ui.vertical(|ui| {
+            if list.is_empty() {
+                unselectable_label("Пусто...", ui);
+            } else {
+                ui.horizontal(|ui| {
+                    let mut deleted_index = None;
+
+                    for (index, item) in list.iter().enumerate() {
+                        egui::Frame::none()
+                            .rounding(4.0)
+                            .inner_margin(egui::Margin { left: 4.0, ..Default::default() })
+                            .fill(ui.style().visuals.widgets.inactive.bg_fill)
+                            .show(ui, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(item);
+                                    if ui.small_button("❌").clicked() {
+                                        deleted_index = Some(index);
+                                    }
+                                });
+                            });
+                    }
+
+                    if let Some(index) = deleted_index {
+                        list.remove(index);
+                    }
+                });
+            }
+
+            ui.horizontal(|ui| {
+                let new_item_id = ui.id().with("new");
+                let mut text = ui.memory_mut(|memory| {
+                    memory.data.get_temp_mut_or_default::<String>(new_item_id).clone()
+                });
+
+                if ui.button("➕").clicked() && !text.is_empty() {
+                    list.push(text.clone());
+                    ui.memory_mut(|memory| memory.data.remove_temp::<String>(new_item_id));
+                }
+
+                if ui.text_edit_singleline(&mut text).changed() {
+                    ui.memory_mut(|memory| memory.data.insert_temp(new_item_id, text));
+                }
+            });
+        });
+    });
+}

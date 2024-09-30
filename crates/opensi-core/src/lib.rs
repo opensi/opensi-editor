@@ -242,34 +242,9 @@ impl Package {
         round_index: usize,
         theme_index: usize,
     ) -> Option<&mut Question> {
-        let question = Question {
-            price: self.guess_next_question_price(round_index, theme_index),
-            ..Default::default()
-        };
+        let price = self.get_theme(round_index, theme_index)?.guess_next_question_price();
+        let question = Question { price, ..Default::default() };
         self.push_question(round_index, theme_index, question)
-    }
-}
-
-impl Package {
-    /// Try to guess a price for the next question:
-    /// - Either a difference between the last two question prices;
-    /// - Or the last question's price plus 100;
-    ///
-    /// In case of no questions, the default price is 100.
-    pub fn guess_next_question_price(&self, round_index: usize, theme_index: usize) -> usize {
-        let Some(theme) = self.get_theme(round_index, theme_index) else {
-            return 100;
-        };
-        let questions = &theme.questions;
-        let mut iter = questions.iter().rev();
-        match (iter.next(), iter.next()) {
-            (Some(last), Some(prev)) => {
-                let diff = last.price.abs_diff(prev.price);
-                last.price + diff
-            },
-            (Some(last), None) => last.price + 100,
-            _ => 100,
-        }
     }
 }
 
@@ -310,10 +285,10 @@ impl PackageNode {
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Info {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub comments: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub extension: Option<String>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub comments: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub extension: String,
     #[serde(with = "serde_impl::authors", skip_serializing_if = "Vec::is_empty")]
     pub authors: Vec<String>,
     #[serde(with = "serde_impl::sources", skip_serializing_if = "Vec::is_empty")]
@@ -347,6 +322,25 @@ pub struct Theme {
     pub questions: Vec<Question>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
+}
+
+impl Theme {
+    /// Try to guess a price for the next question:
+    /// - Either a difference between the last two question prices;
+    /// - Or the last question's price plus 100;
+    ///
+    /// In case of no questions, the default price is 100.
+    pub fn guess_next_question_price(&self) -> usize {
+        let mut iter = self.questions.iter().rev();
+        match (iter.next(), iter.next()) {
+            (Some(last), Some(prev)) => {
+                let diff = last.price.abs_diff(prev.price);
+                last.price + diff
+            },
+            (Some(last), None) => last.price + 100,
+            _ => 100,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
