@@ -11,8 +11,7 @@ use std::{fs::File, io, io::Read};
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
-pub mod serde_utils;
-use serde_utils::*;
+mod serde_impl;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(default, rename = "package")]
@@ -41,7 +40,7 @@ pub struct Package {
 
     // elements
     pub info: Info,
-    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_round_list")]
+    #[serde(with = "serde_impl::rounds")]
     pub rounds: Vec<Round>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<String>,
@@ -309,14 +308,16 @@ impl PackageNode {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Info {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comments: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
-    pub authors: Authors,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sources: Option<Vec<String>>,
+    #[serde(with = "serde_impl::authors", skip_serializing_if = "Vec::is_empty")]
+    pub authors: Vec<String>,
+    #[serde(with = "serde_impl::sources", skip_serializing_if = "Vec::is_empty")]
+    pub sources: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -326,12 +327,7 @@ pub struct Authors {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Rounds {
-    #[serde(rename = "round")]
-    pub rounds: Vec<Round>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Round {
     #[serde(rename = "@name")]
     pub name: String,
@@ -339,7 +335,7 @@ pub struct Round {
     pub variant: Option<String>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
-    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_theme_list")]
+    #[serde(with = "serde_impl::themes")]
     pub themes: Vec<Theme>,
 }
 
@@ -347,7 +343,7 @@ pub struct Round {
 pub struct Theme {
     #[serde(rename = "@name")]
     pub name: String,
-    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_question_list")]
+    #[serde(with = "serde_impl::questions")]
     pub questions: Vec<Question>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
@@ -360,22 +356,18 @@ pub struct Questions {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Question {
     #[serde(rename = "@price")]
     pub price: usize,
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub question_type: Option<QuestionType>,
-    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_atom_list")]
+    #[serde(with = "serde_impl::atoms")]
     pub scenario: Vec<Atom>,
-    #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_answer_list")]
+    #[serde(with = "serde_impl::answers")]
     pub right: Vec<Answer>,
-    #[serde(
-        deserialize_with = "unwrap_option_list",
-        default,
-        serialize_with = "wrap_option_answer_list",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub wrong: Option<Vec<Answer>>,
+    #[serde(with = "serde_impl::answers", skip_serializing_if = "Vec::is_empty")]
+    pub wrong: Vec<Answer>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
 }
