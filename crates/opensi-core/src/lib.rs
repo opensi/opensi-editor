@@ -15,7 +15,7 @@ pub mod serde_utils;
 use serde_utils::*;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(rename = "package")]
+#[serde(default, rename = "package")]
 pub struct Package {
     // attributes
     #[serde(rename = "@name")]
@@ -30,12 +30,12 @@ pub struct Package {
     pub publisher: String,
     #[serde(rename = "@difficulty")]
     pub difficulty: u8,
-    #[serde(rename = "@language", skip_serializing_if = "Option::is_none")]
-    pub language: Option<String>,
+    #[serde(rename = "@language", skip_serializing_if = "String::is_empty")]
+    pub language: String,
     #[serde(rename = "@logo", skip_serializing_if = "Option::is_none")]
     pub logo: Option<String>,
-    #[serde(rename = "@restriction", skip_serializing_if = "Option::is_none")]
-    pub restriction: Option<String>,
+    #[serde(rename = "@restriction", skip_serializing_if = "String::is_empty")]
+    pub restriction: String,
     #[serde(rename = "@xmlns")]
     pub namespace: String,
 
@@ -43,8 +43,8 @@ pub struct Package {
     pub info: Info,
     #[serde(deserialize_with = "unwrap_list", serialize_with = "wrap_round_list")]
     pub rounds: Vec<Round>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
 
     // resources
     #[serde(skip)]

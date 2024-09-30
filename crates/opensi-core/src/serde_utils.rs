@@ -1,5 +1,5 @@
+use super::{Answer, Atom, Question, Round, Theme};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use crate::{Answer, Atom, Question, Round, Theme};
 
 // Generic function to deserialize List structures
 pub fn unwrap_list<'de, T, D>(deserializer: D) -> Result<Vec<T>, D::Error>
@@ -94,7 +94,10 @@ where
     list.serialize(serializer)
 }
 
-pub fn wrap_option_answer_list<S>(answers: &Option<Vec<Answer>>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn wrap_option_answer_list<S>(
+    answers: &Option<Vec<Answer>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
