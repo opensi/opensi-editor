@@ -516,7 +516,7 @@ impl Package {
         }
     }
 
-    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let buffer = Vec::new();
         let cursor = io::Cursor::new(buffer);
         let mut zip = ZipWriter::new(cursor);
@@ -531,7 +531,8 @@ impl Package {
         zip.start_file("[Content_Types].xml", options)?;
         zip.write_all(Self::CONTENT_TYPE_FILE_CONTENT.as_ref())?;
 
-        for (key, value) in self.resource.into_iter() {
+        let resources = &self.resource;
+        for (key, value) in resources.into_iter() {
             zip.start_file(key.extract_key(), options)?;
             zip.write_all(&value)?
         }
