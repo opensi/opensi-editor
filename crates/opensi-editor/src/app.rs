@@ -55,11 +55,47 @@ impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.package_state.update();
 
+        let new_pack_modal =
+            egui_modal::Modal::new(ctx, "new-pack-modal").with_close_on_outside_click(true);
+        new_pack_modal.show(|ui| {
+            new_pack_modal.title(ui, "Перезаписать текущий пак ?");
+            new_pack_modal.frame(ui, |ui| {
+                new_pack_modal
+                    .body(ui, "Создание нового пака перезапишет текущий пак. Вы уверены ?");
+            });
+            new_pack_modal.buttons(ui, |ui| {
+                if new_pack_modal.caution_button(ui, "Отмена").clicked() {
+                    new_pack_modal.close();
+                };
+                if new_pack_modal.suggested_button(ui, "Перезаписать").clicked() {
+                    self.package_state = PackageState::Active {
+                        package: opensi_core::Package::default(),
+                        selected: None,
+                    };
+                };
+            });
+        });
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 egui::widgets::global_theme_preference_switch(ui);
                 ui.add_space(16.0);
                 ui.menu_button("Файл", |ui| {
+                    if ui.button("➕ Новый пак").clicked() {
+                        match self.package_state {
+                            PackageState::Active { .. } => {
+                                new_pack_modal.open();
+                            },
+                            _ => {
+                                self.package_state = PackageState::Active {
+                                    package: opensi_core::Package::default(),
+                                    selected: None,
+                                };
+                            },
+                        }
+                        ui.close_menu();
+                    }
+                    ui.separator();
                     if ui.button("⮩ Импорт").clicked() {
                         let package_receiver = file_dialogs::import_dialog();
                         self.package_state = PackageState::Loading(package_receiver);
