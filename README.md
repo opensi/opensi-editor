@@ -17,5 +17,5 @@ OpenSI Editor совместим с пакетами формата `*.siq` из
 $ cargo run opensi-editor
 
 # Запуск веб-версии (потребуется установка trunk)
-$ trunk serve crates/opensi-editor/index.html
+$ trunk serve --config crates/opensi-editor/Cargo.toml
 ```
