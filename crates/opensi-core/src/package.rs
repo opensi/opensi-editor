@@ -254,7 +254,7 @@ impl Package {
         Some(&mut theme.questions[*idx])
     }
 
-    /// Clone a [`question`], push it afterwards and return
+    /// Clone a [`Question`], push it afterwards and return
     /// a reference to the new question.
     pub fn duplicate_question(&mut self, idx: impl Into<QuestionIdx>) -> Option<&mut Question> {
         let idx = idx.into();

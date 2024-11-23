@@ -2,7 +2,8 @@ use std::fmt::Display;
 
 use derive_more::{AsRef, Deref, From};
 
-/// [`Package`] tree node which operates on indices and is easy to copy.
+/// [`Package`](crate::package::Package) tree node which
+/// operates on indices and is easy to copy.
 #[derive(
     serde::Deserialize,
     serde::Serialize,
@@ -60,7 +61,7 @@ impl From<(usize, usize, usize)> for PackageNode {
     }
 }
 
-/// Typed [`Round`] index inside [`Package`].
+/// Typed [`Round`](crate::package::Round) index.
 #[derive(
     serde::Deserialize,
     serde::Serialize,
@@ -103,7 +104,7 @@ impl Display for RoundIdx {
     }
 }
 
-/// Typed [`Theme`] indices inside [`Package`].
+/// Typed [`Theme`](crate::package::Theme) indices.
 #[derive(
     serde::Deserialize,
     serde::Serialize,
@@ -154,7 +155,7 @@ impl Display for ThemeIdx {
     }
 }
 
-/// Typed [`Question`] indices inside [`Package`].
+/// Typed [`Question`](crate::package::Question) indices.
 #[derive(
     serde::Deserialize,
     serde::Serialize,
@@ -178,14 +179,13 @@ pub struct QuestionIdx {
 }
 
 impl QuestionIdx {
-    /// Get a parent [`ThemeIdx`].
+    /// Get a parent [`ThemeIdx`]
     pub fn parent(&self) -> ThemeIdx {
         ThemeIdx { round_index: self.round_index, index: self.theme_index }
     }
 
     /// Get next question.
     pub fn next(&self) -> Self {
-        // let a: crate::Round = default();
         Self { index: self.index + 1, ..*self }
     }
 }
