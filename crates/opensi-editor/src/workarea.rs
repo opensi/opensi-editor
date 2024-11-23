@@ -2,7 +2,7 @@ use crate::{
     package_tab, question_tab, round_tab, theme_tab,
     utils::{error_label, node_name},
 };
-use opensi_core::{Package, PackageNode};
+use opensi_core::prelude::*;
 
 /// UI for general area of [`Package`] editing.
 pub fn workarea(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
@@ -20,28 +20,22 @@ pub fn workarea(package: &mut Package, selected: &mut Option<PackageNode>, ui: &
 /// Tab ui based on what package node is selected.
 fn selected_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
     match selected {
-        &mut Some(PackageNode::Round { index }) => {
-            round_tab::round_tab(package, index, selected, ui);
+        &mut Some(PackageNode::Round(idx)) => {
+            round_tab::round_tab(package, idx, selected, ui);
         },
-        &mut Some(PackageNode::Theme { round_index, index }) => {
-            if let Some(theme) = package.get_theme_mut(round_index, index) {
+        &mut Some(PackageNode::Theme(idx)) => {
+            if let Some(theme) = package.get_theme_mut(idx) {
                 theme_tab::theme_tab(theme, ui);
             } else {
-                let error = format!(
-                    "Невозможно найти тему с индексом {index} (раунд с индексом {round_index})"
-                );
+                let error = format!("Невозможно найти тему с индексом {idx}");
                 error_label(error, ui);
             }
         },
-        &mut Some(PackageNode::Question { round_index, theme_index, index }) => {
-            if let Some(question) = package.get_question_mut(round_index, theme_index, index) {
+        &mut Some(PackageNode::Question(idx)) => {
+            if let Some(question) = package.get_question_mut(idx) {
                 question_tab::question_tab(question, ui);
             } else {
-                let error = [
-                    format!("Невозможно найти вопрос с индексом {index}"),
-                    format!("(раунд с индексом {round_index}, тема с индексом {theme_index})"),
-                ]
-                .join(" ");
+                let error = format!("Невозможно найти вопрос с индексом {idx}");
                 error_label(error, ui);
             }
         },
@@ -89,26 +83,21 @@ fn breadcrumbs(package: &Package, selected: &mut Option<PackageNode>, ui: &mut e
         root_breadcrumb(package, selected, ui);
 
         match *selected {
-            Some(node @ PackageNode::Round { .. }) => {
+            Some(node @ PackageNode::Round(_)) => {
                 breadcrump_separator(ui);
                 node_breadcrumb(node, package, selected, ui);
             },
-            Some(node @ PackageNode::Theme { .. }) => {
+            Some(node @ PackageNode::Theme(idx)) => {
                 breadcrump_separator(ui);
-                node_breadcrumb(node.get_parent().unwrap(), package, selected, ui);
+                node_breadcrumb(idx.parent().into(), package, selected, ui);
                 breadcrump_separator(ui);
                 node_breadcrumb(node, package, selected, ui);
             },
-            Some(node @ PackageNode::Question { .. }) => {
+            Some(node @ PackageNode::Question(idx)) => {
                 breadcrump_separator(ui);
-                node_breadcrumb(
-                    node.get_parent().unwrap().get_parent().unwrap(),
-                    package,
-                    selected,
-                    ui,
-                );
+                node_breadcrumb(idx.parent().parent().into(), package, selected, ui);
                 breadcrump_separator(ui);
-                node_breadcrumb(node.get_parent().unwrap(), package, selected, ui);
+                node_breadcrumb(idx.parent().into(), package, selected, ui);
                 breadcrump_separator(ui);
                 node_breadcrumb(node, package, selected, ui);
             },

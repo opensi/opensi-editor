@@ -1,6 +1,6 @@
 use std::{borrow::Cow, fmt::Display};
 
-use opensi_core::{Package, PackageNode};
+use opensi_core::prelude::*;
 
 /// A generic error label.
 pub fn error_label(error: impl Display, ui: &mut egui::Ui) {
@@ -34,18 +34,18 @@ pub fn danger_button(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) -> eg
 /// Utility method to get a button name for a [`PackageNode`].
 pub fn node_name<'a>(node: PackageNode, package: &'a Package) -> Cow<'a, str> {
     match node {
-        PackageNode::Round { index } => package
-            .get_round(index)
+        PackageNode::Round(idx) => package
+            .get_round(idx)
             .map(|round| round.name.as_str())
             .unwrap_or("<Неизвестный раунд>")
             .into(),
-        PackageNode::Theme { round_index, index } => package
-            .get_theme(round_index, index)
+        PackageNode::Theme(idx) => package
+            .get_theme(idx)
             .map(|theme| theme.name.as_str())
             .unwrap_or("<Неизвестная тема>")
             .into(),
-        PackageNode::Question { round_index, theme_index, index } => package
-            .get_question(round_index, theme_index, index)
+        PackageNode::Question(idx) => package
+            .get_question(idx)
             .map(|question| format!("🗛 ({})", question.price).into())
             .unwrap_or("<Неизвестный вопрос>".into()),
     }

@@ -1,4 +1,4 @@
-use opensi_core::PackageNode;
+use opensi_core::prelude::*;
 
 use crate::{
     file_dialogs::{self, LoadingPackageReceiver},
@@ -68,10 +68,8 @@ impl eframe::App for EditorApp {
                     new_pack_modal.close();
                 };
                 if new_pack_modal.suggested_button(ui, "Перезаписать").clicked() {
-                    self.package_state = PackageState::Active {
-                        package: opensi_core::Package::default(),
-                        selected: None,
-                    };
+                    self.package_state =
+                        PackageState::Active { package: Package::default(), selected: None };
                 };
             });
         });
@@ -88,7 +86,7 @@ impl eframe::App for EditorApp {
                             },
                             _ => {
                                 self.package_state = PackageState::Active {
-                                    package: opensi_core::Package::default(),
+                                    package: Package::default(),
                                     selected: None,
                                 };
                             },
@@ -162,7 +160,7 @@ enum PackageState {
     #[serde(skip)]
     Loading(LoadingPackageReceiver),
     Active {
-        package: opensi_core::Package,
+        package: Package,
         selected: Option<PackageNode>,
     },
 }

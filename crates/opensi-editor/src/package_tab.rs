@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use opensi_core::{Package, PackageNode, Round};
+use opensi_core::prelude::*;
 
 use crate::utils::{danger_button, unselectable_heading, unselectable_label};
 
@@ -149,14 +149,14 @@ fn package_rounds(package: &mut Package, selected: &mut Option<PackageNode>, ui:
                                         return;
                                     };
                                     if round_card(round, ui).clicked() {
-                                        *selected = Some(PackageNode::Round { index });
+                                        *selected = Some(index.into());
                                     }
                                 });
                                 row.col(|ui| {
                                     ui.add_space(4.0);
                                     if ui.button("✏").on_hover_text("Редактировать").clicked()
                                     {
-                                        *selected = Some(PackageNode::Round { index });
+                                        *selected = Some(index.into());
                                     }
                                     if ui.button("🗐").on_hover_text("Дублировать").clicked()
                                     {

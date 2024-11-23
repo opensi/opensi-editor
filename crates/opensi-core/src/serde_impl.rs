@@ -33,11 +33,10 @@ macro_rules! generate_serde_mod {
     };
 }
 
-// WHY: crate::$type gives errors in rust-analyzer, but compiles ?
-generate_serde_mod!(rounds: super::super::Round as round);
-generate_serde_mod!(themes: super::super::Theme as theme);
-generate_serde_mod!(questions: super::super::Question as question);
-generate_serde_mod!(atoms: super::super::Atom as atom);
-generate_serde_mod!(answers: super::super::Answer as answer);
+generate_serde_mod!(rounds: crate::package::Round as round);
+generate_serde_mod!(themes: crate::package::Theme as theme);
+generate_serde_mod!(questions: crate::package::Question as question);
+generate_serde_mod!(atoms: crate::package::Atom as atom);
+generate_serde_mod!(answers: crate::package::Answer as answer);
 generate_serde_mod!(authors: String as author);
 generate_serde_mod!(sources: String as source);

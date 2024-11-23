@@ -1,11 +1,11 @@
-use opensi_core::{Info, Package, PackageNode, Question, Round, Theme};
+use opensi_core::prelude::*;
 
 use crate::utils::{error_label, string_list, unselectable_heading, unselectable_label};
 
 /// Workarea tab to edit round info and its themes.
 pub fn round_tab(
     package: &mut Package,
-    index: usize,
+    idx: RoundIdx,
     selected: &mut Option<PackageNode>,
     ui: &mut egui::Ui,
 ) {
@@ -15,8 +15,8 @@ pub fn round_tab(
                 .sizes(egui_extras::Size::remainder().at_most(500.0), 2)
                 .cell_layout(egui::Layout::top_down(egui::Align::Min))
                 .horizontal(|mut strip| {
-                    let Some(round) = package.get_round_mut(index) else {
-                        let error = format!("Невозможно найти раунд с индексом {index}");
+                    let Some(round) = package.get_round_mut(idx) else {
+                        let error = format!("Невозможно найти раунд с индексом {idx}");
                         strip.cell(|ui| {
                             error_label(error, ui);
                         });
@@ -40,7 +40,7 @@ pub fn round_tab(
 
         unselectable_heading("Темы", ui);
         ui.separator();
-        round_themes(package, index, selected, ui);
+        round_themes(package, idx, selected, ui);
     });
 }
 
@@ -108,7 +108,7 @@ fn round_edit_row(
 
 fn round_themes(
     package: &mut Package,
-    index: usize,
+    idx: RoundIdx,
     selected: &mut Option<PackageNode>,
     ui: &mut egui::Ui,
 ) {
@@ -171,7 +171,7 @@ fn round_themes(
         .cell_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown))
         .vertical(|mut strip| {
             strip.cell(|ui| {
-                let Some(round) = package.get_round_mut(index) else {
+                let Some(round) = package.get_round_mut(idx) else {
                     return;
                 };
 
@@ -192,17 +192,14 @@ fn round_themes(
                         ))
                         .body(|body| {
                             body.rows(100.0, round.themes.len(), |mut row| {
-                                let theme_index = row.index();
-                                let Some(theme) = round.themes.get_mut(theme_index) else {
+                                let theme_idx = idx.theme(row.index());
+                                let Some(theme) = round.themes.get_mut(*theme_idx) else {
                                     return;
                                 };
 
                                 row.col(|ui| {
                                     if theme_table_card(CardKind::Theme(theme), ui).clicked() {
-                                        *selected = Some(PackageNode::Theme {
-                                            round_index: index,
-                                            index: theme_index,
-                                        });
+                                        *selected = Some(theme_idx.into());
                                     }
                                 });
 
@@ -212,11 +209,8 @@ fn round_themes(
                                         if theme_table_card(CardKind::Question(question), ui)
                                             .clicked()
                                         {
-                                            *selected = Some(PackageNode::Question {
-                                                round_index: index,
-                                                theme_index,
-                                                index: question_index,
-                                            });
+                                            *selected =
+                                                Some(theme_idx.question(question_index).into());
                                         }
                                     });
                                 }
@@ -236,7 +230,7 @@ fn round_themes(
 
             strip.cell(|ui| {
                 if ui.button("➕ Добавить новую тему").clicked() {
-                    package.allocate_theme(index);
+                    package.allocate_theme(idx);
                 }
             });
         });

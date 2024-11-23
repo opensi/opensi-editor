@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use opensi_core::Package;
+use opensi_core::package::*;
 #[cfg(not(target_arch = "wasm32"))]
 use tokio;
 #[cfg(target_arch = "wasm32")]

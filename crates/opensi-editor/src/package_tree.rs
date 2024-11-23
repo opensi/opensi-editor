@@ -1,5 +1,5 @@
 use egui::collapsing_header::CollapsingState;
-use opensi_core::{Package, PackageNode};
+use opensi_core::prelude::*;
 
 use crate::utils::node_name;
 
@@ -44,11 +44,11 @@ fn tree_node_ui<'a>(
             is_deleted: bool,
         }
         let id = match node {
-            PackageNode::Round { index } => format!("tree-node-round-{index}"),
-            PackageNode::Theme { round_index, index } => {
+            PackageNode::Round(RoundIdx { index }) => format!("tree-node-round-{index}"),
+            PackageNode::Theme(ThemeIdx { round_index, index }) => {
                 format!("tree-node-theme-{round_index}-{index}")
             },
-            PackageNode::Question { round_index, theme_index, index } => {
+            PackageNode::Question(QuestionIdx { round_index, theme_index, index }) => {
                 format!("tree-node-question-{round_index}-{theme_index}-{index}")
             },
         };
@@ -129,58 +129,30 @@ fn tree_node_ui<'a>(
         }
 
         if result.is_populated {
-            match node {
-                PackageNode::Round { index } => {
-                    package.allocate_theme(index);
-                },
-                PackageNode::Theme { round_index, index } => {
-                    package.allocate_question(round_index, index);
-                },
-                PackageNode::Question { .. } => {},
+            if let Some(parent) = node.parent() {
+                package.allocate_node(parent);
             }
         }
         if result.is_duplicated {
-            match node {
-                PackageNode::Round { index } => {
-                    package.duplicate_round(index);
-                },
-                PackageNode::Theme { round_index, index } => {
-                    package.duplicate_theme(round_index, index);
-                },
-                PackageNode::Question { round_index, theme_index, index } => {
-                    package.duplicate_question(round_index, theme_index, index);
-                },
-            }
+            package.duplicate_node(node);
         }
         if result.is_deleted {
-            match node {
-                PackageNode::Round { index } => {
-                    package.remove_round(index);
-                },
-                PackageNode::Theme { round_index, index } => {
-                    package.remove_theme(round_index, index);
-                },
-                PackageNode::Question { round_index, theme_index, index } => {
-                    package.remove_question(round_index, theme_index, index);
-                },
-            }
+            package.remove_node(node);
         }
         if let Some(new_name) = result.new_name {
             match node {
-                PackageNode::Round { index } => {
-                    if let Some(round) = package.get_round_mut(index) {
+                PackageNode::Round(idx) => {
+                    if let Some(round) = package.get_round_mut(idx) {
                         round.name = new_name;
                     };
                 },
-                PackageNode::Theme { round_index, index } => {
-                    if let Some(theme) = package.get_theme_mut(round_index, index) {
+                PackageNode::Theme(idx) => {
+                    if let Some(theme) = package.get_theme_mut(idx) {
                         theme.name = new_name;
                     };
                 },
-                PackageNode::Question { round_index, theme_index, index } => {
-                    if let Some(question) =
-                        package.get_question_mut(round_index, theme_index, index)
-                    {
+                PackageNode::Question(idx) => {
+                    if let Some(question) = package.get_question_mut(idx) {
                         if let Ok(new_price) = new_name.parse() {
                             question.price = new_price;
                         }
@@ -198,7 +170,7 @@ fn tree_node_ui<'a>(
                 ui.weak("Нет раундов");
             } else {
                 for index in 0..package.rounds.len() {
-                    tree_node_ui(package, Some(PackageNode::Round { index }), selected, ui);
+                    tree_node_ui(package, Some(index.into()), selected, ui);
                 }
             }
         });
@@ -214,7 +186,7 @@ fn tree_node_ui<'a>(
     let id = egui::Id::new(node.index()).with(ui.id());
     let is_selected = selected.is_some_and(|selected| selected == node);
     match node {
-        PackageNode::Round { index } => {
+        PackageNode::Round(idx) => {
             CollapsingState::load_with_default_open(ui.ctx(), id, true)
                 .show_header(ui, |ui| {
                     if node_button(package, node, is_selected, ui) {
@@ -223,20 +195,15 @@ fn tree_node_ui<'a>(
                 })
                 .body(|ui| {
                     for theme_index in 0..package
-                        .get_round(index)
+                        .get_round(idx)
                         .map(|round| round.themes.len())
                         .unwrap_or_default()
                     {
-                        tree_node_ui(
-                            package,
-                            Some(PackageNode::Theme { round_index: index, index: theme_index }),
-                            selected,
-                            ui,
-                        );
+                        tree_node_ui(package, Some(idx.theme(theme_index).into()), selected, ui);
                     }
                 });
         },
-        PackageNode::Theme { round_index, index } => {
+        PackageNode::Theme(idx) => {
             CollapsingState::load_with_default_open(ui.ctx(), id, false)
                 .show_header(ui, |ui| {
                     if node_button(package, node, is_selected, ui) {
@@ -245,30 +212,21 @@ fn tree_node_ui<'a>(
                 })
                 .body(|ui| {
                     for question_index in 0..package
-                        .get_theme(round_index, index)
+                        .get_theme(idx)
                         .map(|theme| theme.questions.len())
                         .unwrap_or_default()
                     {
                         tree_node_ui(
                             package,
-                            Some(PackageNode::Question {
-                                round_index,
-                                theme_index: index,
-                                index: question_index,
-                            }),
+                            Some(idx.question(question_index).into()),
                             selected,
                             ui,
                         );
                     }
                 });
         },
-        PackageNode::Question { round_index, theme_index, index } => {
-            if node_button(
-                package,
-                PackageNode::Question { round_index, theme_index, index },
-                is_selected,
-                ui,
-            ) {
+        PackageNode::Question(idx) => {
+            if node_button(package, idx.into(), is_selected, ui) {
                 *selected = Some(node);
             }
         },

@@ -1,15 +1,11 @@
 [workspace]
+members = ["crates/*"]
 resolver = "2"
-members = [
-    "crates/opensi-core",
-    "crates/opensi-editor"
-]
 
 [workspace.package]
 authors = ["barsoosayque <shtoshich@gmail.com>", "snpefk <snpefk@gmail.com>"]
 edition = "2021"
 license = "MIT"
-rust-version = "1.76"
 version = "0.1.0"
 
 [profile.release]
