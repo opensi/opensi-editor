@@ -24,12 +24,7 @@ fn selected_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &
             round_tab::round_tab(package, idx, selected, ui);
         },
         &mut Some(PackageNode::Theme(idx)) => {
-            if let Some(theme) = package.get_theme_mut(idx) {
-                theme_tab::theme_tab(theme, ui);
-            } else {
-                let error = format!("Невозможно найти тему с индексом {idx}");
-                error_label(error, ui);
-            }
+            theme_tab::theme_tab(package, idx, selected, ui);
         },
         &mut Some(PackageNode::Question(idx)) => {
             if let Some(question) = package.get_question_mut(idx) {

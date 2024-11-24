@@ -108,3 +108,47 @@ pub fn string_list(id: impl Into<egui::Id>, list: &mut Vec<String>, ui: &mut egu
         });
     });
 }
+
+pub fn simple_row(
+    label: impl AsRef<str>,
+    height: f32,
+    body: &mut egui_extras::TableBody,
+    content: impl FnOnce(&mut egui::Ui),
+) {
+    body.row(height, |mut row| {
+        row.col(|ui| {
+            ui.label(label.as_ref());
+        });
+        row.col(content);
+    });
+}
+
+pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
+    let Some(info) = info.as_mut() else {
+        if ui.button("➕ Добавить информацию").clicked() {
+            *info = Some(Default::default());
+        }
+        return;
+    };
+
+    egui_extras::TableBuilder::new(ui)
+        .id_salt("round-info-edit")
+        .column(egui_extras::Column::auto())
+        .column(egui_extras::Column::remainder())
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Min))
+        .striped(true)
+        .body(|mut body| {
+            simple_row("Авторы", 40.0, &mut body, |ui| {
+                string_list("round-authors", &mut info.authors, ui);
+            });
+            simple_row("Источники", 40.0, &mut body, |ui| {
+                string_list("round-sources", &mut info.sources, ui);
+            });
+            simple_row("Комментарий", 20.0, &mut body, |ui| {
+                ui.text_edit_singleline(&mut info.comments);
+            });
+            simple_row("Расширения", 20.0, &mut body, |ui| {
+                ui.text_edit_singleline(&mut info.extension);
+            });
+        });
+}

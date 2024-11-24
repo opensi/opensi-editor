@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use opensi_core::prelude::*;
 
-use crate::utils::{danger_button, unselectable_heading, unselectable_label};
+use crate::utils::{danger_button, simple_row, unselectable_heading, unselectable_label};
 
 /// Workarea tab to edit package info.
 pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
@@ -43,22 +43,22 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
         .cell_layout(egui::Layout::left_to_right(egui::Align::Min))
         .striped(false)
         .body(|mut body| {
-            package_edit_row("Название", &mut body, |ui| {
+            simple_row("Название", 20.0, &mut body, |ui| {
                 ui.text_edit_singleline(&mut package.name);
             });
-            package_edit_row("Сложность", &mut body, |ui| {
+            simple_row("Сложность", 20.0, &mut body, |ui| {
                 ui.add(egui::DragValue::new(&mut package.difficulty).range(0..=10));
             });
-            package_edit_row("Ограничения", &mut body, |ui| {
+            simple_row("Ограничения", 20.0, &mut body, |ui| {
                 ui.text_edit_singleline(&mut package.restriction);
             });
-            package_edit_row("Дата создания", &mut body, |ui| {
+            simple_row("Дата создания", 20.0, &mut body, |ui| {
                 ui.text_edit_singleline(&mut package.date);
             });
-            package_edit_row("Издатель", &mut body, |ui| {
+            simple_row("Издатель", 20.0, &mut body, |ui| {
                 ui.text_edit_singleline(&mut package.publisher);
             });
-            package_edit_row("Язык", &mut body, |ui| {
+            simple_row("Язык", 20.0, &mut body, |ui| {
                 ui.text_edit_singleline(&mut package.language);
             });
         });
@@ -73,26 +73,13 @@ fn package_metadata_edit(package: &Package, ui: &mut egui::Ui) {
         .cell_layout(egui::Layout::left_to_right(egui::Align::Min))
         .striped(true)
         .body(|mut body| {
-            package_edit_row("ID пакета", &mut body, |ui| {
+            simple_row("ID пакета", 20.0, &mut body, |ui| {
                 ui.label(&package.id);
             });
-            package_edit_row("Версия пакета", &mut body, |ui| {
+            simple_row("Версия пакета", 20.0, &mut body, |ui| {
                 ui.label(format!("{:.1}", package.version));
             });
         });
-}
-
-fn package_edit_row(
-    label: impl AsRef<str>,
-    body: &mut egui_extras::TableBody,
-    content: impl FnOnce(&mut egui::Ui),
-) {
-    body.row(20.0, |mut row| {
-        row.col(|ui| {
-            ui.label(label.as_ref());
-        });
-        row.col(content);
-    });
 }
 
 fn package_rounds(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {

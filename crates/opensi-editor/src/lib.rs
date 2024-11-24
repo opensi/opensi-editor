@@ -1,6 +1,7 @@
 #![warn(clippy::all)]
 
 mod app;
+mod card;
 mod file_dialogs;
 mod package_tab;
 mod package_tree;
