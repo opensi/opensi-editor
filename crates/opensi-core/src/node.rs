@@ -61,7 +61,7 @@ impl From<(usize, usize, usize)> for PackageNode {
     }
 }
 
-/// Typed [`Round`](crate::package::Round) index.
+/// Typed [`Round`](crate::components::Round) index.
 #[derive(
     serde::Deserialize,
     serde::Serialize,
@@ -104,7 +104,7 @@ impl Display for RoundIdx {
     }
 }
 
-/// Typed [`Theme`](crate::package::Theme) indices.
+/// Typed [`Theme`](crate::components::Theme) indices.
 #[derive(
     serde::Deserialize,
     serde::Serialize,
@@ -155,7 +155,7 @@ impl Display for ThemeIdx {
     }
 }
 
-/// Typed [`Question`](crate::package::Question) indices.
+/// Typed [`Question`](crate::components::Question) indices.
 #[derive(
     serde::Deserialize,
     serde::Serialize,

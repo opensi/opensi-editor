@@ -33,10 +33,10 @@ macro_rules! generate_serde_mod {
     };
 }
 
-generate_serde_mod!(rounds: crate::package::Round as round);
-generate_serde_mod!(themes: crate::package::Theme as theme);
-generate_serde_mod!(questions: crate::package::Question as question);
-generate_serde_mod!(atoms: crate::package::Atom as atom);
-generate_serde_mod!(answers: crate::package::Answer as answer);
+generate_serde_mod!(rounds: crate::components::Round as round);
+generate_serde_mod!(themes: crate::components::Theme as theme);
+generate_serde_mod!(questions: crate::components::Question as question);
+generate_serde_mod!(atoms: crate::components::Atom as atom);
+generate_serde_mod!(answers: crate::components::Answer as answer);
 generate_serde_mod!(authors: String as author);
 generate_serde_mod!(sources: String as source);

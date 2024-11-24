@@ -9,9 +9,12 @@ use std::{fs::File, io, io::Read};
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
+use crate::components::{Atom, Info, Question, Round, Theme};
 use crate::node::{PackageNode, QuestionIdx, RoundIdx, ThemeIdx};
 use crate::serde_impl;
 
+/// Complete package structure with meta information about
+/// the package and its tree of [`Question`].
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(default, rename = "package")]
 pub struct Package {
@@ -49,7 +52,9 @@ pub struct Package {
     pub resource: HashMap<Resource, Vec<u8>>,
 }
 
+/// # [`PackageNode`]-based methods
 impl Package {
+    /// Clone a node and push it afterwards.
     pub fn duplicate_node(&mut self, node: PackageNode) {
         match node {
             PackageNode::Round(idx) => {
@@ -64,6 +69,7 @@ impl Package {
         };
     }
 
+    /// Create a new default node and push it.
     pub fn allocate_node(&mut self, node: PackageNode) {
         match node {
             PackageNode::Round(_) => {
@@ -78,6 +84,7 @@ impl Package {
         };
     }
 
+    /// Remove a single node.
     pub fn remove_node(&mut self, node: PackageNode) {
         match node {
             PackageNode::Round(idx) => {
@@ -91,7 +98,10 @@ impl Package {
             },
         };
     }
+}
 
+/// # Methods around [`Round`]
+impl Package {
     /// Get [`Round`] by index.
     pub fn get_round(&self, idx: impl Into<RoundIdx>) -> Option<&Round> {
         let idx = idx.into();
@@ -144,7 +154,10 @@ impl Package {
         let round = Round { name: "Новый раунд".to_string(), ..Default::default() };
         self.push_round(round)
     }
+}
 
+/// # Methods around [`Theme`]
+impl Package {
     /// Get [`Theme`] in [`Round`] by indices.
     pub fn get_theme(&self, idx: impl Into<ThemeIdx>) -> Option<&Theme> {
         let idx = idx.into();
@@ -202,7 +215,10 @@ impl Package {
         let theme = Theme { name: "Новая тема".to_string(), ..Default::default() };
         self.push_theme(idx, theme)
     }
+}
 
+/// # Methods around [`Theme`].
+impl Package {
     /// Get [`Question`] in [`Theme`] in [`Round`] by indices.
     pub fn get_question(&self, idx: impl Into<QuestionIdx>) -> Option<&Question> {
         let idx = idx.into();
@@ -273,141 +289,7 @@ impl Package {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
-pub struct Info {
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub comments: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub extension: String,
-    #[serde(with = "serde_impl::authors", skip_serializing_if = "Vec::is_empty")]
-    pub authors: Vec<String>,
-    #[serde(with = "serde_impl::sources", skip_serializing_if = "Vec::is_empty")]
-    pub sources: Vec<String>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Authors {
-    #[serde(rename = "author")]
-    pub authors: Vec<String>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
-pub struct Round {
-    #[serde(rename = "@name")]
-    pub name: String,
-    #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
-    pub variant: Option<String>,
-    #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
-    pub info: Option<Info>,
-    #[serde(with = "serde_impl::themes")]
-    pub themes: Vec<Theme>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Theme {
-    #[serde(rename = "@name")]
-    pub name: String,
-    #[serde(with = "serde_impl::questions")]
-    pub questions: Vec<Question>,
-    #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
-    pub info: Option<Info>,
-}
-
-impl Theme {
-    /// Try to guess a price for the next question:
-    /// - Either a difference between the last two question prices;
-    /// - Or the last question's price plus 100;
-    ///
-    /// In case of no questions, the default price is 100.
-    pub fn guess_next_question_price(&self) -> usize {
-        let mut iter = self.questions.iter().rev();
-        match (iter.next(), iter.next()) {
-            (Some(last), Some(prev)) => {
-                let diff = last.price.abs_diff(prev.price);
-                last.price + diff
-            },
-            (Some(last), None) => last.price + 100,
-            _ => 100,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Questions {
-    #[serde(rename = "question")]
-    pub questions: Vec<Question>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
-pub struct Question {
-    #[serde(rename = "@price")]
-    pub price: usize,
-    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
-    pub question_type: Option<QuestionType>,
-    #[serde(with = "serde_impl::atoms")]
-    pub scenario: Vec<Atom>,
-    #[serde(with = "serde_impl::answers")]
-    pub right: Vec<Answer>,
-    #[serde(with = "serde_impl::answers", skip_serializing_if = "Vec::is_empty")]
-    pub wrong: Vec<Answer>,
-    #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
-    pub info: Option<Info>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct QuestionType {
-    #[serde(rename = "@name")]
-    pub name: String,
-    #[serde(rename = "param", skip_serializing_if = "Option::is_none")]
-    pub params: Option<Vec<Param>>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Answer {
-    #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
-    pub body: Option<String>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Param {
-    #[serde(rename = "@name")]
-    pub name: String,
-    #[serde(rename = "$value")]
-    pub body: String,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Atom {
-    #[serde(rename = "@time", skip_serializing_if = "Option::is_none")]
-    pub time: Option<f64>,
-    #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
-    pub variant: Option<String>,
-    #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Resource {
-    Audio(String),
-    Video(String),
-    Image(String),
-    Texts(String),
-}
-
-impl Resource {
-    fn extract_key(&self) -> &str {
-        match self {
-            Resource::Audio(key)
-            | Resource::Video(key)
-            | Resource::Image(key)
-            | Resource::Texts(key) => key,
-        }
-    }
-}
-
+/// # IO and resource methods
 impl Package {
     const CONTENT_TYPE_FILE_CONTENT: &'static str = r#"<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="si/xml" /></Types>"""#;
     const XML_VERSION_ENCODING: &'static str = r#"<?xml version="1.0" encoding="utf-8"?>"#;
@@ -531,5 +413,25 @@ impl Package {
         let result = zip.finish()?;
 
         Ok(result.into_inner())
+    }
+}
+
+/// Single resource handle inside [`Package`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Resource {
+    Audio(String),
+    Video(String),
+    Image(String),
+    Texts(String),
+}
+
+impl Resource {
+    fn extract_key(&self) -> &str {
+        match self {
+            Resource::Audio(key)
+            | Resource::Video(key)
+            | Resource::Image(key)
+            | Resource::Texts(key) => key,
+        }
     }
 }
