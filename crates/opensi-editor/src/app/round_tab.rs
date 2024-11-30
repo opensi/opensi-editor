@@ -1,8 +1,7 @@
 use opensi_core::prelude::*;
 
-use crate::{
-    card::CardKind,
-    utils::{error_label, info_edit, simple_row, unselectable_heading, unselectable_label},
+use crate::element::{
+    error_label, info_edit, simple_row, unselectable_heading, unselectable_label, Card,
 };
 
 /// Workarea tab to edit round info and its themes.
@@ -104,7 +103,7 @@ fn round_themes(
                                 };
 
                                 row.col(|ui| {
-                                    if CardKind::Theme(theme).show(ui).clicked() {
+                                    if ui.add(Card::Theme(theme)).clicked() {
                                         *selected = Some(theme_idx.into());
                                     }
                                 });
@@ -112,7 +111,7 @@ fn round_themes(
                                 for (question_index, question) in theme.questions.iter().enumerate()
                                 {
                                     row.col(|ui| {
-                                        if CardKind::Question(question).show(ui).clicked() {
+                                        if ui.add(Card::Question(question)).clicked() {
                                             *selected =
                                                 Some(theme_idx.question(question_index).into());
                                         }
@@ -120,7 +119,7 @@ fn round_themes(
                                 }
 
                                 row.col(|ui| {
-                                    if CardKind::New.show(ui).clicked() {
+                                    if ui.add(Card::New).clicked() {
                                         theme.questions.push(Question {
                                             price: theme.guess_next_question_price(),
                                             ..Default::default()

@@ -1,7 +1,7 @@
 use egui::collapsing_header::CollapsingState;
 use opensi_core::prelude::*;
 
-use crate::utils::node_name;
+use crate::element::node_name;
 
 /// Ui for a whole [`Package`] in a form of a tree.
 ///

@@ -1,10 +1,14 @@
+mod file_dialogs;
+mod package_tab;
+mod package_tree;
+mod question_tab;
+mod round_tab;
+mod theme_tab;
+mod workarea;
+
 use opensi_core::prelude::*;
 
-use crate::{
-    file_dialogs::{self, LoadingPackageReceiver},
-    package_tree::{self},
-    workarea,
-};
+use crate::app::file_dialogs::LoadingPackageReceiver;
 
 const FONT_REGULAR_ID: &'static str = "Regular";
 const FONT_ITALIC_ID: &'static str = "Italic";
@@ -31,11 +35,11 @@ impl EditorApp {
         let mut font_definitions = egui::FontDefinitions::default();
         font_definitions.font_data.insert(
             FONT_REGULAR_ID.into(),
-            egui::FontData::from_static(include_bytes!("../assets/ui/Lora-Medium.ttf")),
+            egui::FontData::from_static(include_bytes!("../../assets/ui/Lora-Medium.ttf")),
         );
         font_definitions.font_data.insert(
             FONT_ITALIC_ID.into(),
-            egui::FontData::from_static(include_bytes!("../assets/ui/Lora-MediumItalic.ttf")),
+            egui::FontData::from_static(include_bytes!("../../assets/ui/Lora-MediumItalic.ttf")),
         );
         if let Some(family) = font_definitions.families.get_mut(&egui::FontFamily::Proportional) {
             family.insert(0, FONT_REGULAR_ID.into());

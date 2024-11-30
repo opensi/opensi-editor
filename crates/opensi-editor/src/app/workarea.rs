@@ -1,7 +1,6 @@
-use crate::{
-    package_tab, question_tab, round_tab, theme_tab,
-    utils::{error_label, node_name},
-};
+use crate::app::{package_tab, question_tab, round_tab, theme_tab};
+use crate::element::{error_label, node_name};
+
 use opensi_core::prelude::*;
 
 /// UI for general area of [`Package`] editing.

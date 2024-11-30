@@ -1,9 +1,6 @@
 use opensi_core::prelude::*;
 
-use crate::{
-    card::CardKind,
-    utils::{error_label, info_edit, simple_row, unselectable_heading},
-};
+use crate::element::{error_label, info_edit, simple_row, unselectable_heading, Card};
 
 pub fn theme_tab(
     package: &mut Package,
@@ -79,14 +76,14 @@ fn theme_questions(
             .horizontal(|mut strip| {
                 for (question_index, question) in theme.questions.iter().enumerate() {
                     strip.cell(|ui| {
-                        if CardKind::Question(question).show(ui).clicked() {
+                        if ui.add(Card::Question(question)).clicked() {
                             *selected = Some(idx.question(question_index).into());
                         }
                     });
                 }
 
                 strip.cell(|ui| {
-                    if CardKind::New.show(ui).clicked() {
+                    if ui.add(Card::New).clicked() {
                         theme.questions.push(Question {
                             price: theme.guess_next_question_price(),
                             ..Default::default()

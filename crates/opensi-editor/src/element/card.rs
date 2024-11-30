@@ -1,26 +1,27 @@
 use opensi_core::prelude::*;
 
+/// Rectangular cilckable card.
 #[derive(Debug, Clone, Copy)]
-pub enum CardKind<'a> {
+pub enum Card<'a> {
     Theme(&'a Theme),
     Question(&'a Question),
     New,
 }
 
-impl<'a> CardKind<'a> {
-    pub fn show(&self, ui: &mut egui::Ui) -> egui::Response {
+impl<'a> egui::Widget for Card<'a> {
+    fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let (text, fill, text_color) = match self {
-            CardKind::Theme(theme) => (
+            Card::Theme(theme) => (
                 theme.name.clone(),
                 ui.visuals().widgets.active.bg_fill,
                 ui.visuals().widgets.active.text_color(),
             ),
-            CardKind::Question(question) => (
+            Card::Question(question) => (
                 question.price.to_string(),
                 egui::Color32::TRANSPARENT,
                 ui.visuals().widgets.inactive.text_color(),
             ),
-            CardKind::New => (
+            Card::New => (
                 "➕ Новый вопрос".to_string(),
                 egui::Color32::TRANSPARENT,
                 ui.visuals().weak_text_color(),

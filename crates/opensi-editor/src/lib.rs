@@ -1,14 +1,6 @@
 #![warn(clippy::all)]
 
 mod app;
-mod card;
-mod file_dialogs;
-mod package_tab;
-mod package_tree;
-mod question_tab;
-mod round_tab;
-mod theme_tab;
-mod utils;
-mod workarea;
+mod element;
 
 pub use app::EditorApp;

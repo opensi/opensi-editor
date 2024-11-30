@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use opensi_core::prelude::*;
 
-use crate::utils::{danger_button, simple_row, unselectable_heading, unselectable_label};
+use crate::element::{danger_button, simple_row, unselectable_heading, unselectable_label};
 
 /// Workarea tab to edit package info.
 pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
