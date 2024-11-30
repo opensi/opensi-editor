@@ -1,8 +1,6 @@
 use opensi_core::prelude::*;
 
-use crate::element::{
-    error_label, info_edit, simple_row, unselectable_heading, unselectable_label, Card,
-};
+use crate::element::{error_label, info_edit, unselectable_heading, Card, PropertyTable};
 
 /// Workarea tab to edit round info and its themes.
 pub fn round_tab(
@@ -47,21 +45,12 @@ pub fn round_tab(
 }
 
 fn round_edit(round: &mut Round, ui: &mut egui::Ui) {
-    egui_extras::TableBuilder::new(ui)
-        .id_salt("round-edit")
-        .column(egui_extras::Column::auto())
-        .column(egui_extras::Column::remainder())
-        .cell_layout(egui::Layout::left_to_right(egui::Align::Min))
-        .striped(false)
-        .body(|mut body| {
-            simple_row("Название", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut round.name);
-            });
-            simple_row("Вариант", 20.0, &mut body, |ui| {
-                // TODO: variant enum
-                unselectable_label(format!("TODO: {:?}", round.variant), ui);
-            });
+    PropertyTable::new("round-properties").show(ui, |mut properties| {
+        properties.row("Название", |ui| ui.text_edit_singleline(&mut round.name));
+        properties.row("Тип", |ui| {
+            ui.add_enabled_ui(false, |ui| ui.label(format!("{:?}?", round.kind))).inner
         });
+    });
 }
 
 fn round_themes(

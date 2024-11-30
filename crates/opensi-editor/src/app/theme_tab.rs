@@ -1,6 +1,6 @@
 use opensi_core::prelude::*;
 
-use crate::element::{error_label, info_edit, simple_row, unselectable_heading, Card};
+use crate::element::{error_label, info_edit, unselectable_heading, Card, PropertyTable};
 
 pub fn theme_tab(
     package: &mut Package,
@@ -44,17 +44,9 @@ pub fn theme_tab(
 }
 
 fn theme_edit(theme: &mut Theme, ui: &mut egui::Ui) {
-    egui_extras::TableBuilder::new(ui)
-        .id_salt("theme-edit")
-        .column(egui_extras::Column::auto())
-        .column(egui_extras::Column::remainder())
-        .cell_layout(egui::Layout::left_to_right(egui::Align::Min))
-        .striped(false)
-        .body(|mut body| {
-            simple_row("Название", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut theme.name);
-            });
-        });
+    PropertyTable::new("theme-properties").show(ui, |mut properties| {
+        properties.row("Название", |ui| ui.text_edit_singleline(&mut theme.name));
+    });
 }
 
 fn theme_questions(

@@ -26,8 +26,9 @@ pub struct Authors {
 pub struct Round {
     #[serde(rename = "@name")]
     pub name: String,
+    // TODO: Actual enum of kinds
     #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
-    pub variant: Option<String>,
+    pub kind: Option<String>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
     #[serde(with = "serde_impl::themes")]
@@ -45,7 +46,7 @@ pub struct Theme {
 }
 
 impl Theme {
-    /// Try to guess a price for the next question:
+    /// Try to guess price for the next question:
     /// - Either a difference between the last two question prices;
     /// - Or the last question's price plus 100;
     ///

@@ -1,7 +1,9 @@
 use itertools::Itertools;
 use opensi_core::prelude::*;
 
-use crate::element::{danger_button, simple_row, unselectable_heading, unselectable_label};
+use crate::element::{
+    danger_button, string_list, unselectable_heading, unselectable_label, PropertyTable,
+};
 
 /// Workarea tab to edit package info.
 pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
@@ -35,51 +37,28 @@ pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui
 }
 
 fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
-    egui_extras::TableBuilder::new(ui)
-        .id_salt("package-info-edit")
-        .vscroll(false)
-        .column(egui_extras::Column::auto())
-        .column(egui_extras::Column::remainder())
-        .cell_layout(egui::Layout::left_to_right(egui::Align::Min))
-        .striped(false)
-        .body(|mut body| {
-            simple_row("Название", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut package.name);
-            });
-            simple_row("Сложность", 20.0, &mut body, |ui| {
-                ui.add(egui::DragValue::new(&mut package.difficulty).range(0..=10));
-            });
-            simple_row("Ограничения", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut package.restriction);
-            });
-            simple_row("Дата создания", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut package.date);
-            });
-            simple_row("Издатель", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut package.publisher);
-            });
-            simple_row("Язык", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut package.language);
-            });
+    PropertyTable::new("package-info-properties").show(ui, |mut properties| {
+        properties.row("Название", |ui| ui.text_edit_singleline(&mut package.name));
+        properties.row("Сложность", |ui| {
+            ui.add(egui::DragValue::new(&mut package.difficulty).range(0..=10))
         });
+        properties
+            .row("Ограничения", |ui| ui.text_edit_singleline(&mut package.restriction));
+        properties
+            .row("Дата создания", |ui| ui.text_edit_singleline(&mut package.date));
+        properties.row("Издатель", |ui| ui.text_edit_singleline(&mut package.publisher));
+        properties.row("Язык", |ui| ui.text_edit_singleline(&mut package.language));
+        properties
+            .multiline_row("Тэги", 2, |ui| string_list("package-tags", &mut package.tags, ui))
+    });
 }
 
 fn package_metadata_edit(package: &Package, ui: &mut egui::Ui) {
-    egui_extras::TableBuilder::new(ui)
-        .id_salt("package-metadata-edit")
-        .vscroll(false)
-        .column(egui_extras::Column::auto())
-        .column(egui_extras::Column::remainder())
-        .cell_layout(egui::Layout::left_to_right(egui::Align::Min))
-        .striped(true)
-        .body(|mut body| {
-            simple_row("ID пакета", 20.0, &mut body, |ui| {
-                ui.label(&package.id);
-            });
-            simple_row("Версия пакета", 20.0, &mut body, |ui| {
-                ui.label(format!("{:.1}", package.version));
-            });
-        });
+    PropertyTable::new("package-metadata-properties").readonly(true).show(ui, |mut properties| {
+        properties.row("ID пакета", |ui| ui.label(&package.id));
+        properties
+            .row("Версия пакета", |ui| ui.label(format!("{:.1}", package.version)));
+    });
 }
 
 fn package_rounds(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {

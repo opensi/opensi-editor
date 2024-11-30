@@ -2,6 +2,8 @@ use std::{borrow::Cow, fmt::Display};
 
 use opensi_core::prelude::*;
 
+use super::PropertyTable;
+
 /// A generic error label.
 pub fn error_label(error: impl Display, ui: &mut egui::Ui) {
     let text =
@@ -60,67 +62,73 @@ pub fn unselectable_label(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) 
     ui.add(egui::Label::new(text).selectable(false))
 }
 
-pub fn string_list(id: impl Into<egui::Id>, list: &mut Vec<String>, ui: &mut egui::Ui) {
+pub fn string_list(
+    id: impl Into<egui::Id>,
+    list: &mut Vec<String>,
+    ui: &mut egui::Ui,
+) -> egui::Response {
     ui.push_id(id.into(), |ui| {
-        ui.vertical(|ui| {
-            if list.is_empty() {
-                unselectable_label("Пусто...", ui);
-            } else {
-                ui.horizontal(|ui| {
-                    let mut deleted_index = None;
+        ui.with_layout(
+            egui::Layout::top_down(egui::Align::Min)
+                .with_cross_justify(true)
+                .with_main_align(egui::Align::Center),
+            |ui| {
+                if list.is_empty() {
+                    unselectable_label("Пусто...", ui);
+                } else {
+                    ui.horizontal(|ui| {
+                        let mut deleted_index = None;
 
-                    for (index, item) in list.iter().enumerate() {
-                        egui::Frame::none()
-                            .rounding(4.0)
-                            .inner_margin(egui::Margin { left: 4.0, ..Default::default() })
-                            .fill(ui.style().visuals.widgets.inactive.bg_fill)
-                            .show(ui, |ui| {
-                                ui.horizontal(|ui| {
-                                    ui.label(item);
-                                    if ui.small_button("❌").clicked() {
-                                        deleted_index = Some(index);
-                                    }
+                        for (index, item) in list.iter().enumerate() {
+                            egui::Frame::none()
+                                .rounding(4.0)
+                                .inner_margin(egui::Margin { left: 4.0, ..Default::default() })
+                                .fill(ui.style().visuals.widgets.inactive.bg_fill)
+                                .show(ui, |ui| {
+                                    ui.horizontal(|ui| {
+                                        ui.label(item);
+                                        if ui.small_button("❌").clicked() {
+                                            deleted_index = Some(index);
+                                        }
+                                    });
                                 });
-                            });
-                    }
+                        }
 
-                    if let Some(index) = deleted_index {
-                        list.remove(index);
-                    }
-                });
-            }
+                        if let Some(index) = deleted_index {
+                            list.remove(index);
+                        }
+                    });
+                }
 
-            ui.horizontal(|ui| {
+                ui.spacing();
+
                 let new_item_id = ui.id().with("new");
                 let mut text = ui.memory_mut(|memory| {
                     memory.data.get_temp_mut_or_default::<String>(new_item_id).clone()
                 });
+                egui_extras::StripBuilder::new(ui)
+                    .size(egui_extras::Size::exact(22.0))
+                    .size(egui_extras::Size::remainder())
+                    .horizontal(|mut strip| {
+                        strip.cell(|ui| {
+                            if ui.button("➕").clicked() && !text.is_empty() {
+                                list.push(text.clone());
+                                ui.memory_mut(|memory| {
+                                    memory.data.remove_temp::<String>(new_item_id)
+                                });
+                            }
+                        });
 
-                if ui.button("➕").clicked() && !text.is_empty() {
-                    list.push(text.clone());
-                    ui.memory_mut(|memory| memory.data.remove_temp::<String>(new_item_id));
-                }
-
-                if ui.text_edit_singleline(&mut text).changed() {
-                    ui.memory_mut(|memory| memory.data.insert_temp(new_item_id, text));
-                }
-            });
-        });
-    });
-}
-
-pub fn simple_row(
-    label: impl AsRef<str>,
-    height: f32,
-    body: &mut egui_extras::TableBody,
-    content: impl FnOnce(&mut egui::Ui),
-) {
-    body.row(height, |mut row| {
-        row.col(|ui| {
-            ui.label(label.as_ref());
-        });
-        row.col(content);
-    });
+                        strip.cell(|ui| {
+                            if ui.text_edit_singleline(&mut text).changed() {
+                                ui.memory_mut(|memory| memory.data.insert_temp(new_item_id, text));
+                            }
+                        });
+                    });
+            },
+        );
+    })
+    .response
 }
 
 pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
@@ -131,24 +139,14 @@ pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
         return;
     };
 
-    egui_extras::TableBuilder::new(ui)
-        .id_salt("round-info-edit")
-        .column(egui_extras::Column::auto())
-        .column(egui_extras::Column::remainder())
-        .cell_layout(egui::Layout::left_to_right(egui::Align::Min))
-        .striped(true)
-        .body(|mut body| {
-            simple_row("Авторы", 40.0, &mut body, |ui| {
-                string_list("round-authors", &mut info.authors, ui);
-            });
-            simple_row("Источники", 40.0, &mut body, |ui| {
-                string_list("round-sources", &mut info.sources, ui);
-            });
-            simple_row("Комментарий", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut info.comments);
-            });
-            simple_row("Расширения", 20.0, &mut body, |ui| {
-                ui.text_edit_singleline(&mut info.extension);
-            });
+    PropertyTable::new("info-properties").show(ui, |mut properties| {
+        properties.multiline_row("Авторы", 2, |ui| {
+            string_list("info-properties-authors", &mut info.authors, ui)
         });
+        properties.multiline_row("Источники", 2, |ui| {
+            string_list("info-properties-sources", &mut info.sources, ui)
+        });
+        properties.row("Комментарий", |ui| ui.text_edit_singleline(&mut info.comments));
+        properties.row("Расширения", |ui| ui.text_edit_singleline(&mut info.extension));
+    });
 }
