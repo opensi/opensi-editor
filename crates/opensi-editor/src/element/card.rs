@@ -67,6 +67,11 @@ impl Card<'_> {
     pub fn content(&self, ui: &mut egui::Ui) {
         let text_color = self.style.text_color(ui.visuals());
 
+        let card_width = 160.0;
+        let card_height = 80.0;
+        let card_size = egui::vec2(card_width, card_height);
+        ui.set_min_size(card_size);
+
         let text = match &self.kind {
             CardKind::Round(package, idx) => {
                 let Some(round) = package.get_round(*idx) else {
@@ -140,13 +145,7 @@ impl<'a> egui::Widget for Card<'a> {
             .fill(fill_color)
             .begin(ui);
 
-        let card_width = 120.0;
-        let card_height = 80.0;
-
-        frame.content_ui.allocate_ui(egui::vec2(card_width, card_height), |ui| {
-            ui.set_min_size(egui::vec2(card_width, card_height));
-            self.content(ui);
-        });
+        self.content(&mut frame.content_ui);
         let rect =
             frame.content_ui.min_rect() + frame.frame.inner_margin + frame.frame.outer_margin;
         let response = ui.allocate_rect(rect, egui::Sense::click());
@@ -230,15 +229,26 @@ impl CardTable {
         count: (usize, usize),
         mut builder: impl FnMut(CardTableRow),
     ) {
-        egui_extras::TableBuilder::new(ui)
+        egui::ScrollArea::both()
             .id_salt(self.id)
-            .vscroll(false)
-            .columns(egui_extras::Column::remainder(), count.0)
-            .cell_layout(egui::Layout::centered_and_justified(egui::Direction::LeftToRight))
-            .body(|body| {
-                body.rows(120.0, count.1, |row| {
-                    let row = CardTableRow { row };
-                    builder(row);
+            // FIXME: this fixes always present horizontal scroll, but kinda yucky fix
+            .min_scrolled_width(ui.available_width() + 1.0)
+            .show(ui, |ui| {
+                let table = egui_extras::TableBuilder::new(ui)
+                    .id_salt(self.id.with("table"))
+                    .columns(egui_extras::Column::remainder(), count.0)
+                    .vscroll(false)
+                    .cell_layout(egui::Layout::centered_and_justified(
+                        egui::Direction::LeftToRight,
+                    ));
+
+                table.reset();
+
+                table.body(|body| {
+                    body.rows(120.0, count.1, |row| {
+                        let row = CardTableRow { row };
+                        builder(row);
+                    });
                 });
             });
     }

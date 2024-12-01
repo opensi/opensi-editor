@@ -5,15 +5,19 @@ use opensi_core::prelude::*;
 
 /// UI for general area of [`Package`] editing.
 pub fn workarea(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-    ui.vertical(|ui| {
-        breadcrumbs(package, selected, ui);
+    egui_extras::StripBuilder::new(ui)
+        .size(egui_extras::Size::initial(30.0))
+        .size(egui_extras::Size::remainder())
+        .cell_layout(egui::Layout::top_down(egui::Align::Min))
+        .vertical(|mut strip| {
+            strip.cell(|ui| {
+                breadcrumbs(package, selected, ui);
+            });
 
-        ui.add_space(16.0);
-
-        ui.vertical_centered_justified(|ui| {
-            selected_tab(package, selected, ui);
+            strip.cell(|ui| {
+                selected_tab(package, selected, ui);
+            });
         });
-    });
 }
 
 /// Tab ui based on what package node is selected.

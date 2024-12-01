@@ -2,38 +2,29 @@ use opensi_core::prelude::*;
 
 use crate::element::{
     card::{CardStyle, CardTable},
-    info_properties, string_list, unselectable_heading, PropertyTable,
+    info_properties, string_list, PropertyTable, Sections,
 };
 
 /// Workarea tab to edit package info.
 pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-    ui.vertical(|ui| {
-        ui.allocate_ui(egui::vec2(ui.available_width(), 200.0), |ui| {
-            egui_extras::StripBuilder::new(ui)
-                .sizes(egui_extras::Size::remainder().at_most(500.0), 2)
-                .cell_layout(egui::Layout::top_down_justified(egui::Align::Min))
-                .horizontal(|mut strip| {
-                    strip.cell(|ui| {
-                        unselectable_heading("Информация о пакете", ui);
-                        ui.separator();
-                        package_info_edit(package, ui);
-                    });
-                    strip.cell(|ui| {
-                        unselectable_heading("Метаданные", ui);
-                        ui.separator();
-                        package_metadata_edit(package, ui);
-                    });
+    Sections::new("package-sections")
+        .line(egui_extras::Size::relative(0.4).at_least(400.0), 2)
+        .line(egui_extras::Size::relative(0.6), 1)
+        .show(ui, |mut body| {
+            body.line(|mut line| {
+                line.section("Пакет вопросов", |ui| {
+                    package_info_edit(package, ui);
                 });
-        });
-
-        ui.allocate_ui(egui::vec2(1020.0, ui.available_height()), |ui| {
-            unselectable_heading("Раунды", ui);
-            ui.separator();
-            ui.push_id("package_rounds", |ui| {
-                package_rounds(package, selected, ui);
+                line.section("Метаданные", |ui| {
+                    package_metadata_edit(package, ui);
+                });
+            });
+            body.line(|mut line| {
+                line.section("Раунды", |ui| {
+                    package_rounds(package, selected, ui);
+                });
             });
         });
-    });
 }
 
 fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {

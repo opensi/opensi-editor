@@ -2,7 +2,7 @@ use opensi_core::prelude::*;
 
 use crate::element::{
     card::{CardStyle, CardTable},
-    error_label, info_edit, unselectable_heading, PropertyTable,
+    info_edit, PropertyTable, Sections,
 };
 
 pub fn theme_tab(
@@ -11,39 +11,27 @@ pub fn theme_tab(
     selected: &mut Option<PackageNode>,
     ui: &mut egui::Ui,
 ) {
-    ui.vertical(|ui| {
-        ui.allocate_ui(egui::vec2(ui.available_width(), 200.0), |ui| {
-            egui_extras::StripBuilder::new(ui)
-                .sizes(egui_extras::Size::remainder().at_most(500.0), 2)
-                .cell_layout(egui::Layout::top_down(egui::Align::Min))
-                .horizontal(|mut strip| {
-                    let Some(theme) = package.get_theme_mut(idx) else {
-                        let error = format!("Невозможно найти тему с индексом {idx}");
-                        strip.cell(|ui| {
-                            error_label(error, ui);
-                        });
-                        strip.empty();
-                        return;
-                    };
-
-                    strip.cell(|ui| {
-                        unselectable_heading("Тема", ui);
-                        ui.separator();
-                        theme_edit(theme, ui);
-                    });
-
-                    strip.cell(|ui| {
-                        unselectable_heading("Дополнительная информация", ui);
-                        ui.separator();
-                        info_edit(&mut theme.info, ui);
-                    });
+    Sections::new("theme-sections")
+        .line(egui_extras::Size::relative(0.2).at_least(200.0), 2)
+        .line(egui_extras::Size::relative(0.8), 1)
+        .show(ui, |mut body| {
+            body.line(|mut line| {
+                let Some(theme) = package.get_theme_mut(idx) else {
+                    return;
+                };
+                line.section("Тема", |ui| {
+                    theme_edit(theme, ui);
                 });
+                line.section("Дополнительная информация", |ui| {
+                    info_edit(&mut theme.info, ui);
+                });
+            });
+            body.line(|mut line| {
+                line.section("Вопросы", |ui| {
+                    theme_questions(package, idx, selected, ui);
+                });
+            });
         });
-
-        unselectable_heading("Вопросы", ui);
-        ui.separator();
-        theme_questions(package, idx, selected, ui);
-    });
 }
 
 fn theme_edit(theme: &mut Theme, ui: &mut egui::Ui) {

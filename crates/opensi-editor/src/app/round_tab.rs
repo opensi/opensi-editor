@@ -2,7 +2,7 @@ use opensi_core::prelude::*;
 
 use crate::element::{
     card::{CardStyle, CardTable},
-    error_label, info_edit, unselectable_heading, PropertyTable,
+    info_edit, PropertyTable, Sections,
 };
 
 /// Workarea tab to edit round info and its themes.
@@ -12,39 +12,27 @@ pub fn round_tab(
     selected: &mut Option<PackageNode>,
     ui: &mut egui::Ui,
 ) {
-    ui.vertical(|ui| {
-        ui.allocate_ui(egui::vec2(ui.available_width(), 200.0), |ui| {
-            egui_extras::StripBuilder::new(ui)
-                .sizes(egui_extras::Size::remainder().at_most(500.0), 2)
-                .cell_layout(egui::Layout::top_down(egui::Align::Min))
-                .horizontal(|mut strip| {
-                    let Some(round) = package.get_round_mut(idx) else {
-                        let error = format!("Невозможно найти раунд с индексом {idx}");
-                        strip.cell(|ui| {
-                            error_label(error, ui);
-                        });
-                        strip.empty();
-                        return;
-                    };
-
-                    strip.cell(|ui| {
-                        unselectable_heading("Раунд", ui);
-                        ui.separator();
-                        round_edit(round, ui);
-                    });
-
-                    strip.cell(|ui| {
-                        unselectable_heading("Дополнительная информация", ui);
-                        ui.separator();
-                        info_edit(&mut round.info, ui);
-                    });
+    Sections::new("round-sections")
+        .line(egui_extras::Size::relative(0.2).at_least(200.0), 2)
+        .line(egui_extras::Size::relative(0.8), 1)
+        .show(ui, |mut body| {
+            body.line(|mut line| {
+                let Some(round) = package.get_round_mut(idx) else {
+                    return;
+                };
+                line.section("Раунд", |ui| {
+                    round_edit(round, ui);
                 });
+                line.section("Дополнительная информация", |ui| {
+                    info_edit(&mut round.info, ui);
+                });
+            });
+            body.line(|mut line| {
+                line.section("Темы", |ui| {
+                    round_themes(package, idx, selected, ui);
+                });
+            });
         });
-
-        unselectable_heading("Темы", ui);
-        ui.separator();
-        round_themes(package, idx, selected, ui);
-    });
 }
 
 fn round_edit(round: &mut Round, ui: &mut egui::Ui) {
