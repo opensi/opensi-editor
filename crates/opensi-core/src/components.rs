@@ -21,7 +21,7 @@ pub struct Authors {
     pub authors: Vec<String>,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Round {
     #[serde(rename = "@name")]
@@ -35,7 +35,13 @@ pub struct Round {
     pub themes: Vec<Theme>,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+impl Default for Round {
+    fn default() -> Self {
+        Self { name: "Новый раунд".to_string(), kind: None, info: None, themes: vec![] }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Theme {
     #[serde(rename = "@name")]
     pub name: String,
@@ -64,13 +70,29 @@ impl Theme {
     }
 }
 
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            name: "Новая тема".to_string(),
+            questions: vec![
+                Question { price: 100, ..Question::default() },
+                Question { price: 200, ..Question::default() },
+                Question { price: 300, ..Question::default() },
+                Question { price: 400, ..Question::default() },
+                Question { price: 500, ..Question::default() },
+            ],
+            info: None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Questions {
     #[serde(rename = "question")]
     pub questions: Vec<Question>,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Question {
     #[serde(rename = "@price")]
@@ -85,6 +107,19 @@ pub struct Question {
     pub wrong: Vec<Answer>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Info>,
+}
+
+impl Default for Question {
+    fn default() -> Self {
+        Self {
+            price: 100,
+            question_type: None,
+            scenario: vec![],
+            right: vec![],
+            wrong: vec![],
+            info: None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]

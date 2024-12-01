@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use quick_xml::de::from_str;
 use quick_xml::se::to_string;
@@ -15,8 +16,8 @@ use crate::serde_impl;
 
 /// Complete package structure with meta information about
 /// the package and its tree of [`Question`].
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default, rename = "package")]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename = "package")]
 pub struct Package {
     // attributes
     #[serde(rename = "@name")]
@@ -25,31 +26,56 @@ pub struct Package {
     pub version: f32,
     #[serde(rename = "@id")]
     pub id: String,
-    #[serde(rename = "@date")]
+    #[serde(default, rename = "@date")]
     pub date: String,
-    #[serde(rename = "@publisher")]
+    #[serde(default, rename = "@publisher")]
     pub publisher: String,
-    #[serde(rename = "@difficulty")]
+    #[serde(default, rename = "@difficulty")]
     pub difficulty: u8,
-    #[serde(rename = "@language", skip_serializing_if = "String::is_empty")]
+    #[serde(default, rename = "@language", skip_serializing_if = "String::is_empty")]
     pub language: String,
-    #[serde(rename = "@logo", skip_serializing_if = "Option::is_none")]
+    #[serde(default, rename = "@logo", skip_serializing_if = "Option::is_none")]
     pub logo: Option<String>,
-    #[serde(rename = "@restriction", skip_serializing_if = "String::is_empty")]
+    #[serde(default, rename = "@restriction", skip_serializing_if = "String::is_empty")]
     pub restriction: String,
-    #[serde(rename = "@xmlns")]
+    #[serde(default, rename = "@xmlns")]
     pub namespace: String,
 
     // elements
+    #[serde(default)]
     pub info: Info,
-    #[serde(with = "serde_impl::rounds")]
+    #[serde(default, with = "serde_impl::rounds")]
     pub rounds: Vec<Round>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<String>,
 
     // resources
     #[serde(skip)]
     pub resource: HashMap<Resource, Vec<u8>>,
+}
+
+/// # Creation of package.
+impl Package {
+    pub fn new() -> Self {
+        let utc = chrono::Utc::now();
+
+        Self {
+            name: "Новый пакет вопросов".to_string(),
+            version: 5.0,
+            id: uuid::Uuid::new_v4().to_string(),
+            date: format!("{}-{:0>2}-{:0>2}", utc.year(), utc.month(), utc.day()),
+            publisher: String::new(),
+            difficulty: 5,
+            language: String::new(),
+            logo: None,
+            restriction: String::new(),
+            namespace: String::new(),
+            info: Info::default(),
+            rounds: vec![],
+            tags: vec![],
+            resource: HashMap::new(),
+        }
+    }
 }
 
 /// # [`PackageNode`]-based methods
@@ -151,8 +177,7 @@ impl Package {
     /// Create a new default [`Round`], push it and return
     /// a reference to it.
     pub fn allocate_round(&mut self) -> &mut Round {
-        let round = Round { name: "Новый раунд".to_string(), ..Default::default() };
-        self.push_round(round)
+        self.push_round(Round::default())
     }
 
     /// Check if [`Round`] by index exist.
@@ -229,8 +254,7 @@ impl Package {
     /// and return a reference to it.
     pub fn allocate_theme(&mut self, idx: impl Into<RoundIdx>) -> Option<&mut Theme> {
         let idx = idx.into();
-        let theme = Theme { name: "Новая тема".to_string(), ..Default::default() };
-        self.push_theme(idx, theme)
+        self.push_theme(idx, Theme::default())
     }
 
     /// Return amount of [`Theme`]s in a [`Round`].

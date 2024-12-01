@@ -74,7 +74,7 @@ impl eframe::App for EditorApp {
                 };
                 if new_pack_modal.suggested_button(ui, "Перезаписать").clicked() {
                     self.package_state =
-                        PackageState::Active { package: Package::default(), selected: None };
+                        PackageState::Active { package: Package::new(), selected: None };
                 };
             });
         });
@@ -127,7 +127,7 @@ impl eframe::App for EditorApp {
                             },
                             _ => {
                                 self.package_state = PackageState::Active {
-                                    package: Package::default(),
+                                    package: Package::new(),
                                     selected: None,
                                 };
                             },
