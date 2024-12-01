@@ -2,7 +2,7 @@ use opensi_core::prelude::*;
 
 use crate::element::{
     card::{CardStyle, CardTable},
-    string_list, unselectable_heading, PropertyTable,
+    info_properties, string_list, unselectable_heading, PropertyTable,
 };
 
 /// Workarea tab to edit package info.
@@ -49,7 +49,9 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
         properties.row("Издатель", |ui| ui.text_edit_singleline(&mut package.publisher));
         properties.row("Язык", |ui| ui.text_edit_singleline(&mut package.language));
         properties
-            .multiline_row("Тэги", 2, |ui| string_list("package-tags", &mut package.tags, ui))
+            .multiline_row("Тэги", 2, |ui| string_list("package-tags", &mut package.tags, ui));
+
+        info_properties(&mut package.info, &mut properties);
     });
 }
 

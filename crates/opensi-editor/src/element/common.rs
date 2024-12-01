@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use opensi_core::prelude::*;
 
-use super::PropertyTable;
+use super::{property::Properties, PropertyTable};
 
 /// A generic error label.
 pub fn error_label(error: impl Display, ui: &mut egui::Ui) {
@@ -120,13 +120,17 @@ pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
     };
 
     PropertyTable::new("info-properties").show(ui, |mut properties| {
-        properties.multiline_row("Авторы", 2, |ui| {
-            string_list("info-properties-authors", &mut info.authors, ui)
-        });
-        properties.multiline_row("Источники", 2, |ui| {
-            string_list("info-properties-sources", &mut info.sources, ui)
-        });
-        properties.row("Комментарий", |ui| ui.text_edit_singleline(&mut info.comments));
-        properties.row("Расширения", |ui| ui.text_edit_singleline(&mut info.extension));
+        info_properties(info, &mut properties);
     });
+}
+
+pub fn info_properties(info: &mut Info, properties: &mut Properties) {
+    properties.multiline_row("Авторы", 2, |ui| {
+        string_list("info-properties-authors", &mut info.authors, ui)
+    });
+    properties.multiline_row("Источники", 2, |ui| {
+        string_list("info-properties-sources", &mut info.sources, ui)
+    });
+    properties.row("Комментарий", |ui| ui.text_edit_singleline(&mut info.comments));
+    properties.row("Расширения", |ui| ui.text_edit_singleline(&mut info.extension));
 }
