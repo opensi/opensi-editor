@@ -1,22 +1,24 @@
 use opensi_core::prelude::*;
 use std::borrow::Cow;
 
-use super::{question_name, round_name, theme_name, unselectable_label};
+use super::{
+    node_context::PackageNodeContextMenu, question_name, round_name, theme_name, unselectable_label,
+};
 
 /// Rectangular cilckable card for package nodes (and more).
 // TODO: context menu
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct Card<'a> {
     kind: CardKind<'a>,
     style: CardStyle,
 }
 
 /// Types of content of [`Card`].
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub enum CardKind<'a> {
-    Round(&'a Round),
-    Theme(&'a Theme),
-    Question(&'a Question),
+    Round(&'a mut Package, RoundIdx),
+    Theme(&'a mut Package, ThemeIdx),
+    Question(&'a mut Package, QuestionIdx),
     Custom(&'a str),
 }
 
@@ -61,13 +63,75 @@ impl CardStyle {
     }
 }
 
+impl Card<'_> {
+    pub fn content(&self, ui: &mut egui::Ui) {
+        let text_color = self.style.text_color(ui.visuals());
+
+        let text = match &self.kind {
+            CardKind::Round(package, idx) => {
+                let Some(round) = package.get_round(*idx) else {
+                    return;
+                };
+                ui.vertical_centered_justified(|ui| {
+                    unselectable_label(
+                        egui::RichText::new(round_name(round)).size(22.0).color(text_color),
+                        ui,
+                    );
+                    ui.separator();
+                    if round.themes.is_empty() {
+                        unselectable_label("Пусто", ui);
+                    } else {
+                        ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
+                            for theme in &round.themes {
+                                unselectable_label(format!("⚫ {}", theme_name(theme)), ui);
+                            }
+                        });
+                    }
+                });
+                return;
+            },
+            CardKind::Theme(package, idx) => {
+                let Some(theme) = package.get_theme(*idx) else {
+                    return;
+                };
+                theme_name(theme).into()
+            },
+            CardKind::Question(package, idx) => {
+                let Some(question) = package.get_question(*idx) else {
+                    return;
+                };
+                question_name(question).into()
+            },
+            &CardKind::Custom(str) => Cow::Borrowed(str),
+        };
+
+        // TODO: aprox, accurate values
+        let font_size = 22.0 - (text.len() as isize - 8).max(0) as f32 * 0.3;
+        let label =
+            egui::Label::new(egui::RichText::new(text.as_ref()).size(font_size).color(text_color))
+                .selectable(false)
+                .halign(egui::Align::Center)
+                .wrap();
+
+        ui.add(label);
+    }
+
+    fn context_menu(&mut self, response: &egui::Response, ui: &mut egui::Ui) {
+        let (package, node) = match &mut self.kind {
+            CardKind::Round(package, round_idx) => (package, (*round_idx).into()),
+            CardKind::Theme(package, theme_idx) => (package, (*theme_idx).into()),
+            CardKind::Question(package, question_idx) => (package, (*question_idx).into()),
+            _ => return,
+        };
+
+        PackageNodeContextMenu { package, node }.show(response, ui);
+    }
+}
+
 impl<'a> egui::Widget for Card<'a> {
-    fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let (fill_color, text_color, stroke) = (
-            self.style.fill_color(ui.visuals()),
-            self.style.text_color(ui.visuals()),
-            self.style.stroke(ui.visuals()),
-        );
+    fn ui(mut self, ui: &mut egui::Ui) -> egui::Response {
+        let (fill_color, stroke) =
+            (self.style.fill_color(ui.visuals()), self.style.stroke(ui.visuals()));
         let mut frame = egui::Frame::default()
             .inner_margin(16.0)
             .outer_margin(egui::Margin::symmetric(0.0, 4.0))
@@ -81,45 +145,7 @@ impl<'a> egui::Widget for Card<'a> {
 
         frame.content_ui.allocate_ui(egui::vec2(card_width, card_height), |ui| {
             ui.set_min_size(egui::vec2(card_width, card_height));
-
-            let text = match self.kind {
-                CardKind::Round(round) => {
-                    ui.vertical_centered_justified(|ui| {
-                        unselectable_label(
-                            egui::RichText::new(round_name(round)).size(22.0).color(text_color),
-                            ui,
-                        );
-                        ui.separator();
-                        if round.themes.is_empty() {
-                            unselectable_label("Пусто", ui);
-                        } else {
-                            ui.with_layout(
-                                egui::Layout::top_down_justified(egui::Align::Min),
-                                |ui| {
-                                    for theme in &round.themes {
-                                        unselectable_label(format!("⚫ {}", theme_name(theme)), ui);
-                                    }
-                                },
-                            );
-                        }
-                    });
-                    return;
-                },
-                CardKind::Theme(theme) => theme_name(theme).into(),
-                CardKind::Question(question) => question_name(question).into(),
-                CardKind::Custom(str) => Cow::Borrowed(str),
-            };
-
-            // TODO: aprox, accurate values
-            let font_size = 22.0 - (text.len() as isize - 8).max(0) as f32 * 0.3;
-            let label = egui::Label::new(
-                egui::RichText::new(text.as_ref()).size(font_size).color(text_color),
-            )
-            .selectable(false)
-            .halign(egui::Align::Center)
-            .wrap();
-
-            ui.add(label);
+            self.content(ui);
         });
         let rect =
             frame.content_ui.min_rect() + frame.frame.inner_margin + frame.frame.outer_margin;
@@ -129,6 +155,7 @@ impl<'a> egui::Widget for Card<'a> {
             frame.frame.fill = self.style.hover_fill_color(ui.visuals());
         }
         frame.paint(ui);
+        self.context_menu(&response, ui);
         response
     }
 }
@@ -151,16 +178,34 @@ impl CardTableRow<'_, '_> {
         unsafe { response.assume_init() }
     }
 
-    pub fn round(&mut self, round: &Round, style: CardStyle) -> egui::Response {
-        self.row(|ui| ui.add(Card { kind: CardKind::Round(round), style }))
+    pub fn round(
+        &mut self,
+        package: &mut Package,
+        idx: impl Into<RoundIdx>,
+        style: CardStyle,
+    ) -> egui::Response {
+        let idx = idx.into();
+        self.row(|ui| ui.add(Card { kind: CardKind::Round(package, idx), style }))
     }
 
-    pub fn theme(&mut self, theme: &Theme, style: CardStyle) -> egui::Response {
-        self.row(|ui| ui.add(Card { kind: CardKind::Theme(theme), style }))
+    pub fn theme(
+        &mut self,
+        package: &mut Package,
+        idx: impl Into<ThemeIdx>,
+        style: CardStyle,
+    ) -> egui::Response {
+        let idx = idx.into();
+        self.row(|ui| ui.add(Card { kind: CardKind::Theme(package, idx), style }))
     }
 
-    pub fn question(&mut self, question: &Question, style: CardStyle) -> egui::Response {
-        self.row(|ui| ui.add(Card { kind: CardKind::Question(question), style }))
+    pub fn question(
+        &mut self,
+        package: &mut Package,
+        idx: impl Into<QuestionIdx>,
+        style: CardStyle,
+    ) -> egui::Response {
+        let idx = idx.into();
+        self.row(|ui| ui.add(Card { kind: CardKind::Question(package, idx), style }))
     }
 
     pub fn custom(&mut self, str: impl AsRef<str>, style: CardStyle) -> egui::Response {

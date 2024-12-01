@@ -63,16 +63,15 @@ fn theme_questions(
     };
 
     CardTable::new("theme-questions").show(ui, (1, theme.questions.len() + 1), |mut row| {
-        let index = row.index();
-        let Some(question) = package.get_question(idx.question(index)) else {
-            if row.custom("➕ Новый вопрос", CardStyle::Weak).clicked() {
-                package.allocate_question(idx);
+        let idx = idx.question(row.index());
+        if package.contains_question(idx) {
+            if row.question(package, idx, CardStyle::Important).clicked() {
+                *selected = Some(idx.into());
             }
-            return;
-        };
-
-        if row.question(question, CardStyle::Normal).clicked() {
-            *selected = Some(idx.question(index).into());
+        } else {
+            if row.custom("➕ Новый вопрос", CardStyle::Weak).clicked() {
+                package.allocate_question(idx.parent());
+            }
         }
     });
 }

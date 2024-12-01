@@ -28,8 +28,17 @@ impl PackageNode {
     pub fn parent(&self) -> Option<PackageNode> {
         match self {
             PackageNode::Round(_) => None,
-            PackageNode::Theme(node) => Some(node.parent().into()),
-            PackageNode::Question(node) => Some(node.parent().into()),
+            PackageNode::Theme(idx) => Some(idx.parent().into()),
+            PackageNode::Question(idx) => Some(idx.parent().into()),
+        }
+    }
+
+    /// Get child node of this node, unless it's a [`PackageNode::Question`].
+    pub fn child(&self, child_idx: usize) -> Option<PackageNode> {
+        match self {
+            PackageNode::Round(idx) => Some(idx.theme(child_idx).into()),
+            PackageNode::Theme(idx) => Some(idx.question(child_idx).into()),
+            PackageNode::Question(_) => None,
         }
     }
 

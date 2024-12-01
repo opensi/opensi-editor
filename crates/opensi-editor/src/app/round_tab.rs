@@ -72,26 +72,27 @@ fn round_themes(
     };
 
     CardTable::new("round-themes").show(ui, count, |mut row| {
-        let theme_idx = idx.theme(row.index());
-        let Some(theme) = package.get_theme(theme_idx) else {
+        let idx = idx.theme(row.index());
+
+        if package.contains_theme(idx) {
+            if row.theme(package, idx, CardStyle::Important).clicked() {
+                *selected = Some(idx.into());
+            }
+
+            for question_idx in 0..package.count_questions(idx).min(count.0 - 2) {
+                let idx = idx.question(question_idx);
+                if row.question(package, idx, CardStyle::Normal).clicked() {
+                    *selected = Some(idx.into());
+                }
+            }
+
+            if row.custom("➕ Новый вопрос", CardStyle::Weak).clicked() {
+                package.allocate_question(idx);
+            }
+        } else {
             if row.custom("➕ Новая тема", CardStyle::Weak).clicked() {
-                package.allocate_theme(idx);
+                package.allocate_theme(idx.parent());
             }
-            return;
-        };
-
-        if row.theme(theme, CardStyle::Important).clicked() {
-            *selected = Some(theme_idx.into());
-        }
-
-        for (question_index, question) in theme.questions.iter().enumerate() {
-            if row.question(question, CardStyle::Normal).clicked() {
-                *selected = Some(theme_idx.question(question_index).into());
-            }
-        }
-
-        if row.custom("➕ Новый вопрос", CardStyle::Weak).clicked() {
-            package.allocate_question(theme_idx);
         }
     });
 }

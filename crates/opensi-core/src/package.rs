@@ -154,6 +154,17 @@ impl Package {
         let round = Round { name: "Новый раунд".to_string(), ..Default::default() };
         self.push_round(round)
     }
+
+    /// Check if [`Round`] by index exist.
+    pub fn contains_round(&self, idx: impl Into<RoundIdx>) -> bool {
+        let idx = idx.into();
+        *idx < self.rounds.len()
+    }
+
+    /// Return amount of [`Round`]s in this package.
+    pub fn count_rounds(&self) -> usize {
+        self.rounds.len()
+    }
 }
 
 /// # Methods around [`Theme`]
@@ -168,6 +179,12 @@ impl Package {
     pub fn get_theme_mut(&mut self, idx: impl Into<ThemeIdx>) -> Option<&mut Theme> {
         let idx = idx.into();
         self.get_round_mut(idx.round_index).and_then(|round| round.themes.get_mut(*idx))
+    }
+
+    /// Check if [`Theme`] by indices exist.
+    pub fn contains_theme(&self, idx: impl Into<ThemeIdx>) -> bool {
+        let idx = idx.into();
+        self.get_round(idx.parent()).map(|round| *idx < round.themes.len()).unwrap_or_default()
     }
 
     /// Remove [`Theme`] in [`Round`] by indices.
@@ -215,6 +232,11 @@ impl Package {
         let theme = Theme { name: "Новая тема".to_string(), ..Default::default() };
         self.push_theme(idx, theme)
     }
+
+    /// Return amount of [`Theme`]s in a [`Round`].
+    pub fn count_themes(&self, idx: impl Into<RoundIdx>) -> usize {
+        self.get_round(idx).map(|round| round.themes.len()).unwrap_or_default()
+    }
 }
 
 /// # Methods around [`Theme`].
@@ -229,6 +251,12 @@ impl Package {
     pub fn get_question_mut(&mut self, idx: impl Into<QuestionIdx>) -> Option<&mut Question> {
         let idx = idx.into();
         self.get_theme_mut(idx.parent()).and_then(|theme| theme.questions.get_mut(*idx))
+    }
+
+    /// Check if [`Question`] by indices exist.
+    pub fn contains_question(&self, idx: impl Into<QuestionIdx>) -> bool {
+        let idx = idx.into();
+        self.get_theme(idx.parent()).map(|theme| *idx < theme.questions.len()).unwrap_or_default()
     }
 
     /// Remove [`Question`] in [`Theme`] in [`Round`] by indices.
@@ -286,6 +314,11 @@ impl Package {
         let price = self.get_theme(idx)?.guess_next_question_price();
         let question = Question { price, ..Default::default() };
         self.push_question(idx, question)
+    }
+
+    /// Return amount of [`Question`]s in a [`Theme`].
+    pub fn count_questions(&self, idx: impl Into<ThemeIdx>) -> usize {
+        self.get_theme(idx).map(|theme| theme.questions.len()).unwrap_or_default()
     }
 }
 
