@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::Display};
+use std::fmt::Display;
 
 use opensi_core::prelude::*;
 
@@ -31,26 +31,6 @@ pub fn danger_button(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) -> eg
         ui.add(egui::Button::new(text))
     })
     .inner
-}
-
-/// Utility method to get a button name for a [`PackageNode`].
-pub fn node_name<'a>(node: PackageNode, package: &'a Package) -> Cow<'a, str> {
-    match node {
-        PackageNode::Round(idx) => package
-            .get_round(idx)
-            .map(|round| round.name.as_str())
-            .unwrap_or("<Неизвестный раунд>")
-            .into(),
-        PackageNode::Theme(idx) => package
-            .get_theme(idx)
-            .map(|theme| theme.name.as_str())
-            .unwrap_or("<Неизвестная тема>")
-            .into(),
-        PackageNode::Question(idx) => package
-            .get_question(idx)
-            .map(|question| format!("🗛 ({})", question.price).into())
-            .unwrap_or("<Неизвестный вопрос>".into()),
-    }
 }
 
 pub fn unselectable_heading(text: impl Into<String>, ui: &mut egui::Ui) -> egui::Response {

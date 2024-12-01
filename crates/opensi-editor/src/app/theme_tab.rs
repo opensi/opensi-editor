@@ -1,6 +1,9 @@
 use opensi_core::prelude::*;
 
-use crate::element::{error_label, info_edit, unselectable_heading, Card, PropertyTable};
+use crate::element::{
+    card::{CardStyle, CardTable},
+    error_label, info_edit, unselectable_heading, PropertyTable,
+};
 
 pub fn theme_tab(
     package: &mut Package,
@@ -55,33 +58,21 @@ fn theme_questions(
     selected: &mut Option<PackageNode>,
     ui: &mut egui::Ui,
 ) {
-    egui::ScrollArea::horizontal().show(ui, |ui| {
-        let Some(theme) = package.get_theme_mut(idx) else {
+    let Some(theme) = package.get_theme_mut(idx) else {
+        return;
+    };
+
+    CardTable::new("theme-questions").show(ui, (1, theme.questions.len() + 1), |mut row| {
+        let index = row.index();
+        let Some(question) = package.get_question(idx.question(index)) else {
+            if row.custom("➕ Новый вопрос", CardStyle::Weak).clicked() {
+                package.allocate_question(idx);
+            }
             return;
         };
 
-        ui.set_max_height(100.0);
-
-        egui_extras::StripBuilder::new(ui)
-            .sizes(egui_extras::Size::remainder().at_least(200.0), theme.questions.len() + 1)
-            .cell_layout(egui::Layout::centered_and_justified(egui::Direction::LeftToRight))
-            .horizontal(|mut strip| {
-                for (question_index, question) in theme.questions.iter().enumerate() {
-                    strip.cell(|ui| {
-                        if ui.add(Card::Question(question)).clicked() {
-                            *selected = Some(idx.question(question_index).into());
-                        }
-                    });
-                }
-
-                strip.cell(|ui| {
-                    if ui.add(Card::New).clicked() {
-                        theme.questions.push(Question {
-                            price: theme.guess_next_question_price(),
-                            ..Default::default()
-                        });
-                    }
-                });
-            });
+        if row.question(question, CardStyle::Normal).clicked() {
+            *selected = Some(idx.question(index).into());
+        }
     });
 }

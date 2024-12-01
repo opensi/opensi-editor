@@ -1,6 +1,9 @@
 use opensi_core::prelude::*;
 
-use crate::element::{error_label, info_edit, unselectable_heading, Card, PropertyTable};
+use crate::element::{
+    card::{CardStyle, CardTable},
+    error_label, info_edit, unselectable_heading, PropertyTable,
+};
 
 /// Workarea tab to edit round info and its themes.
 pub fn round_tab(
@@ -59,71 +62,36 @@ fn round_themes(
     selected: &mut Option<PackageNode>,
     ui: &mut egui::Ui,
 ) {
-    egui_extras::StripBuilder::new(ui)
-        .size(egui_extras::Size::remainder())
-        .size(egui_extras::Size::exact(30.0))
-        .cell_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown))
-        .vertical(|mut strip| {
-            strip.cell(|ui| {
-                let Some(round) = package.get_round_mut(idx) else {
-                    return;
-                };
+    let count = {
+        let Some(round) = package.get_round(idx) else {
+            return;
+        };
+        let max_theme_len =
+            round.themes.iter().map(|theme| theme.questions.len()).max().unwrap_or_default();
+        (max_theme_len + 2, round.themes.len() + 1)
+    };
 
-                egui::ScrollArea::both().show(ui, |ui| {
-                    let max_theme_len = round
-                        .themes
-                        .iter()
-                        .map(|theme| theme.questions.len())
-                        .max()
-                        .unwrap_or_default();
+    CardTable::new("round-themes").show(ui, count, |mut row| {
+        let theme_idx = idx.theme(row.index());
+        let Some(theme) = package.get_theme(theme_idx) else {
+            if row.custom("➕ Новая тема", CardStyle::Weak).clicked() {
+                package.allocate_theme(idx);
+            }
+            return;
+        };
 
-                    egui_extras::TableBuilder::new(ui)
-                        .id_salt("rounds")
-                        .vscroll(false)
-                        .columns(egui_extras::Column::remainder(), max_theme_len + 2)
-                        .cell_layout(egui::Layout::centered_and_justified(
-                            egui::Direction::LeftToRight,
-                        ))
-                        .body(|body| {
-                            body.rows(100.0, round.themes.len(), |mut row| {
-                                let theme_idx = idx.theme(row.index());
-                                let Some(theme) = round.themes.get_mut(*theme_idx) else {
-                                    return;
-                                };
+        if row.theme(theme, CardStyle::Important).clicked() {
+            *selected = Some(theme_idx.into());
+        }
 
-                                row.col(|ui| {
-                                    if ui.add(Card::Theme(theme)).clicked() {
-                                        *selected = Some(theme_idx.into());
-                                    }
-                                });
+        for (question_index, question) in theme.questions.iter().enumerate() {
+            if row.question(question, CardStyle::Normal).clicked() {
+                *selected = Some(theme_idx.question(question_index).into());
+            }
+        }
 
-                                for (question_index, question) in theme.questions.iter().enumerate()
-                                {
-                                    row.col(|ui| {
-                                        if ui.add(Card::Question(question)).clicked() {
-                                            *selected =
-                                                Some(theme_idx.question(question_index).into());
-                                        }
-                                    });
-                                }
-
-                                row.col(|ui| {
-                                    if ui.add(Card::New).clicked() {
-                                        theme.questions.push(Question {
-                                            price: theme.guess_next_question_price(),
-                                            ..Default::default()
-                                        });
-                                    }
-                                });
-                            });
-                        });
-                });
-            });
-
-            strip.cell(|ui| {
-                if ui.button("➕ Добавить новую тему").clicked() {
-                    package.allocate_theme(idx);
-                }
-            });
-        });
+        if row.custom("➕ Новый вопрос", CardStyle::Weak).clicked() {
+            package.allocate_question(theme_idx);
+        }
+    });
 }
