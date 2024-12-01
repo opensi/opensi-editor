@@ -6,6 +6,7 @@ mod round_tab;
 mod theme_tab;
 mod workarea;
 
+use itertools::Itertools;
 use opensi_core::prelude::*;
 
 use crate::app::file_dialogs::LoadingPackageReceiver;
@@ -78,6 +79,42 @@ impl eframe::App for EditorApp {
             });
         });
 
+        let authors_modal =
+            egui_modal::Modal::new(ctx, "authors-modal").with_close_on_outside_click(true);
+        authors_modal.show(|ui| {
+            authors_modal.title(ui, "🎓 OpenSI Editor");
+            authors_modal.frame(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.strong("Авторы:");
+                    let authors = env!("CARGO_PKG_AUTHORS").split(":").join(", ");
+                    ui.label(authors);
+                });
+
+                ui.horizontal(|ui| {
+                    ui.strong("Версия:");
+                    let version = env!("CARGO_PKG_VERSION");
+                    ui.code(format!("v{version}"));
+                });
+
+                ui.horizontal(|ui| {
+                    ui.strong("Репозиторий:");
+                    let url = env!("CARGO_PKG_REPOSITORY");
+                    let short_url = url.trim_start_matches("https://github.com/");
+                    ui.hyperlink_to(format!(" {short_url}"), url);
+                });
+
+                ui.separator();
+
+                ui.horizontal(|ui| {
+                    ui.weak("Сделано с помощью");
+                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
+                });
+            });
+            authors_modal.buttons(ui, |ui| {
+                authors_modal.button(ui, "Закрыть");
+            });
+        });
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 egui::widgets::global_theme_preference_switch(ui);
@@ -120,12 +157,19 @@ impl eframe::App for EditorApp {
                 });
                 if let PackageState::Active { .. } = self.package_state {
                     ui.menu_button("Пак", |ui| {
-                        if ui.button("❌Закрыть").clicked() {
+                        if ui.button("❌ Закрыть").clicked() {
                             self.package_state = PackageState::None;
                             ui.close_menu();
                         }
                     });
                 }
+
+                ui.menu_button("Справка", |ui| {
+                    if ui.button("💬 Авторы").clicked() {
+                        authors_modal.open();
+                        ui.close_menu();
+                    }
+                });
             });
         });
 

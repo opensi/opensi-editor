@@ -5,6 +5,9 @@ edition.workspace = true
 license.workspace = true
 version.workspace = true
 rust-version.workspace = true
+description = "Open-source editor for the popular TV game"
+homepage = "opensi.github.io/opensi-editor"
+repository = "https://github.com/opensi/opensi-editor"
 
 [dependencies]
 opensi-core = { version = "*", path = "../opensi-core" }
