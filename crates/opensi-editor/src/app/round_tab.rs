@@ -66,9 +66,13 @@ fn round_themes(
         let Some(round) = package.get_round(idx) else {
             return;
         };
-        let max_theme_len =
-            round.themes.iter().map(|theme| theme.questions.len()).max().unwrap_or_default();
-        (max_theme_len + 2, round.themes.len() + 1)
+        if round.themes.is_empty() {
+            (1, 1)
+        } else {
+            let max_theme_len =
+                round.themes.iter().map(|theme| theme.questions.len()).max().unwrap_or_default();
+            (max_theme_len + 2, round.themes.len() + 1)
+        }
     };
 
     CardTable::new("round-themes").show(ui, count, |mut row| {
