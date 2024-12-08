@@ -135,7 +135,7 @@ impl eframe::App for EditorApp {
                         ui.close_menu();
                     }
                     ui.separator();
-                    if ui.button("⮩ Импорт").clicked() {
+                    if ui.button("⮩ Открыть").clicked() {
                         let package_receiver = file_dialogs::import_dialog();
                         self.package_state = PackageState::Loading(package_receiver);
                         ui.close_menu();
