@@ -1,5 +1,5 @@
 use opensi_core::prelude::*;
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Debug};
 
 use super::{
     node_context::PackageNodeContextMenu, question_name, round_name, theme_name, unselectable_label,
@@ -161,17 +161,18 @@ impl<'a> egui::Widget for Card<'a> {
 
 /// Builder for a signle row inside [`CardTable`].
 pub struct CardTableRow<'a, 'b> {
-    row: egui_extras::TableRow<'a, 'b>,
+    strip: egui_extras::Strip<'a, 'b>,
+    index: usize,
 }
 
 impl CardTableRow<'_, '_> {
     pub fn index(&self) -> usize {
-        self.row.index()
+        self.index
     }
 
     fn row(&mut self, mut add: impl FnMut(&mut egui::Ui) -> egui::Response) -> egui::Response {
         let mut response = std::mem::MaybeUninit::uninit();
-        self.row.col(|ui| {
+        self.strip.cell(|ui| {
             response.write(add(ui));
         });
         unsafe { response.assume_init() }
@@ -234,21 +235,25 @@ impl CardTable {
             // FIXME: this fixes always present horizontal scroll, but kinda yucky fix
             .min_scrolled_width(ui.available_width() + 1.0)
             .show(ui, |ui| {
-                let table = egui_extras::TableBuilder::new(ui)
-                    .id_salt(self.id.with("table"))
-                    .columns(egui_extras::Column::remainder(), count.0)
-                    .vscroll(false)
-                    .cell_layout(egui::Layout::centered_and_justified(
-                        egui::Direction::LeftToRight,
-                    ));
-
-                table.reset();
-
-                table.body(|body| {
-                    body.rows(120.0, count.1, |row| {
-                        let row = CardTableRow { row };
-                        builder(row);
-                    });
+                ui.set_min_height(ui.available_height());
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                    egui_extras::StripBuilder::new(ui)
+                        .sizes(egui_extras::Size::initial(120.0), count.1)
+                        .vertical(|mut vertical| {
+                            for row in 0..count.1 {
+                                vertical.strip(|horizontal| {
+                                    horizontal
+                                        .sizes(egui_extras::Size::remainder(), count.0)
+                                        .cell_layout(egui::Layout::centered_and_justified(
+                                            egui::Direction::LeftToRight,
+                                        ))
+                                        .horizontal(|strip| {
+                                            let row = CardTableRow { strip, index: row };
+                                            builder(row);
+                                        });
+                                });
+                            }
+                        });
                 });
             });
     }
