@@ -10,7 +10,7 @@ use std::{fs::File, io, io::Read};
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
-use super::components::{AtomV5, InfoV5, RoundV5};
+use super::components::{AtomV5, InfoV5, RoundV5, Tag};
 use crate::package_trait::RoundContainer;
 use crate::serde_impl;
 
@@ -46,8 +46,8 @@ pub struct PackageV5 {
     pub info: InfoV5,
     #[serde(default, with = "serde_impl::rounds")]
     pub rounds: Vec<RoundV5>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub tags: Vec<String>,
+    #[serde(default, with = "serde_impl::tags", skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<Tag>,
 
     // resources
     #[serde(skip)]

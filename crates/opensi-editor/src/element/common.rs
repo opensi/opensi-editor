@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use opensi_core::prelude::*;
-
+use opensi_core::v5::Tag;
 use super::{property::Properties, PropertyTable};
 
 /// A generic error label.
@@ -44,7 +44,7 @@ pub fn unselectable_label(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) 
 
 pub fn string_list(
     id: impl Into<egui::Id>,
-    list: &mut Vec<String>,
+    list: &mut Vec<Tag>,
     ui: &mut egui::Ui,
 ) -> egui::Response {
     ui.push_id(id.into(), |ui| {

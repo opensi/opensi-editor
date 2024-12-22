@@ -40,3 +40,4 @@ generate_serde_mod!(atoms: crate::v5::AtomV5 as atom);
 generate_serde_mod!(answers: crate::v5::AnswerV5 as answer);
 generate_serde_mod!(authors: String as author);
 generate_serde_mod!(sources: String as source);
+generate_serde_mod!(tags: crate::v5::Tag as tag);
