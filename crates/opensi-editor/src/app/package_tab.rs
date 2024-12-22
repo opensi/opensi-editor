@@ -8,8 +8,8 @@ use crate::element::{
 /// Workarea tab to edit package info.
 pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
     Sections::new("package-sections")
-        .line(egui_extras::Size::relative(0.4).at_least(400.0), 2)
-        .line(egui_extras::Size::relative(0.6), 1)
+        .line(egui_extras::Size::initial(400.0), 2)
+        .line(egui_extras::Size::remainder(), 1)
         .show(ui, |mut body| {
             body.line(|mut line| {
                 line.section("Пакет вопросов", |ui| {

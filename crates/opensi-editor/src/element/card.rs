@@ -234,11 +234,11 @@ impl CardTable {
             .id_salt(self.id)
             // FIXME: this fixes always present horizontal scroll, but kinda yucky fix
             .min_scrolled_width(ui.available_width() + 1.0)
+            // .max_height(ui.max_rect().height())
             .show(ui, |ui| {
-                ui.set_min_height(ui.available_height());
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                     egui_extras::StripBuilder::new(ui)
-                        .sizes(egui_extras::Size::initial(120.0), count.1)
+                        .sizes(egui_extras::Size::initial(80.0), count.1)
                         .vertical(|mut vertical| {
                             for row in 0..count.1 {
                                 vertical.strip(|horizontal| {

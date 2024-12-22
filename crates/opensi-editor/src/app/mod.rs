@@ -180,7 +180,7 @@ impl eframe::App for EditorApp {
         }
 
         egui::CentralPanel::default()
-            .frame(egui::Frame::central_panel(&ctx.style()).inner_margin(16.0))
+            .frame(egui::Frame::central_panel(&ctx.style()).inner_margin(20.0))
             .show(ctx, |ui| {
                 ui.with_layout(
                     egui::Layout::centered_and_justified(egui::Direction::LeftToRight),

@@ -12,8 +12,8 @@ pub fn theme_tab(
     ui: &mut egui::Ui,
 ) {
     Sections::new("theme-sections")
-        .line(egui_extras::Size::relative(0.2).at_least(200.0), 2)
-        .line(egui_extras::Size::relative(0.8), 1)
+        .line(egui_extras::Size::initial(200.0), 2)
+        .line(egui_extras::Size::remainder(), 1)
         .show(ui, |mut body| {
             body.line(|mut line| {
                 let Some(theme) = package.get_theme_mut(idx) else {

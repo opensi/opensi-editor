@@ -42,6 +42,7 @@ impl SectionsBody<'_, '_, '_> {
             builder
                 .sizes(egui_extras::Size::remainder(), len as usize)
                 .cell_layout(egui::Layout::top_down(egui::Align::Min))
+                .clip(true)
                 .horizontal(|strip| {
                     let line = SectionLine {
                         len,
@@ -77,7 +78,9 @@ impl Sections {
 
     pub fn show(self, ui: &mut egui::Ui, mut add_contents: impl FnMut(SectionsBody)) {
         ui.push_id(self.id, |ui| {
-            let mut builder = egui_extras::StripBuilder::new(ui).clip(true);
+            let mut builder = egui_extras::StripBuilder::new(ui)
+                .clip(true)
+                .cell_layout(egui::Layout::top_down_justified(egui::Align::Min));
             for size in self.sizes {
                 builder = builder.size(size);
             }
