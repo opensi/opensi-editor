@@ -161,8 +161,8 @@ pub struct AnswerV5 {
 pub struct ParamV5 {
     #[serde(rename = "@name")]
     pub name: String,
-    #[serde(rename = "$value")]
-    pub body: String,
+    #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
+    pub body: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
