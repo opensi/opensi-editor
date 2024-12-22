@@ -1,4 +1,4 @@
-use opensi_core::prelude::Package;
+use opensi_core::prelude::*;
 
 const PATH: &str = "tests/data/slamjam2.siq";
 
