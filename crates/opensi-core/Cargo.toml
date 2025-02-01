@@ -4,13 +4,12 @@ authors.workspace = true
 edition.workspace = true
 license.workspace = true
 version.workspace = true
-rust-version.workspace = true
 
 [dependencies]
 serde = { version = "1.0", features = [ "derive" ] }
-quick-xml = { version = "0.36.2", features = ["serialize"] }
-zip = { version = "0.5.4", default-features = false, features = ["deflate"] }
-percent-encoding = "2.1.0"
-derive_more = { version = "0.99.0", default-features = false, features = [ "from", "as_ref", "deref" ] }
-uuid = { version = "1.11.0", features = [ "v4", "fast-rng", "js" ] }
-chrono = { version = "0.4.38", features = [ "now", "alloc", "wasmbind" ] }
+quick-xml = { version = "0.37.2", features = ["serialize"] }
+zip = { version = "2.2.2", default-features = false, features = ["deflate"] }
+percent-encoding = "2.3.1"
+derive_more = { version = "1.0.0", default-features = false, features = [ "from", "as_ref", "deref" ] }
+uuid = { version = "1.12.1", features = [ "v4", "fast-rng", "js" ] }
+chrono = { version = "0.4.39", features = [ "now", "alloc", "wasmbind" ] }

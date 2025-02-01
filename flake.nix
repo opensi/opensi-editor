@@ -5,6 +5,7 @@
     };
     utils = {
       url = "github:numtide/flake-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Write};
 use std::path::Path;
 use std::{fs::File, io, io::Read};
-use zip::write::FileOptions;
+use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 use super::components::{AtomV5, InfoV5, RoundV5, Tag};
@@ -196,7 +196,7 @@ impl PackageV5 {
         let mut zip = ZipWriter::new(cursor);
 
         // Define file options (e.g., compression method)
-        let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
         let xml = to_string(&self).map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
         zip.start_file("content.xml", options)?;
         zip.write_all(Self::XML_VERSION_ENCODING.as_ref())?;
