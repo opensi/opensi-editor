@@ -7,6 +7,7 @@ mod theme_tab;
 mod workarea;
 
 use itertools::Itertools;
+use log::error;
 use opensi_core::prelude::*;
 
 use crate::{app::file_dialogs::LoadingPackageReceiver, icon_format, icon_str};
@@ -27,7 +28,9 @@ impl EditorApp {
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         let app: Self = if let Some(storage) = cc.storage {
-            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+            eframe::get_value::<Vec<u8>>(storage, eframe::APP_KEY)
+                .and_then(|binary| bincode::deserialize(&binary).ok())
+                .unwrap_or_default()
         } else {
             Default::default()
         };
@@ -53,7 +56,12 @@ impl EditorApp {
 impl eframe::App for EditorApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+        match bincode::serialize(self) {
+            Ok(binary) => {
+                eframe::set_value(storage, eframe::APP_KEY, &binary);
+            },
+            Err(err) => error!("Unable to bincode app state: {err}"),
+        }
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
