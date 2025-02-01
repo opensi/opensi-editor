@@ -11,8 +11,7 @@ use opensi_core::prelude::*;
 
 use crate::app::file_dialogs::LoadingPackageReceiver;
 
-const FONT_REGULAR_ID: &'static str = "Regular";
-const FONT_ITALIC_ID: &'static str = "Italic";
+const FONT_REGULAR_ID: &'static str = "regular";
 
 /// Main context for the whole app.
 /// Serialized fields are saved and restored.
@@ -36,11 +35,8 @@ impl EditorApp {
         let mut font_definitions = egui::FontDefinitions::default();
         font_definitions.font_data.insert(
             FONT_REGULAR_ID.into(),
-            egui::FontData::from_static(include_bytes!("../../assets/ui/Lora-Medium.ttf")),
-        );
-        font_definitions.font_data.insert(
-            FONT_ITALIC_ID.into(),
-            egui::FontData::from_static(include_bytes!("../../assets/ui/Lora-MediumItalic.ttf")),
+            egui::FontData::from_static(include_bytes!("../../assets/fonts/Rubik-Medium.ttf"))
+                .into(),
         );
         if let Some(family) = font_definitions.families.get_mut(&egui::FontFamily::Proportional) {
             family.insert(0, FONT_REGULAR_ID.into());
