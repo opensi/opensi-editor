@@ -1,5 +1,7 @@
 use opensi_core::prelude::*;
 
+use crate::icon_str;
+
 use super::danger_button;
 
 /// Context menu for [`PackageNode`].
@@ -11,8 +13,16 @@ pub struct PackageNodeContextMenu<'p> {
 impl PackageNodeContextMenu<'_> {
     pub fn show(self, source: &egui::Response, ui: &mut egui::Ui) {
         let is_question = matches!(self.node, PackageNode::Question(..));
-        let change_text =
-            if is_question { "Изменить цену" } else { "Переименовать" };
+        let change_text = if is_question {
+            icon_str!(COINS, "Изменить цену")
+        } else {
+            icon_str!(PENCIL, "Переименовать")
+        };
+        let add_text = match self.node {
+            PackageNode::Round { .. } => Some(icon_str!(STACK_PLUS, "Добавить тему")),
+            PackageNode::Theme { .. } => Some(icon_str!(FILE_PLUS, "Добавить вопрос")),
+            PackageNode::Question { .. } => None,
+        };
         let new_value_id = source.id.with(egui::Id::new("new-value"));
 
         let modal =
@@ -100,19 +110,15 @@ impl PackageNodeContextMenu<'_> {
         });
 
         source.context_menu(|ui| {
-            if let Some(add_text) = match self.node {
-                PackageNode::Round { .. } => Some("Добавить тему"),
-                PackageNode::Theme { .. } => Some("Добавить вопрос"),
-                PackageNode::Question { .. } => None,
-            } {
-                if ui.button(format!("➕ {add_text}")).clicked() {
+            if let Some(text) = add_text {
+                if ui.button(text).clicked() {
                     self.package.allocate_node(self.node.child(0).unwrap());
                     ui.close_menu();
                 }
                 ui.separator();
             }
 
-            if ui.button(format!("✏ {}", change_text)).clicked() {
+            if ui.button(change_text).clicked() {
                 let value = match self.node {
                     PackageNode::Round(idx) => self
                         .package
@@ -134,12 +140,12 @@ impl PackageNodeContextMenu<'_> {
                 ui.close_menu();
                 modal.open();
             }
-            if ui.button("🗐 Дублировать").clicked() {
+            if ui.button(icon_str!(COPY, "Дублировать")).clicked() {
                 self.package.duplicate_node(self.node);
                 ui.close_menu();
             }
             ui.separator();
-            if danger_button("❌ Удалить", ui).clicked() {
+            if danger_button(icon_str!(TRASH, "Удалить"), ui).clicked() {
                 self.package.remove_node(self.node);
                 ui.close_menu();
             }

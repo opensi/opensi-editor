@@ -1,8 +1,11 @@
 use opensi_core::prelude::*;
 
-use crate::element::{
-    card::{CardStyle, CardTable},
-    info_edit, PropertyTable, Sections,
+use crate::{
+    element::{
+        card::{CardStyle, CardTable},
+        info_edit, PropertyTable, Sections,
+    },
+    icon_str,
 };
 
 pub fn theme_tab(
@@ -57,7 +60,8 @@ fn theme_questions(
                 *selected = Some(idx.into());
             }
         } else {
-            if row.custom("➕ Новый вопрос", CardStyle::Weak).clicked() {
+            if row.custom(icon_str!(FILE_PLUS, "Добавить вопрос"), CardStyle::Weak).clicked()
+            {
                 package.allocate_question(idx.parent());
             }
         }

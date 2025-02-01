@@ -21,6 +21,7 @@ eframe = { version = "0.30", default-features = false, features = [
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.
 ] }
+egui-phosphor = { version = "0.8", default-features = false, features = ["fill"] }
 log = "0.4"
 rfd = "0.15.2"
 thiserror = "2.0.11"
@@ -28,6 +29,7 @@ serde = { version = "1", features = ["derive"] }
 egui_extras = "0.30.0"
 itertools = "0.14.0"
 egui-modal = "0.6.0"
+const_format = "0.2.34"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

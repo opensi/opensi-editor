@@ -9,7 +9,7 @@ mod workarea;
 use itertools::Itertools;
 use opensi_core::prelude::*;
 
-use crate::app::file_dialogs::LoadingPackageReceiver;
+use crate::{app::file_dialogs::LoadingPackageReceiver, icon_format, icon_str};
 
 const FONT_REGULAR_ID: &'static str = "regular";
 
@@ -32,16 +32,19 @@ impl EditorApp {
             Default::default()
         };
 
-        let mut font_definitions = egui::FontDefinitions::default();
-        font_definitions.font_data.insert(
+        let mut fonts = egui::FontDefinitions::default();
+        fonts.font_data.insert(
             FONT_REGULAR_ID.into(),
             egui::FontData::from_static(include_bytes!("../../assets/fonts/Rubik-Medium.ttf"))
                 .into(),
         );
-        if let Some(family) = font_definitions.families.get_mut(&egui::FontFamily::Proportional) {
+        if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
             family.insert(0, FONT_REGULAR_ID.into());
         }
-        cc.egui_ctx.set_fonts(font_definitions);
+
+        egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Fill);
+
+        cc.egui_ctx.set_fonts(fonts);
 
         app
     }
@@ -78,7 +81,7 @@ impl eframe::App for EditorApp {
         let authors_modal =
             egui_modal::Modal::new(ctx, "authors-modal").with_close_on_outside_click(true);
         authors_modal.show(|ui| {
-            authors_modal.title(ui, "🎓 OpenSI Editor");
+            authors_modal.title(ui, icon_str!(GRADUATION_CAP, "OpenSI Editor"));
             authors_modal.frame(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.strong("Авторы:");
@@ -96,7 +99,7 @@ impl eframe::App for EditorApp {
                     ui.strong("Репозиторий:");
                     let url = env!("CARGO_PKG_REPOSITORY");
                     let short_url = url.trim_start_matches("https://github.com/");
-                    ui.hyperlink_to(format!(" {short_url}"), url);
+                    ui.hyperlink_to(icon_format!(GITHUB_LOGO, "{short_url}"), url);
                 });
 
                 ui.separator();
@@ -116,7 +119,7 @@ impl eframe::App for EditorApp {
                 egui::widgets::global_theme_preference_switch(ui);
                 ui.add_space(16.0);
                 ui.menu_button("Файл", |ui| {
-                    if ui.button("➕ Новый пак").clicked() {
+                    if ui.button(icon_str!(FOLDER_SIMPLE_PLUS, "Новый пак")).clicked() {
                         match self.package_state {
                             PackageState::Active { .. } => {
                                 new_pack_modal.open();
@@ -131,12 +134,12 @@ impl eframe::App for EditorApp {
                         ui.close_menu();
                     }
                     ui.separator();
-                    if ui.button("⮩ Открыть").clicked() {
+                    if ui.button(icon_str!(FOLDER_OPEN, "Открыть")).clicked() {
                         let package_receiver = file_dialogs::import_dialog();
                         self.package_state = PackageState::Loading(package_receiver);
                         ui.close_menu();
                     }
-                    if ui.button("💾 Сохранить").clicked() {
+                    if ui.button(icon_str!(FLOPPY_DISK_BACK, "Сохранить")).clicked() {
                         let PackageState::Active { ref package, .. } = self.package_state else {
                             return;
                         };
@@ -153,7 +156,7 @@ impl eframe::App for EditorApp {
                 });
                 if let PackageState::Active { .. } = self.package_state {
                     ui.menu_button("Пак", |ui| {
-                        if ui.button("❌ Закрыть").clicked() {
+                        if ui.button(icon_str!(X, "Закрыть")).clicked() {
                             self.package_state = PackageState::None;
                             ui.close_menu();
                         }
@@ -161,7 +164,7 @@ impl eframe::App for EditorApp {
                 }
 
                 ui.menu_button("Справка", |ui| {
-                    if ui.button("💬 Авторы").clicked() {
+                    if ui.button(icon_str!(STUDENT, "Авторы")).clicked() {
                         authors_modal.open();
                         ui.close_menu();
                     }
@@ -185,10 +188,10 @@ impl eframe::App for EditorApp {
                         {
                             workarea::workarea(package, selected, ui);
                         } else {
-                            let text = egui::RichText::new("OpenSI Editor")
-                                .italics()
-                                .size(64.0)
-                                .color(ui.style().visuals.weak_text_color());
+                            let text =
+                                egui::RichText::new(icon_str!(GRADUATION_CAP, "OpenSI Editor"))
+                                    .size(64.0)
+                                    .color(ui.style().visuals.weak_text_color());
                             ui.add(egui::Label::new(text).selectable(false));
                         }
                     },

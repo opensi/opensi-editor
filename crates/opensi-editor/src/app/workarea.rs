@@ -1,5 +1,6 @@
 use crate::app::{package_tab, question_tab, round_tab, theme_tab};
 use crate::element::{error_label, node_name};
+use crate::icon_string;
 
 use opensi_core::prelude::*;
 
@@ -60,7 +61,7 @@ fn breadcrumbs(package: &Package, selected: &mut Option<PackageNode>, ui: &mut e
     }
 
     fn root_breadcrumb(package: &Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-        if breadcrumb(format!("🏠 {}", package.name), ui) {
+        if breadcrumb(icon_string!(HOUSE, package.name), ui) {
             *selected = None;
         }
     }

@@ -1,8 +1,11 @@
 use opensi_core::prelude::*;
 
-use crate::element::{
-    card::{CardStyle, CardTable},
-    info_properties, string_list, PropertyTable, Sections,
+use crate::{
+    element::{
+        card::{CardStyle, CardTable},
+        info_properties, string_list, PropertyTable, Sections,
+    },
+    icon_str,
 };
 
 /// Workarea tab to edit package info.
@@ -28,7 +31,8 @@ pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui
 }
 
 fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
-    let tags: &mut Vec<String> = &mut package.tags.iter().filter_map(|tag| tag.body.clone()).collect();
+    let tags: &mut Vec<String> =
+        &mut package.tags.iter().filter_map(|tag| tag.body.clone()).collect();
     PropertyTable::new("package-info-properties").show(ui, |mut properties| {
         properties.row("Название", |ui| ui.text_edit_singleline(&mut package.name));
         properties.row("Сложность", |ui| {
@@ -40,8 +44,7 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
             .row("Дата создания", |ui| ui.text_edit_singleline(&mut package.date));
         properties.row("Издатель", |ui| ui.text_edit_singleline(&mut package.publisher));
         properties.row("Язык", |ui| ui.text_edit_singleline(&mut package.language));
-        properties
-            .multiline_row("Тэги", 2, |ui| string_list("package-tags", tags, ui));
+        properties.multiline_row("Тэги", 2, |ui| string_list("package-tags", tags, ui));
 
         info_properties(&mut package.info, &mut properties);
     });
@@ -63,7 +66,8 @@ fn package_rounds(package: &mut Package, selected: &mut Option<PackageNode>, ui:
                 *selected = Some(idx.into());
             }
         } else {
-            if row.custom("➕ Новый раунд", CardStyle::Weak).clicked() {
+            if row.custom(icon_str!(ROWS_PLUS_BOTTOM, "Добавить раунд"), CardStyle::Weak).clicked()
+            {
                 package.allocate_round();
             }
         }

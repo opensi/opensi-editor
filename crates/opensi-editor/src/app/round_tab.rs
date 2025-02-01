@@ -1,8 +1,11 @@
 use opensi_core::prelude::*;
 
-use crate::element::{
-    card::{CardStyle, CardTable},
-    info_edit, PropertyTable, Sections,
+use crate::{
+    element::{
+        card::{CardStyle, CardTable},
+        info_edit, PropertyTable, Sections,
+    },
+    icon_str,
 };
 
 /// Workarea tab to edit round info and its themes.
@@ -78,11 +81,13 @@ fn round_themes(
                 }
             }
 
-            if row.custom("➕ Новый вопрос", CardStyle::Weak).clicked() {
+            if row.custom(icon_str!(FILE_PLUS, "Добавить вопрос"), CardStyle::Weak).clicked()
+            {
                 package.allocate_question(idx);
             }
         } else {
-            if row.custom("➕ Новая тема", CardStyle::Weak).clicked() {
+            if row.custom(icon_str!(STACK_PLUS, "Добавить тему"), CardStyle::Weak).clicked()
+            {
                 package.allocate_theme(idx.parent());
             }
         }

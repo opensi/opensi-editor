@@ -1,18 +1,47 @@
 use std::fmt::Display;
 
-use opensi_core::prelude::*;
 use super::{property::Properties, PropertyTable};
+use opensi_core::prelude::*;
+
+#[macro_export]
+macro_rules! icon {
+    ($icon:ident) => {
+        egui_phosphor::fill::$icon
+    };
+}
+
+#[macro_export]
+macro_rules! icon_str {
+    ($icon:ident, $str:literal) => {
+        const_format::formatcp!("{} {}", crate::icon!($icon), $str)
+    };
+}
+
+#[macro_export]
+macro_rules! icon_string {
+    ($icon:ident, $string:expr) => {
+        format!("{} {}", crate::icon!($icon), $string)
+    };
+}
+
+#[macro_export]
+macro_rules! icon_format {
+    ($icon:ident, $fmt:literal $(,)? $($t:tt)*) => {
+        format!("{} {}", crate::icon!($icon), format_args!($fmt, $($t,)*))
+    };
+}
 
 /// A generic error label.
 pub fn error_label(error: impl Display, ui: &mut egui::Ui) {
-    let text =
-        egui::RichText::new(error.to_string()).color(ui.style().visuals.error_fg_color).size(24.0);
+    let text = egui::RichText::new(icon_string!(WARNING, error))
+        .color(ui.style().visuals.error_fg_color)
+        .size(24.0);
     ui.add(egui::Label::new(text).selectable(true).wrap());
 }
 
 /// A stub todo label.
 pub fn todo_label(ui: &mut egui::Ui) {
-    let text = egui::RichText::new("TODO")
+    let text = egui::RichText::new(icon_str!(PLACEHOLDER, "TODO"))
         .background_color(ui.style().visuals.warn_fg_color)
         .strong()
         .size(24.0);
@@ -66,7 +95,7 @@ pub fn string_list(
                                 .show(ui, |ui| {
                                     ui.horizontal(|ui| {
                                         ui.label(item);
-                                        if ui.small_button("❌").clicked() {
+                                        if ui.small_button(icon!(X_CIRCLE)).clicked() {
                                             deleted_index = Some(index);
                                         }
                                     });
@@ -90,7 +119,7 @@ pub fn string_list(
                     .size(egui_extras::Size::remainder())
                     .horizontal(|mut strip| {
                         strip.cell(|ui| {
-                            if ui.button("➕").clicked() && !text.is_empty() {
+                            if ui.button(icon!(PLUS_CIRCLE)).clicked() && !text.is_empty() {
                                 list.push(text.clone());
                                 ui.memory_mut(|memory| {
                                     memory.data.remove_temp::<String>(new_item_id)
@@ -112,7 +141,7 @@ pub fn string_list(
 
 pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
     let Some(info) = info.as_mut() else {
-        if ui.button("➕ Добавить информацию").clicked() {
+        if ui.button(icon_str!(LIST_PLUS, "Добавить информацию")).clicked() {
             *info = Some(Default::default());
         }
         return;

@@ -1,3 +1,4 @@
+use egui_phosphor::fill as icon;
 use opensi_core::prelude::*;
 use std::borrow::Cow;
 
@@ -23,13 +24,13 @@ pub fn node_name<'a>(node: PackageNode, package: &'a Package) -> Cow<'a, str> {
 }
 
 pub fn round_name(round: &Round) -> String {
-    format!("📚 {}", round.name)
+    format!("{} {}", icon::ROWS, round.name)
 }
 
 pub fn theme_name(theme: &Theme) -> String {
-    format!("📔 {}", theme.name)
+    format!("{} {}", icon::STACK, theme.name)
 }
 
 pub fn question_name(question: &Question) -> String {
-    format!("🗛 ({})", question.price)
+    format!("{} ({})", icon::NOTE, question.price)
 }
