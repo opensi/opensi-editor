@@ -10,16 +10,26 @@ use itertools::Itertools;
 use log::error;
 use opensi_core::prelude::*;
 
-use crate::{app::file_dialogs::LoadingPackageReceiver, icon_format, icon_str};
+use crate::{app::file_dialogs::LoadingPackageReceiver, icon_format, icon_str, icon_string, style};
 
 const FONT_REGULAR_ID: &'static str = "regular";
 
 /// Main context for the whole app.
 /// Serialized fields are saved and restored.
-#[derive(serde::Deserialize, serde::Serialize, Default, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(default)]
 pub struct EditorApp {
     package_state: PackageState,
+    theme_name: String,
+}
+
+impl Default for EditorApp {
+    fn default() -> Self {
+        Self {
+            package_state: PackageState::None,
+            theme_name: style::default_theme().name().to_string(),
+        }
+    }
 }
 
 impl EditorApp {
@@ -27,13 +37,21 @@ impl EditorApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
-        let app: Self = if let Some(storage) = cc.storage {
+        let mut app: Self = if let Some(storage) = cc.storage {
             eframe::get_value::<Vec<u8>>(storage, eframe::APP_KEY)
                 .and_then(|binary| bincode::deserialize(&binary).ok())
                 .unwrap_or_default()
         } else {
             Default::default()
         };
+
+        if let Some(theme) = style::choose(&app.theme_name) {
+            theme.apply(&cc.egui_ctx);
+        } else {
+            error!("Unknown theme: {}", &app.theme_name);
+            app.theme_name = style::default_theme().name().to_string();
+            style::default_theme().apply(&cc.egui_ctx);
+        }
 
         let mut fonts = egui::FontDefinitions::default();
         fonts.font_data.insert(
@@ -64,7 +82,7 @@ impl eframe::App for EditorApp {
         }
     }
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.package_state.update();
 
         let new_pack_modal =
@@ -122,72 +140,103 @@ impl eframe::App for EditorApp {
             });
         });
 
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                egui::widgets::global_theme_preference_switch(ui);
-                ui.add_space(16.0);
-                ui.menu_button("Файл", |ui| {
-                    if ui.button(icon_str!(FOLDER_SIMPLE_PLUS, "Новый пак")).clicked() {
-                        match self.package_state {
-                            PackageState::Active { .. } => {
-                                new_pack_modal.open();
-                            },
-                            _ => {
-                                self.package_state = PackageState::Active {
-                                    package: Package::new(),
-                                    selected: None,
-                                };
-                            },
+        egui::TopBottomPanel::top("top_panel")
+            .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(4.0))
+            .show(ctx, |ui| {
+                egui::menu::bar(ui, |ui| {
+                    ui.add_space(16.0);
+                    ui.menu_button("Файл", |ui| {
+                        if ui.button(icon_str!(FOLDER_SIMPLE_PLUS, "Новый пак")).clicked() {
+                            match self.package_state {
+                                PackageState::Active { .. } => {
+                                    new_pack_modal.open();
+                                },
+                                _ => {
+                                    self.package_state = PackageState::Active {
+                                        package: Package::new(),
+                                        selected: None,
+                                    };
+                                },
+                            }
+                            ui.close_menu();
                         }
-                        ui.close_menu();
-                    }
-                    ui.separator();
-                    if ui.button(icon_str!(FOLDER_OPEN, "Открыть")).clicked() {
-                        let package_receiver = file_dialogs::import_dialog();
-                        self.package_state = PackageState::Loading(package_receiver);
-                        ui.close_menu();
-                    }
-                    if ui.button(icon_str!(FLOPPY_DISK_BACK, "Сохранить")).clicked() {
-                        let PackageState::Active { ref package, .. } = self.package_state else {
-                            return;
-                        };
-                        file_dialogs::export_dialog(package);
-                        ui.close_menu();
+                        ui.separator();
+                        if ui.button(icon_str!(FOLDER_OPEN, "Открыть")).clicked() {
+                            let package_receiver = file_dialogs::import_dialog();
+                            self.package_state = PackageState::Loading(package_receiver);
+                            ui.close_menu();
+                        }
+                        if ui.button(icon_str!(FLOPPY_DISK_BACK, "Сохранить")).clicked() {
+                            let PackageState::Active { ref package, .. } = self.package_state
+                            else {
+                                return;
+                            };
+                            file_dialogs::export_dialog(package);
+                            ui.close_menu();
+                        }
+
+                        if !cfg!(target_arch = "wasm32") {
+                            ui.separator();
+                            if ui.button("Выйти").clicked() {
+                                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                            }
+                        }
+                    });
+                    if let PackageState::Active { .. } = self.package_state {
+                        ui.menu_button("Пак", |ui| {
+                            if ui.button(icon_str!(X, "Закрыть")).clicked() {
+                                self.package_state = PackageState::None;
+                                ui.close_menu();
+                            }
+                        });
                     }
 
-                    if !cfg!(target_arch = "wasm32") {
-                        ui.separator();
-                        if ui.button("Выйти").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    }
-                });
-                if let PackageState::Active { .. } = self.package_state {
-                    ui.menu_button("Пак", |ui| {
-                        if ui.button(icon_str!(X, "Закрыть")).clicked() {
-                            self.package_state = PackageState::None;
+                    ui.menu_button("Справка", |ui| {
+                        if ui.button(icon_str!(STUDENT, "Авторы")).clicked() {
+                            authors_modal.open();
                             ui.close_menu();
                         }
                     });
-                }
 
-                ui.menu_button("Справка", |ui| {
-                    if ui.button(icon_str!(STUDENT, "Авторы")).clicked() {
-                        authors_modal.open();
-                        ui.close_menu();
-                    }
+                    ui.menu_button("Настройки", |ui| {
+                        ui.menu_button(icon_str!(SWATCHES, "Тема"), |ui| {
+                            ui.label(format!("Текущая тема: {}", self.theme_name));
+
+                            for theme in style::all_themes() {
+                                let title = if theme.color_scheme().dark {
+                                    icon_string!(MOON, theme.name())
+                                } else {
+                                    icon_string!(SUN, theme.name())
+                                };
+
+                                if ui.button(title).clicked() {
+                                    self.theme_name = theme.name().to_string();
+                                    theme.apply(ui.ctx());
+                                    if let Some(storage) = frame.storage_mut() {
+                                        self.save(storage);
+                                    }
+                                }
+                            }
+                        });
+                    });
                 });
             });
-        });
 
         if let PackageState::Active { package, selected } = &mut self.package_state {
-            egui::SidePanel::left("question-tree").min_width(300.0).show(ctx, |ui| {
-                package_tree::package_tree(package, selected, ui);
-            });
+            egui::SidePanel::left("question-tree")
+                .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(20.0))
+                .min_width(320.0)
+                .show(ctx, |ui| {
+                    package_tree::package_tree(package, selected, ui);
+                });
         }
 
         egui::CentralPanel::default()
-            .frame(egui::Frame::central_panel(&ctx.style()).inner_margin(20.0))
+            .frame(
+                egui::Frame::central_panel(&ctx.style())
+                    .inner_margin(20.0)
+                    .fill(ctx.style().visuals.widgets.noninteractive.weak_bg_fill),
+            )
             .show(ctx, |ui| {
                 ui.with_layout(
                     egui::Layout::centered_and_justified(egui::Direction::LeftToRight),

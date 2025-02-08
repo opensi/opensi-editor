@@ -34,39 +34,46 @@ pub enum CardStyle {
 impl CardStyle {
     pub fn fill_color(&self, visuals: &egui::Visuals) -> egui::Color32 {
         match self {
-            Self::Important => visuals.widgets.active.weak_bg_fill,
-            Self::Normal | Self::Weak => egui::Color32::TRANSPARENT,
+            Self::Important | Self::Normal => visuals.widgets.active.bg_fill,
+            Self::Weak => egui::Color32::TRANSPARENT,
         }
     }
 
     pub fn hover_fill_color(&self, visuals: &egui::Visuals) -> egui::Color32 {
         match self {
-            Self::Important => visuals.widgets.active.bg_fill,
-            Self::Normal | Self::Weak => visuals.widgets.active.weak_bg_fill,
+            Self::Important => visuals.widgets.hovered.bg_fill,
+            Self::Normal | Self::Weak => visuals.widgets.hovered.weak_bg_fill,
         }
     }
 
     pub fn text_color(&self, visuals: &egui::Visuals) -> egui::Color32 {
         match self {
-            Self::Important => visuals.widgets.active.text_color(),
-            Self::Weak => visuals.weak_text_color(),
+            Self::Important => visuals.widgets.active.bg_stroke.color,
             Self::Normal => visuals.widgets.inactive.text_color(),
+            Self::Weak => visuals.weak_text_color(),
         }
     }
 
+    pub fn hover_text_color(&self, visuals: &egui::Visuals) -> egui::Color32 {
+        visuals.widgets.hovered.text_color()
+    }
+
     pub fn stroke(&self, visuals: &egui::Visuals) -> egui::Stroke {
-        visuals.widgets.noninteractive.bg_stroke
+        visuals.widgets.inactive.bg_stroke
     }
 
     pub fn hover_stroke(&self, visuals: &egui::Visuals) -> egui::Stroke {
-        visuals.widgets.active.bg_stroke
+        visuals.widgets.hovered.bg_stroke
     }
 }
 
 impl Card<'_> {
-    pub fn content(&self, ui: &mut egui::Ui) {
-        let text_color = self.style.text_color(ui.visuals());
-
+    pub fn content(&self, ui: &mut egui::Ui, hover: bool) {
+        let text_color = if hover {
+            self.style.hover_text_color(ui.visuals())
+        } else {
+            self.style.text_color(ui.visuals())
+        };
         let card_width = 160.0;
         let card_height = 80.0;
         let card_size = egui::vec2(card_width, card_height);
@@ -84,13 +91,19 @@ impl Card<'_> {
                     );
                     ui.separator();
                     if round.themes.is_empty() {
-                        unselectable_label("Пусто", ui);
+                        unselectable_label(egui::RichText::new("Пусто").color(text_color), ui);
                     } else {
-                        ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
-                            for theme in &round.themes {
-                                unselectable_label(format!("⚫ {}", theme_name(theme)), ui);
-                            }
-                        });
+                        ui.with_layout(
+                            egui::Layout::top_down_justified(egui::Align::Center),
+                            |ui| {
+                                for theme in &round.themes {
+                                    unselectable_label(
+                                        egui::RichText::new(theme_name(theme)).color(text_color),
+                                        ui,
+                                    );
+                                }
+                            },
+                        );
                     }
                 });
                 return;
@@ -145,15 +158,25 @@ impl<'a> egui::Widget for Card<'a> {
             .fill(fill_color)
             .begin(ui);
 
-        self.content(&mut frame.content_ui);
+        // yucky two pass solution to hover cards bleh
+        let hover = {
+            let builder = egui::UiBuilder::new();
+            let mut sizing_ui = frame.content_ui.new_child(builder);
+            self.content(&mut sizing_ui, false);
+            let rect = sizing_ui.min_rect() + frame.frame.inner_margin + frame.frame.outer_margin;
+            sizing_ui.rect_contains_pointer(rect)
+        };
+
+        self.content(&mut frame.content_ui, hover);
         let rect =
             frame.content_ui.min_rect() + frame.frame.inner_margin + frame.frame.outer_margin;
-        let response = ui.allocate_rect(rect, egui::Sense::click());
-        if response.hovered() {
+        if hover {
             frame.frame.stroke = self.style.hover_stroke(ui.visuals());
             frame.frame.fill = self.style.hover_fill_color(ui.visuals());
         }
         frame.paint(ui);
+
+        let response = ui.allocate_rect(rect, egui::Sense::click());
         self.context_menu(&response, ui);
         response
     }

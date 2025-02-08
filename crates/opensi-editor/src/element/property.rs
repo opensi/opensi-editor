@@ -62,7 +62,6 @@ impl PropertyTable {
                     .with_main_justify(true)
                     .with_main_align(egui::Align::Min),
             )
-            .striped(true)
             .vscroll(false)
             .body(|body| {
                 let properties =

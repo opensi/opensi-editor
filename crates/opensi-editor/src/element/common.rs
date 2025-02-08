@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::{property::Properties, PropertyTable};
+use super::{PropertyTable, property::Properties};
 use opensi_core::prelude::*;
 
 #[macro_export]
@@ -41,21 +41,25 @@ pub fn error_label(error: impl Display, ui: &mut egui::Ui) {
 
 /// A stub todo label.
 pub fn todo_label(ui: &mut egui::Ui) {
-    let text = egui::RichText::new(icon_str!(PLACEHOLDER, "TODO"))
-        .background_color(ui.style().visuals.warn_fg_color)
-        .strong()
+    let warn_bg = ui.style().visuals.warn_fg_color.linear_multiply(0.1);
+    let text = egui::RichText::new("< TODO >")
+        .monospace()
+        .color(ui.style().visuals.warn_fg_color)
+        .background_color(warn_bg)
         .size(24.0);
     ui.add(egui::Label::new(text).selectable(false).extend());
 }
 
 pub fn danger_button(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) -> egui::Response {
     ui.scope(|ui| {
-        ui.style_mut().visuals.widgets.inactive.weak_bg_fill = egui::Color32::DARK_RED;
-        ui.style_mut().visuals.widgets.active.weak_bg_fill = egui::Color32::DARK_RED;
-        ui.style_mut().visuals.widgets.hovered.weak_bg_fill = egui::Color32::RED;
-        ui.style_mut().visuals.widgets.inactive.fg_stroke.color = egui::Color32::RED;
-        ui.style_mut().visuals.widgets.active.fg_stroke.color = egui::Color32::RED;
-        ui.style_mut().visuals.widgets.hovered.fg_stroke.color = egui::Color32::LIGHT_RED;
+        let error = ui.style().visuals.error_fg_color;
+        let error_bg = error.linear_multiply(0.1);
+
+        ui.style_mut().visuals.widgets.inactive.fg_stroke.color = error;
+        ui.style_mut().visuals.widgets.active.fg_stroke.color = error;
+        ui.style_mut().visuals.widgets.hovered.weak_bg_fill = error_bg;
+        ui.style_mut().visuals.widgets.hovered.bg_fill = error_bg;
+        ui.style_mut().visuals.widgets.hovered.fg_stroke.color = error;
         ui.add(egui::Button::new(text))
     })
     .inner
