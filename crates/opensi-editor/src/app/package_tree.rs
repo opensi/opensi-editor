@@ -36,10 +36,10 @@ fn tree_node_ui<'a>(
         ui: &mut egui::Ui,
     ) -> bool {
         let node_name = node_name(node, package);
-        let button = egui::Button::new(node_name.as_ref())
-            .selected(is_selected)
-            .fill(egui::Color32::TRANSPARENT);
+        let button =
+            egui::Button::new(node_name.as_ref()).frame(false).fill(egui::Color32::TRANSPARENT);
         let response = ui.add(button);
+        let response = if is_selected { response.highlight() } else { response };
 
         PackageNodeContextMenu { package, node }.show(&response, ui);
 
@@ -69,43 +69,57 @@ fn tree_node_ui<'a>(
     let is_selected = selected.is_some_and(|selected| selected == node);
     match node {
         PackageNode::Round(idx) => {
-            CollapsingState::load_with_default_open(ui.ctx(), id, true)
+            let mut state = CollapsingState::load_with_default_open(ui.ctx(), id, true)
                 .show_header(ui, |ui| {
                     if node_button(package, node, is_selected, ui) {
                         *selected = Some(node);
                     };
-                })
-                .body(|ui| {
-                    for theme_index in 0..package
-                        .get_round(idx)
-                        .map(|round| round.themes.len())
-                        .unwrap_or_default()
-                    {
-                        tree_node_ui(package, Some(idx.theme(theme_index).into()), selected, ui);
-                    }
                 });
+
+            if !state.is_open() && selected.is_some_and(|selected| {
+                matches!(
+                    selected,
+                    PackageNode::Question(QuestionIdx { round_index, .. })
+                    | PackageNode::Theme(ThemeIdx { round_index, .. })
+                    | PackageNode::Round(RoundIdx { index: round_index, .. }) if round_index == *idx
+                )
+            }) {
+                state.set_open(true);
+            }
+
+            state.body(|ui| {
+                for theme_index in
+                    0..package.get_round(idx).map(|round| round.themes.len()).unwrap_or_default()
+                {
+                    tree_node_ui(package, Some(idx.theme(theme_index).into()), selected, ui);
+                }
+            });
         },
         PackageNode::Theme(idx) => {
-            CollapsingState::load_with_default_open(ui.ctx(), id, false)
+            let mut state = CollapsingState::load_with_default_open(ui.ctx(), id, false)
                 .show_header(ui, |ui| {
                     if node_button(package, node, is_selected, ui) {
                         *selected = Some(node);
                     };
-                })
-                .body(|ui| {
-                    for question_index in 0..package
-                        .get_theme(idx)
-                        .map(|theme| theme.questions.len())
-                        .unwrap_or_default()
-                    {
-                        tree_node_ui(
-                            package,
-                            Some(idx.question(question_index).into()),
-                            selected,
-                            ui,
-                        );
-                    }
                 });
+
+            if !state.is_open() && selected.is_some_and(|selected| {
+                matches!(
+                    selected,
+                    PackageNode::Question(QuestionIdx { theme_index, .. })
+                    | PackageNode::Theme(ThemeIdx { index: theme_index, .. }) if theme_index == *idx
+                )
+            }) {
+                state.set_open(true);
+            }
+
+            state.body(|ui| {
+                for question_index in
+                    0..package.get_theme(idx).map(|theme| theme.questions.len()).unwrap_or_default()
+                {
+                    tree_node_ui(package, Some(idx.question(question_index).into()), selected, ui);
+                }
+            });
         },
         PackageNode::Question(idx) => {
             if node_button(package, idx.into(), is_selected, ui) {
