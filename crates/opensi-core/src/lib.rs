@@ -10,7 +10,7 @@ pub mod prelude {
     pub use crate::node::*;
     pub use crate::package_trait::*;
     pub use crate::v5::{
-        InfoV5 as Info, PackageV5 as Package, QuestionV5 as Question, RoundV5 as Round,
-        ThemeV5 as Theme,
+        Infov5 as Info, Packagev5 as Package, Questionv5 as Question, Roundv5 as Round,
+        Themev5 as Theme,
     };
 }

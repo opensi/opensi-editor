@@ -1,5 +1,5 @@
 use chrono::Datelike;
-use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
 use quick_xml::de::from_str;
 use quick_xml::se::to_string;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use std::{fs::File, io, io::Read};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
-use super::components::{AtomV5, InfoV5, RoundV5, Tag};
+use super::components::{Atomv5, Infov5, Roundv5, Tag};
 use crate::package_trait::RoundContainer;
 use crate::serde_impl;
 
@@ -18,7 +18,7 @@ use crate::serde_impl;
 /// the package and its tree of [`Question`].
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename = "package")]
-pub struct PackageV5 {
+pub struct Packagev5 {
     // attributes
     #[serde(rename = "@name")]
     pub name: String,
@@ -43,9 +43,9 @@ pub struct PackageV5 {
 
     // elements
     #[serde(default)]
-    pub info: InfoV5,
+    pub info: Infov5,
     #[serde(default, with = "serde_impl::rounds")]
-    pub rounds: Vec<RoundV5>,
+    pub rounds: Vec<Roundv5>,
     #[serde(default, with = "serde_impl::tags", skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<Tag>,
 
@@ -55,7 +55,7 @@ pub struct PackageV5 {
 }
 
 /// # Creation of package.
-impl PackageV5 {
+impl Packagev5 {
     pub fn new() -> Self {
         let utc = chrono::Utc::now();
 
@@ -70,7 +70,7 @@ impl PackageV5 {
             logo: None,
             restriction: String::new(),
             namespace: String::new(),
-            info: InfoV5::default(),
+            info: Infov5::default(),
             rounds: vec![],
             tags: vec![],
             resource: HashMap::new(),
@@ -78,8 +78,8 @@ impl PackageV5 {
     }
 }
 
-impl RoundContainer for PackageV5 {
-    type Round = RoundV5;
+impl RoundContainer for Packagev5 {
+    type Round = Roundv5;
 
     fn get_rounds(&self) -> &Vec<Self::Round> {
         &self.rounds
@@ -91,12 +91,12 @@ impl RoundContainer for PackageV5 {
 }
 
 /// # IO and resource methods
-impl PackageV5 {
+impl Packagev5 {
     const CONTENT_TYPE_FILE_CONTENT: &'static str = r#"<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="si/xml" /></Types>"""#;
     const XML_VERSION_ENCODING: &'static str = r#"<?xml version="1.0" encoding="utf-8"?>"#;
     const CONTROLS_ASCII_SET: &'static AsciiSet = &CONTROLS.add(b' ');
 
-    pub fn get_resource(&self, atom: &AtomV5) -> Option<&Vec<u8>> {
+    pub fn get_resource(&self, atom: &Atomv5) -> Option<&Vec<u8>> {
         // Atom xml content or ("resource name" as stated in official docs) begins
         // with '@' in package to distinguish plain text and links to
         // resources. This is how it looks like in package:
@@ -127,17 +127,17 @@ impl PackageV5 {
     }
 
     // Expecting byte array of zip file
-    pub fn from_zip_buffer(bytes: impl AsRef<[u8]>) -> Result<PackageV5, Error> {
+    pub fn from_zip_buffer(bytes: impl AsRef<[u8]>) -> Result<Packagev5, Error> {
         let cursor = io::Cursor::new(bytes);
         Self::get_package_from_zip(cursor)
     }
 
-    pub fn open_zip_file(path: impl AsRef<Path>) -> Result<PackageV5, Error> {
+    pub fn open_zip_file(path: impl AsRef<Path>) -> Result<Packagev5, Error> {
         let package_file = File::open(path)?;
         Self::get_package_from_zip(package_file)
     }
 
-    fn get_package_from_zip<T: Read + io::Seek>(source: T) -> Result<PackageV5, Error> {
+    fn get_package_from_zip<T: Read + io::Seek>(source: T) -> Result<Packagev5, Error> {
         let mut zip_archive = ZipArchive::new(source)?;
         let mut resources = HashMap::new();
 
@@ -173,7 +173,7 @@ impl PackageV5 {
         content_file.read_to_string(&mut contents)?;
 
         let package = from_str(&contents).map_err(|e| Error::new(ErrorKind::InvalidData, e));
-        package.map(|p| PackageV5 { resource: resources, ..p })
+        package.map(|p| Packagev5 { resource: resources, ..p })
     }
 
     fn get_resource_type(filename: &str) -> Result<Resource, Error> {

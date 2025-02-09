@@ -8,7 +8,7 @@ use crate::{
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
-pub struct InfoV5 {
+pub struct Infov5 {
     #[serde(skip_serializing_if = "String::is_empty")]
     pub comments: String,
     #[serde(skip_serializing_if = "String::is_empty")]
@@ -20,34 +20,34 @@ pub struct InfoV5 {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct AuthorsV5 {
+pub struct Authorsv5 {
     #[serde(rename = "author")]
     pub authors: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
-pub struct RoundV5 {
+pub struct Roundv5 {
     #[serde(rename = "@name")]
     pub name: String,
     // TODO: Actual enum of kinds
     #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
-    pub info: Option<InfoV5>,
+    pub info: Option<Infov5>,
     #[serde(with = "serde_impl::themes")]
-    pub themes: Vec<ThemeV5>,
+    pub themes: Vec<Themev5>,
 }
 
-impl Default for RoundV5 {
+impl Default for Roundv5 {
     fn default() -> Self {
         Self { name: "Новый раунд".to_string(), kind: None, info: None, themes: vec![] }
     }
 }
 
-impl RoundBase for RoundV5 {}
-impl ThemesContainer for RoundV5 {
-    type Theme = ThemeV5;
+impl RoundBase for Roundv5 {}
+impl ThemesContainer for Roundv5 {
+    type Theme = Themev5;
 
     fn get_themes(&self, _idx: impl Into<RoundIdx>) -> Option<&Vec<Self::Theme>> {
         Some(&self.themes)
@@ -59,18 +59,18 @@ impl ThemesContainer for RoundV5 {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct ThemeV5 {
+pub struct Themev5 {
     #[serde(rename = "@name")]
     pub name: String,
     #[serde(with = "serde_impl::questions")]
-    pub questions: Vec<QuestionV5>,
+    pub questions: Vec<Questionv5>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
-    pub info: Option<InfoV5>,
+    pub info: Option<Infov5>,
 }
 
-impl ThemeBase for ThemeV5 {}
-impl QuestionsContainer for ThemeV5 {
-    type Question = QuestionV5;
+impl ThemeBase for Themev5 {}
+impl QuestionsContainer for Themev5 {
+    type Question = Questionv5;
 
     fn get_questions(&self, _idx: impl Into<ThemeIdx>) -> Option<&Vec<Self::Question>> {
         Some(&self.questions)
@@ -81,16 +81,16 @@ impl QuestionsContainer for ThemeV5 {
     }
 }
 
-impl Default for ThemeV5 {
+impl Default for Themev5 {
     fn default() -> Self {
         Self {
             name: "Новая тема".to_string(),
             questions: vec![
-                QuestionV5 { price: 100, ..QuestionV5::default() },
-                QuestionV5 { price: 200, ..QuestionV5::default() },
-                QuestionV5 { price: 300, ..QuestionV5::default() },
-                QuestionV5 { price: 400, ..QuestionV5::default() },
-                QuestionV5 { price: 500, ..QuestionV5::default() },
+                Questionv5 { price: 100, ..Questionv5::default() },
+                Questionv5 { price: 200, ..Questionv5::default() },
+                Questionv5 { price: 300, ..Questionv5::default() },
+                Questionv5 { price: 400, ..Questionv5::default() },
+                Questionv5 { price: 500, ..Questionv5::default() },
             ],
             info: None,
         }
@@ -98,33 +98,33 @@ impl Default for ThemeV5 {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct QuestionsV5 {
+pub struct Questionsv5 {
     #[serde(rename = "question")]
-    pub questions: Vec<QuestionV5>,
+    pub questions: Vec<Questionv5>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
-pub struct QuestionV5 {
+pub struct Questionv5 {
     #[serde(rename = "@price")]
     pub price: usize,
     #[serde(rename = "type")]
-    pub question_type: QuestionTypeV5,
+    pub question_type: QuestionTypev5,
     #[serde(with = "serde_impl::atoms")]
-    pub scenario: Vec<AtomV5>,
+    pub scenario: Vec<Atomv5>,
     #[serde(with = "serde_impl::answers")]
-    pub right: Vec<AnswerV5>,
+    pub right: Vec<Answerv5>,
     #[serde(with = "serde_impl::answers", skip_serializing_if = "Vec::is_empty")]
-    pub wrong: Vec<AnswerV5>,
+    pub wrong: Vec<Answerv5>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
-    pub info: Option<InfoV5>,
+    pub info: Option<Infov5>,
 }
 
-impl Default for QuestionV5 {
+impl Default for Questionv5 {
     fn default() -> Self {
         Self {
             price: 100,
-            question_type: QuestionTypeV5::default(),
+            question_type: QuestionTypev5::default(),
             scenario: vec![],
             right: vec![],
             wrong: vec![],
@@ -133,7 +133,7 @@ impl Default for QuestionV5 {
     }
 }
 
-impl QuestionBase for QuestionV5 {
+impl QuestionBase for Questionv5 {
     fn get_price(&self) -> usize {
         self.price
     }
@@ -144,21 +144,21 @@ impl QuestionBase for QuestionV5 {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct QuestionTypeV5 {
+pub struct QuestionTypev5 {
     #[serde(rename = "@name")]
     pub name: String,
     #[serde(rename = "param", skip_serializing_if = "Option::is_none")]
-    pub params: Option<Vec<ParamV5>>,
+    pub params: Option<Vec<Paramv5>>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct AnswerV5 {
+pub struct Answerv5 {
     #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
     pub body: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct ParamV5 {
+pub struct Paramv5 {
     #[serde(rename = "@name")]
     pub name: String,
     #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
@@ -166,7 +166,7 @@ pub struct ParamV5 {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct AtomV5 {
+pub struct Atomv5 {
     #[serde(rename = "@time", skip_serializing_if = "Option::is_none")]
     pub time: Option<f64>,
     #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
