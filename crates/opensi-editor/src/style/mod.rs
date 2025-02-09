@@ -49,6 +49,9 @@ pub struct ColorScheme {
 impl ColorScheme {
     pub fn apply(&self, ctx: &egui::Context) {
         ctx.style_mut(|style| {
+            style.spacing.menu_margin = egui::Margin::same(10);
+            style.spacing.button_padding = egui::vec2(4.0, 2.0);
+
             let visuals = &mut style.visuals;
             let accent_bg = self.accent.linear_multiply(0.2);
             let accent_bg_weak = self.accent.linear_multiply(0.1);
@@ -80,7 +83,7 @@ impl ColorScheme {
                 weak_bg_fill: self.base_weak,
                 bg_stroke: egui::Stroke::new(0.0, egui::Color32::TRANSPARENT),
                 fg_stroke: egui::Stroke::new(1.0, self.text_weak),
-                rounding: egui::Rounding::same(4.0),
+                corner_radius: egui::CornerRadius::same(4),
                 expansion: 0.0,
             };
             visuals.widgets.inactive = egui::style::WidgetVisuals {
@@ -88,7 +91,7 @@ impl ColorScheme {
                 weak_bg_fill: self.base_strong,
                 bg_stroke: egui::Stroke::new(0.0, egui::Color32::TRANSPARENT),
                 fg_stroke: egui::Stroke::new(1.0, self.text),
-                rounding: egui::Rounding::same(4.0),
+                corner_radius: egui::CornerRadius::same(4),
                 expansion: 0.0,
             };
             visuals.widgets.hovered = egui::style::WidgetVisuals {
@@ -96,7 +99,7 @@ impl ColorScheme {
                 weak_bg_fill: accent_bg_weak,
                 bg_stroke: egui::Stroke::new(1.0, self.accent),
                 fg_stroke: egui::Stroke::new(1.0, self.accent),
-                rounding: egui::Rounding::same(4.0),
+                corner_radius: egui::CornerRadius::same(4),
                 expansion: 0.0,
             };
             visuals.widgets.active = egui::style::WidgetVisuals {
@@ -104,15 +107,15 @@ impl ColorScheme {
                 weak_bg_fill: self.base_strong,
                 bg_stroke: egui::Stroke::new(0.0, self.text_strong),
                 fg_stroke: egui::Stroke::new(1.0, self.text_weak),
-                rounding: egui::Rounding::same(4.0),
+                corner_radius: egui::CornerRadius::same(4),
                 expansion: 0.0,
             };
             visuals.widgets.open = visuals.widgets.active.clone();
 
             visuals.window_shadow = egui::Shadow {
-                offset: egui::vec2(0.0, 5.0),
-                blur: 10.0,
-                spread: 0.0,
+                offset: [0, 5],
+                blur: 10,
+                spread: 0,
                 color: egui::Color32::from_black_alpha(80),
             };
             visuals.popup_shadow = visuals.window_shadow.clone();

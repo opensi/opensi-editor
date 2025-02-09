@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use log::error;
 use opensi_core::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use tokio;
@@ -28,8 +29,10 @@ pub fn import_dialog() -> LoadingPackageReceiver {
     let (sender, receiver) = tokio::sync::oneshot::channel();
     let _handle = tokio::spawn(async {
         let package = import_package().await;
-        // TODO: handle channel errors ?
-        let _ = sender.send(package).unwrap();
+        match sender.send(package) {
+            Ok(_) => {},
+            Err(_) => error!("Error sending imported package !"),
+        };
     });
     receiver
 }

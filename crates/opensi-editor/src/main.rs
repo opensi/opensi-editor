@@ -1,11 +1,49 @@
 #![warn(clippy::all)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+fn setup_logger() -> Result<(), fern::InitError> {
+    use fern::Dispatch;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let dispatch = {
+        use fern::colors::{Color, ColoredLevelConfig};
+        use std::time::SystemTime;
+
+        let colors =
+            ColoredLevelConfig::new().info(Color::Green).error(Color::Red).warn(Color::Yellow);
+
+        Dispatch::new()
+            .format(move |out, message, record| {
+                out.finish(format_args!(
+                    "[{} {}] {}",
+                    humantime::format_rfc3339_seconds(SystemTime::now()),
+                    colors.color(record.level()),
+                    message
+                ))
+            })
+            .level(log::LevelFilter::Info)
+            .chain(std::io::stdout())
+    };
+
+    #[cfg(target_arch = "wasm32")]
+    let dispatch = {
+        Dispatch::new()
+            .format(move |out, message, record| {
+                out.finish(format_args!("[{}] {}", record.level(), message))
+            })
+            .level(log::LevelFilter::Info)
+            .chain(Box::new(eframe::WebLogger::new(log::LevelFilter::Info)) as Box<dyn log::Log>)
+    };
+
+    dispatch.apply()?;
+    Ok(())
+}
+
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 #[tokio::main]
 async fn main() -> eframe::Result {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    setup_logger().expect("logger init");
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -32,8 +70,7 @@ async fn main() -> eframe::Result {
 async fn main() {
     use eframe::wasm_bindgen::JsCast as _;
 
-    // Redirect `log` message to `console.log` and friends:
-    eframe::WebLogger::init(log::LevelFilter::Debug).ok();
+    setup_logger().expect("logger init");
 
     let web_options = eframe::WebOptions::default();
 

@@ -92,9 +92,9 @@ pub fn string_list(
                         let mut deleted_index = None;
 
                         for (index, item) in list.iter().enumerate() {
-                            egui::Frame::none()
-                                .rounding(4.0)
-                                .inner_margin(egui::Margin { left: 4.0, ..Default::default() })
+                            egui::Frame::new()
+                                .corner_radius(4)
+                                .inner_margin(egui::Margin { left: 4, ..Default::default() })
                                 .fill(ui.style().visuals.widgets.inactive.bg_fill)
                                 .show(ui, |ui| {
                                     ui.horizontal(|ui| {

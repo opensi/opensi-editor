@@ -2,7 +2,7 @@ use opensi_core::prelude::*;
 
 use crate::icon_str;
 
-use super::danger_button;
+use super::{ModalExt, ModalWrapper, danger_button};
 
 /// Context menu for [`PackageNode`].
 pub struct PackageNodeContextMenu<'p> {
@@ -25,89 +25,7 @@ impl PackageNodeContextMenu<'_> {
         };
         let new_value_id = source.id.with(egui::Id::new("new-value"));
 
-        let modal =
-            egui_modal::Modal::new(ui.ctx(), format!("{}", source.id.with("modal").value()))
-                .with_close_on_outside_click(true);
-
-        modal.show(|ui| {
-            let mut is_renaming_done = false;
-
-            modal.title(ui, change_text);
-            modal.frame(ui, |ui| {
-                egui::Grid::new(source.id.with("modal-grid")).num_columns(2).show(ui, |ui| {
-                    modal.icon(
-                        ui,
-                        egui_modal::Icon::Custom((
-                            "✏".to_string(),
-                            ui.visuals().strong_text_color(),
-                        )),
-                    );
-                    ui.vertical(|ui| {
-                        let body = match self.node {
-                            PackageNode::Round(_) => "Введите новое название для раунда:",
-                            PackageNode::Theme(_) => "Введите новое название для темы:",
-                            PackageNode::Question(_) => "Введите новую цену для вопроса:",
-                        };
-                        ui.label(body);
-
-                        let mut new_value = ui
-                            .memory(|memory| memory.data.get_temp::<String>(new_value_id))
-                            .unwrap_or_default();
-                        let response = ui.add(
-                            egui::TextEdit::singleline(&mut new_value)
-                                .id_salt(source.id.with("edit")),
-                        );
-                        response.request_focus();
-
-                        if response.changed() {
-                            if is_question {
-                                new_value.retain(|c| c.is_digit(10));
-                            }
-                            ui.memory_mut(|memory| {
-                                memory.data.insert_temp(new_value_id, new_value)
-                            });
-                        }
-
-                        is_renaming_done = ui.input(|input| input.key_pressed(egui::Key::Enter));
-                    });
-                });
-            });
-            modal.buttons(ui, |ui| {
-                if modal.button(ui, "Отмена").clicked() {
-                    is_renaming_done = false;
-                };
-                if modal.suggested_button(ui, "Подтвердить").clicked() {
-                    is_renaming_done = true;
-                }
-            });
-
-            if is_renaming_done {
-                modal.close();
-                let new_value = ui
-                    .memory(|memory| memory.data.get_temp::<String>(new_value_id))
-                    .unwrap_or_default();
-
-                match self.node {
-                    PackageNode::Round(idx) => {
-                        if let Some(round) = self.package.get_round_mut(idx) {
-                            round.name = new_value;
-                        };
-                    },
-                    PackageNode::Theme(idx) => {
-                        if let Some(theme) = self.package.get_theme_mut(idx) {
-                            theme.name = new_value;
-                        };
-                    },
-                    PackageNode::Question(idx) => {
-                        if let Some(question) = self.package.get_question_mut(idx) {
-                            if let Ok(new_price) = new_value.parse() {
-                                question.price = new_price;
-                            }
-                        };
-                    },
-                }
-            }
-        });
+        let mut modal = ModalWrapper::new(ui.ctx(), source.id.with("modal"));
 
         source.context_menu(|ui| {
             if let Some(text) = add_text {
@@ -148,6 +66,72 @@ impl PackageNodeContextMenu<'_> {
             if danger_button(icon_str!(TRASH, "Удалить"), ui).clicked() {
                 self.package.remove_node(self.node);
                 ui.close_menu();
+            }
+        });
+
+        modal.show(ui.ctx(), |ui| {
+            let mut is_renaming_done = false;
+
+            ui.modal_title(change_text);
+            ui.vertical(|ui| {
+                let body = match self.node {
+                    PackageNode::Round(_) => "Введите новое название для раунда:",
+                    PackageNode::Theme(_) => "Введите новое название для темы:",
+                    PackageNode::Question(_) => "Введите новую цену для вопроса:",
+                };
+                ui.label(body);
+
+                let mut new_value = ui
+                    .memory(|memory| memory.data.get_temp::<String>(new_value_id))
+                    .unwrap_or_default();
+                let response = ui.add(
+                    egui::TextEdit::singleline(&mut new_value).id_salt(source.id.with("edit")),
+                );
+                response.request_focus();
+
+                if response.changed() {
+                    if is_question {
+                        new_value.retain(|c| c.is_digit(10));
+                    }
+                    ui.memory_mut(|memory| memory.data.insert_temp(new_value_id, new_value));
+                }
+
+                is_renaming_done = ui.input(|input| input.key_pressed(egui::Key::Enter));
+            });
+            ui.modal_buttons(|ui| {
+                if ui.modal_danger(icon_str!(PROHIBIT, "Отмена")).clicked() {
+                    is_renaming_done = false;
+                }
+                if ui.modal_confirm(icon_str!(CHECK, "Подтвердить")).clicked() {
+                    is_renaming_done = true;
+                }
+            });
+
+            if is_renaming_done {
+                ui.close_modal();
+                let new_value = ui
+                    .memory(|memory| memory.data.get_temp::<String>(new_value_id))
+                    .unwrap_or_default();
+
+                match self.node {
+                    PackageNode::Round(idx) => {
+                        if let Some(round) = self.package.get_round_mut(idx) {
+                            round.name = new_value;
+                        };
+                    },
+                    PackageNode::Theme(idx) => {
+                        if let Some(theme) = self.package.get_theme_mut(idx) {
+                            theme.name = new_value;
+                        };
+                    },
+                    PackageNode::Question(idx) => {
+                        if let Some(question) = self.package.get_question_mut(idx) {
+                            if let Ok(new_price) = new_value.parse() {
+                                question.price = new_price;
+                            }
+                        };
+                    },
+                }
             }
         });
     }

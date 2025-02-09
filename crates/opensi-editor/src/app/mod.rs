@@ -10,7 +10,11 @@ use itertools::Itertools;
 use log::error;
 use opensi_core::prelude::*;
 
-use crate::{app::file_dialogs::LoadingPackageReceiver, icon_format, icon_str, icon_string, style};
+use crate::{
+    app::file_dialogs::LoadingPackageReceiver,
+    element::{ModalExt, ModalWrapper},
+    icon_format, icon_str, icon_string, style,
+};
 
 const FONT_REGULAR_ID: &'static str = "regular";
 
@@ -85,60 +89,8 @@ impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.package_state.update();
 
-        let new_pack_modal =
-            egui_modal::Modal::new(ctx, "new-pack-modal").with_close_on_outside_click(true);
-        new_pack_modal.show(|ui| {
-            new_pack_modal.title(ui, "Перезаписать текущий пак ?");
-            new_pack_modal.frame(ui, |ui| {
-                new_pack_modal
-                    .body(ui, "Создание нового пака перезапишет текущий пак. Вы уверены ?");
-            });
-            new_pack_modal.buttons(ui, |ui| {
-                if new_pack_modal.caution_button(ui, "Отмена").clicked() {
-                    new_pack_modal.close();
-                };
-                if new_pack_modal.suggested_button(ui, "Перезаписать").clicked() {
-                    self.package_state =
-                        PackageState::Active { package: Package::new(), selected: None };
-                };
-            });
-        });
-
-        let authors_modal =
-            egui_modal::Modal::new(ctx, "authors-modal").with_close_on_outside_click(true);
-        authors_modal.show(|ui| {
-            authors_modal.title(ui, icon_str!(GRADUATION_CAP, "OpenSI Editor"));
-            authors_modal.frame(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.strong("Авторы:");
-                    let authors = env!("CARGO_PKG_AUTHORS").split(":").join(", ");
-                    ui.label(authors);
-                });
-
-                ui.horizontal(|ui| {
-                    ui.strong("Версия:");
-                    let version = env!("CARGO_PKG_VERSION");
-                    ui.code(format!("v{version}"));
-                });
-
-                ui.horizontal(|ui| {
-                    ui.strong("Репозиторий:");
-                    let url = env!("CARGO_PKG_REPOSITORY");
-                    let short_url = url.trim_start_matches("https://github.com/");
-                    ui.hyperlink_to(icon_format!(GITHUB_LOGO, "{short_url}"), url);
-                });
-
-                ui.separator();
-
-                ui.horizontal(|ui| {
-                    ui.weak("Сделано с помощью");
-                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-                });
-            });
-            authors_modal.buttons(ui, |ui| {
-                authors_modal.button(ui, "Закрыть");
-            });
-        });
+        let mut new_pack_modal = ModalWrapper::new(ctx, "new-pack-modal");
+        let mut authors_modal = ModalWrapper::new(ctx, "authors-modal");
 
         egui::TopBottomPanel::top("top_panel")
             .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(4.0))
@@ -254,6 +206,50 @@ impl eframe::App for EditorApp {
                     },
                 );
             });
+
+        new_pack_modal.show(ctx, |ui| {
+            ui.modal_title(icon_str!(PENCIL_SIMPLE_LINE, "Перезаписать текущий пак ?"));
+            ui.modal_buttons(|ui| {
+                if ui.modal_danger(icon_str!(PROHIBIT, "Отмена")).clicked() {}
+                if ui.modal_confirm(icon_str!(CHECK, "Перезаписать")).clicked() {
+                    self.package_state =
+                        PackageState::Active { package: Package::new(), selected: None };
+                }
+            });
+        });
+
+        authors_modal.show(ctx, |ui| {
+            ui.modal_title(icon_str!(GRADUATION_CAP, "OpenSI Editor"));
+            ui.horizontal(|ui| {
+                ui.strong("Авторы:");
+                let authors = env!("CARGO_PKG_AUTHORS").split(":").join(", ");
+                ui.label(authors);
+            });
+
+            ui.horizontal(|ui| {
+                ui.strong("Версия:");
+                let version = env!("CARGO_PKG_VERSION");
+                ui.code(format!("v{version}"));
+            });
+
+            ui.horizontal(|ui| {
+                ui.strong("Репозиторий:");
+                let url = env!("CARGO_PKG_REPOSITORY");
+                let short_url = url.trim_start_matches("https://github.com/");
+                ui.hyperlink_to(icon_format!(GITHUB_LOGO, "{short_url}"), url);
+            });
+
+            ui.separator();
+
+            ui.horizontal(|ui| {
+                ui.weak("Сделано с помощью");
+                ui.hyperlink_to("egui", "https://github.com/emilk/egui");
+            });
+
+            ui.modal_buttons(|ui| {
+                ui.modal_button(icon_str!(X, "Закрыть"));
+            });
+        });
     }
 }
 
@@ -272,16 +268,14 @@ enum PackageState {
 impl PackageState {
     fn update(&mut self) {
         match self {
-            Self::Loading(receiver) => {
-                match receiver.try_recv() {
-                    Ok(Ok(package)) => {
-                        *self = Self::Active { package, selected: None };
-                    },
-                    Ok(Err(_err)) => {
-                        // TODO: error handle
-                    },
-                    Err(_) => {},
-                }
+            Self::Loading(receiver) => match receiver.try_recv() {
+                Ok(Ok(package)) => {
+                    *self = Self::Active { package, selected: None };
+                },
+                Ok(Err(err)) => {
+                    error!("Error loading package: {err}");
+                },
+                Err(_) => {},
             },
             _ => {},
         }

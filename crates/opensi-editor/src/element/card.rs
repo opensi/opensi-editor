@@ -152,9 +152,9 @@ impl<'a> egui::Widget for Card<'a> {
             (self.style.fill_color(ui.visuals()), self.style.stroke(ui.visuals()));
         let mut frame = egui::Frame::default()
             .inner_margin(16.0)
-            .outer_margin(egui::Margin::symmetric(0.0, 4.0))
+            .outer_margin(egui::Margin::symmetric(0, 4))
             .stroke(stroke)
-            .rounding(8.0)
+            .corner_radius(8)
             .fill(fill_color)
             .begin(ui);
 
