@@ -23,7 +23,7 @@ eframe = { version = "0.30", default-features = false, features = [
 ] }
 egui-phosphor = { version = "0.8", default-features = false, features = ["fill"] }
 log = "0.4"
-rfd = "0.15.2"
+rfd = { version = "0.15.2", default-features = false, features = ["xdg-portal", "tokio"] }
 thiserror = "2.0.11"
 serde = { version = "1", features = ["derive"] }
 egui_extras = "0.30.0"
