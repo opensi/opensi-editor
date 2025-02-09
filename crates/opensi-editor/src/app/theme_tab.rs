@@ -2,8 +2,9 @@ use opensi_core::prelude::*;
 
 use crate::{
     element::{
+        PropertyTable, Sections,
         card::{CardStyle, CardTable},
-        info_edit, PropertyTable, Sections,
+        info_edit,
     },
     icon_str,
 };
@@ -39,7 +40,9 @@ pub fn theme_tab(
 
 fn theme_edit(theme: &mut Theme, ui: &mut egui::Ui) {
     PropertyTable::new("theme-properties").show(ui, |mut properties| {
-        properties.row("Название", |ui| ui.text_edit_singleline(&mut theme.name));
+        properties.row(icon_str!(STICKER, "Название"), |ui| {
+            ui.text_edit_singleline(&mut theme.name)
+        });
     });
 }
 

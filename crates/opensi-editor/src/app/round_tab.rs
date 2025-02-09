@@ -2,8 +2,9 @@ use opensi_core::prelude::*;
 
 use crate::{
     element::{
+        PropertyTable, Sections,
         card::{CardStyle, CardTable},
-        info_edit, PropertyTable, Sections,
+        info_edit,
     },
     icon_str,
 };
@@ -40,8 +41,10 @@ pub fn round_tab(
 
 fn round_edit(round: &mut Round, ui: &mut egui::Ui) {
     PropertyTable::new("round-properties").show(ui, |mut properties| {
-        properties.row("Название", |ui| ui.text_edit_singleline(&mut round.name));
-        properties.row("Тип", |ui| {
+        properties.row(icon_str!(STICKER, "Название"), |ui| {
+            ui.text_edit_singleline(&mut round.name)
+        });
+        properties.row(icon_str!(STAR, "Тип"), |ui| {
             ui.add_enabled_ui(false, |ui| ui.label(format!("{:?}?", round.kind))).inner
         });
     });

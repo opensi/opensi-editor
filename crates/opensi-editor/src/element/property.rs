@@ -55,7 +55,7 @@ impl PropertyTable {
     pub fn show(self, ui: &mut egui::Ui, mut builder: impl FnMut(Properties)) {
         egui_extras::TableBuilder::new(ui)
             .id_salt(self.id)
-            .column(egui_extras::Column::auto())
+            .column(egui_extras::Column::auto_with_initial_suggestion(150.0))
             .column(egui_extras::Column::remainder())
             .cell_layout(
                 egui::Layout::left_to_right(egui::Align::Center)

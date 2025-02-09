@@ -99,7 +99,14 @@ pub fn string_list(
                                 .show(ui, |ui| {
                                     ui.horizontal(|ui| {
                                         ui.label(item);
-                                        if ui.small_button(icon!(X_CIRCLE)).clicked() {
+                                        if ui
+                                            .add(
+                                                egui::Button::new(icon!(X_CIRCLE))
+                                                    .small()
+                                                    .frame(false),
+                                            )
+                                            .clicked()
+                                        {
                                             deleted_index = Some(index);
                                         }
                                     });
@@ -157,12 +164,16 @@ pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
 }
 
 pub fn info_properties(info: &mut Info, properties: &mut Properties) {
-    properties.multiline_row("Авторы", 2, |ui| {
+    properties.multiline_row(icon_str!(USERS, "Авторы"), 2, |ui| {
         string_list("info-properties-authors", &mut info.authors, ui)
     });
-    properties.multiline_row("Источники", 2, |ui| {
+    properties.multiline_row(icon_str!(ARCHIVE, "Источники"), 2, |ui| {
         string_list("info-properties-sources", &mut info.sources, ui)
     });
-    properties.row("Комментарий", |ui| ui.text_edit_singleline(&mut info.comments));
-    properties.row("Расширения", |ui| ui.text_edit_singleline(&mut info.extension));
+    properties.row(icon_str!(CHAT_DOTS, "Комментарий"), |ui| {
+        ui.text_edit_singleline(&mut info.comments)
+    });
+    properties.row(icon_str!(PUZZLE_PIECE, "Расширения"), |ui| {
+        ui.text_edit_singleline(&mut info.extension)
+    });
 }
