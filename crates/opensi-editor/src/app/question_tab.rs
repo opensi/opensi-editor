@@ -2,7 +2,7 @@ use opensi_core::prelude::*;
 
 use crate::{
     element::{PropertyTable, Sections, info_edit, unselectable_label},
-    icon_str,
+    icon, icon_str, icon_string,
 };
 
 pub fn question_tab(question: &mut Question, ui: &mut egui::Ui) {
@@ -43,7 +43,7 @@ fn question_info_edit(question: &mut Question, ui: &mut egui::Ui) {
 fn question_scenario(question: &mut Question, ui: &mut egui::Ui) {
     ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
         for atom in &mut question.scenario {
-            unselectable_label(format!("{atom:?}"), ui);
+            atom_ui(atom, ui);
         }
     });
 }
@@ -53,7 +53,7 @@ fn question_answers(question: &mut Question, ui: &mut egui::Ui) {
         for answer in &mut question.right {
             ui.add(
                 egui::Label::new(
-                    egui::RichText::new(format!("{answer:?}"))
+                    egui::RichText::new(icon_string!(CHECK_FAT, answer))
                         .color(ui.visuals().widgets.hovered.text_color()),
                 )
                 .selectable(false),
@@ -62,10 +62,38 @@ fn question_answers(question: &mut Question, ui: &mut egui::Ui) {
         for answer in &mut question.wrong {
             ui.add(
                 egui::Label::new(
-                    egui::RichText::new(format!("{answer:?}")).color(ui.visuals().error_fg_color),
+                    egui::RichText::new(icon_string!(PLACEHOLDER, answer))
+                        .color(ui.visuals().error_fg_color),
                 )
                 .selectable(false),
             );
+        }
+    });
+}
+
+fn atom_ui(atom: &mut Atom, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+        match atom.kind {
+            AtomKind::Image => unselectable_label(icon!(IMAGE), ui),
+            AtomKind::Voice => unselectable_label(icon!(HEADPHONES), ui),
+            AtomKind::Video => unselectable_label(icon!(VIDEO), ui),
+            AtomKind::Text => unselectable_label(icon!(CHAT_CIRCLE_TEXT), ui),
+        };
+
+        match atom.kind {
+            AtomKind::Text => {
+                if atom.body.is_empty() {
+                    ui.add(
+                        egui::Label::new(egui::WidgetText::from("Пусто...").weak())
+                            .selectable(false),
+                    );
+                } else {
+                    ui.strong(&atom.body);
+                }
+            },
+            _ => {
+                unselectable_label(format!("{atom:?}"), ui);
+            },
         }
     });
 }

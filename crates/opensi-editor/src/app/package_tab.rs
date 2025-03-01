@@ -32,8 +32,6 @@ pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui
 }
 
 fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
-    let tags: &mut Vec<String> =
-        &mut package.tags.iter().filter_map(|tag| tag.body.clone()).collect();
     PropertyTable::new("package-info-properties").show(ui, |mut properties| {
         properties.row(icon_str!(STICKER, "Название"), |ui| {
             ui.text_edit_singleline(&mut package.name)
@@ -54,7 +52,7 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
             ui.text_edit_singleline(&mut package.language)
         });
         properties.multiline_row(icon_str!(TAG, "Тэги"), 2, |ui| {
-            string_list("package-tags", tags, ui)
+            string_list("package-tags", &mut package.tags, ui)
         });
 
         info_properties(&mut package.info, &mut properties);
