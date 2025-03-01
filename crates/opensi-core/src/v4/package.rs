@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Write};
 use std::path::Path;
+use std::sync::Arc;
 use std::{fs::File, io, io::Read};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
@@ -52,7 +53,7 @@ pub struct Packagev4 {
 
     // resources
     #[serde(skip)]
-    pub resource: HashMap<ResourceIdv4, Vec<u8>>,
+    pub resources: HashMap<ResourceIdv4, Arc<[u8]>>,
 }
 
 /// # Creation of package.
@@ -74,7 +75,7 @@ impl Packagev4 {
             info: Infov4::default(),
             rounds: vec![],
             tags: vec![],
-            resource: HashMap::new(),
+            resources: HashMap::new(),
         }
     }
 }
@@ -96,9 +97,9 @@ impl Packagev4 {
     const CONTENT_TYPE_FILE_CONTENT: &'static str = r#"<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="si/xml" /></Types>"""#;
     const XML_VERSION_ENCODING: &'static str = r#"<?xml version="1.0" encoding="utf-8"?>"#;
 
-    pub fn get_resource(&self, atom: &Atomv4) -> Option<&Vec<u8>> {
+    pub fn get_resource(&self, atom: &Atomv4) -> Option<&Arc<[u8]>> {
         let resource = atom.resource()?;
-        self.resource.get(&resource)
+        self.resources.get(&resource)
     }
 
     // Expecting byte array of zip file
@@ -133,7 +134,7 @@ impl Packagev4 {
                             let mut value = Vec::new();
                             zip_file.read_to_end(&mut value)?;
 
-                            resources.insert(key, value);
+                            resources.insert(key, Arc::from(value.into_boxed_slice()));
                         },
                         None => {
                             println!("Unknown resource type for {}", filename)
@@ -148,7 +149,7 @@ impl Packagev4 {
         content_file.read_to_string(&mut contents)?;
 
         let package = from_str(&contents).map_err(|e| Error::new(ErrorKind::InvalidData, e));
-        package.map(|p| Packagev4 { resource: resources, ..p })
+        package.map(|p| Packagev4 { resources, ..p })
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
@@ -166,7 +167,7 @@ impl Packagev4 {
         zip.start_file("[Content_Types].xml", options)?;
         zip.write_all(Self::CONTENT_TYPE_FILE_CONTENT.as_ref())?;
 
-        let resources = &self.resource;
+        let resources = &self.resources;
         for (key, value) in resources.into_iter() {
             zip.start_file(key.path(), options)?;
             zip.write_all(&value)?

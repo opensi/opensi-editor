@@ -45,7 +45,7 @@ impl Atomv4 {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum AtomKindv4 {
     Image,
@@ -74,16 +74,15 @@ pub enum ResourceIdv4 {
 impl ResourceIdv4 {
     pub fn try_new(path: impl AsRef<str>) -> Option<Self> {
         let path = path.as_ref();
-        let id = if path.starts_with("Audio/") {
-            Self::Audio(path.to_owned())
-        } else if path.starts_with("Images/") {
-            Self::Image(path.to_owned())
-        } else if path.starts_with("Video/") {
-            Self::Video(path.to_owned())
-        } else if path.starts_with("Texts/") {
-            Self::Texts(path.to_owned())
-        } else {
-            return None;
+        let (category, path) = path.split_once('/')?;
+
+        let path = if path.starts_with('@') { path.to_string() } else { format!("@{path}") };
+        let id = match category {
+            "Audio" => Self::Audio(format!("{}/{}", category, path)),
+            "Images" => Self::Image(format!("{}/{}", category, path)),
+            "Video" => Self::Video(format!("{}/{}", category, path)),
+            "Texts" => Self::Texts(format!("{}/{}", category, path)),
+            _ => return None,
         };
 
         Some(id)
