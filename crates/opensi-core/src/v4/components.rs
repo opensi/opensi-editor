@@ -103,9 +103,9 @@ pub struct Questionv4 {
     #[serde(with = "serde_impl::atoms")]
     pub scenario: Vec<Atomv4>,
     #[serde(with = "serde_impl::answers")]
-    pub right: Vec<Answerv4>,
+    pub right: Vec<String>,
     #[serde(with = "serde_impl::answers", skip_serializing_if = "Vec::is_empty")]
-    pub wrong: Vec<Answerv4>,
+    pub wrong: Vec<String>,
     #[serde(rename = "@info", skip_serializing_if = "Option::is_none")]
     pub info: Option<Infov4>,
 }
@@ -142,21 +142,9 @@ pub struct QuestionTypev4 {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Answerv4 {
-    #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
-    pub body: Option<String>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Paramv4 {
     #[serde(rename = "@name")]
     pub name: String,
-    #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
-    pub body: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Tag {
     #[serde(rename = "$value", skip_serializing_if = "Option::is_none")]
     pub body: Option<String>,
 }

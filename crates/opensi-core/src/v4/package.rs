@@ -11,7 +11,7 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 use super::ResourceIdv4;
 use super::atom::Atomv4;
-use super::components::{Infov4, Roundv4, Tag};
+use super::components::{Infov4, Roundv4};
 use crate::package_trait::RoundContainer;
 use crate::serde_impl;
 
@@ -48,7 +48,7 @@ pub struct Packagev4 {
     #[serde(default, with = "serde_impl::rounds")]
     pub rounds: Vec<Roundv4>,
     #[serde(default, with = "serde_impl::tags", skip_serializing_if = "Vec::is_empty")]
-    pub tags: Vec<Tag>,
+    pub tags: Vec<String>,
 
     // resources
     #[serde(skip)]
