@@ -33,11 +33,11 @@ macro_rules! generate_serde_mod {
     };
 }
 
-generate_serde_mod!(rounds: crate::v5::Roundv5 as round);
-generate_serde_mod!(themes: crate::v5::Themev5 as theme);
-generate_serde_mod!(questions: crate::v5::Questionv5 as question);
-generate_serde_mod!(atoms: crate::v5::Atomv5 as atom);
-generate_serde_mod!(answers: crate::v5::Answerv5 as answer);
+generate_serde_mod!(rounds: crate::v4::Roundv4 as round);
+generate_serde_mod!(themes: crate::v4::Themev4 as theme);
+generate_serde_mod!(questions: crate::v4::Questionv4 as question);
+generate_serde_mod!(atoms: crate::v4::Atomv4 as atom);
+generate_serde_mod!(answers: crate::v4::Answerv4 as answer);
 generate_serde_mod!(authors: String as author);
 generate_serde_mod!(sources: String as source);
-generate_serde_mod!(tags: crate::v5::Tag as tag);
+generate_serde_mod!(tags: crate::v4::Tag as tag);

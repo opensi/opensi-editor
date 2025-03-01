@@ -11,7 +11,12 @@ fn open_packs() {
         let package = Package::open_zip_file(&pack);
         let package_name = pack.file_name().unwrap().to_str().unwrap();
 
-        assert!(package.is_ok(), "Can't open package {}, error is {}", package_name, package.err().unwrap());
+        assert!(
+            package.is_ok(),
+            "Can't open package {}, error is {}",
+            package_name,
+            package.err().unwrap()
+        );
     }
 }
 
@@ -26,8 +31,7 @@ fn resave_test() {
         let package_name = pack.file_name().unwrap().to_str().unwrap();
 
         assert_eq!(
-            package_original,
-            package_resaved,
+            package_original, package_resaved,
             "Package {} resaving produced different results",
             package_name
         );

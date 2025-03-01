@@ -1,5 +1,4 @@
 use chrono::Datelike;
-use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
 use quick_xml::de::from_str;
 use quick_xml::se::to_string;
 use serde::{Deserialize, Serialize};
@@ -10,7 +9,9 @@ use std::{fs::File, io, io::Read};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
-use super::components::{Atomv5, Infov5, Roundv5, Tag};
+use super::ResourceIdv4;
+use super::atom::Atomv4;
+use super::components::{Infov4, Roundv4, Tag};
 use crate::package_trait::RoundContainer;
 use crate::serde_impl;
 
@@ -18,7 +19,7 @@ use crate::serde_impl;
 /// the package and its tree of [`Question`].
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename = "package")]
-pub struct Packagev5 {
+pub struct Packagev4 {
     // attributes
     #[serde(rename = "@name")]
     pub name: String,
@@ -43,19 +44,19 @@ pub struct Packagev5 {
 
     // elements
     #[serde(default)]
-    pub info: Infov5,
+    pub info: Infov4,
     #[serde(default, with = "serde_impl::rounds")]
-    pub rounds: Vec<Roundv5>,
+    pub rounds: Vec<Roundv4>,
     #[serde(default, with = "serde_impl::tags", skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<Tag>,
 
     // resources
     #[serde(skip)]
-    pub resource: HashMap<Resource, Vec<u8>>,
+    pub resource: HashMap<ResourceIdv4, Vec<u8>>,
 }
 
 /// # Creation of package.
-impl Packagev5 {
+impl Packagev4 {
     pub fn new() -> Self {
         let utc = chrono::Utc::now();
 
@@ -70,7 +71,7 @@ impl Packagev5 {
             logo: None,
             restriction: String::new(),
             namespace: String::new(),
-            info: Infov5::default(),
+            info: Infov4::default(),
             rounds: vec![],
             tags: vec![],
             resource: HashMap::new(),
@@ -78,8 +79,8 @@ impl Packagev5 {
     }
 }
 
-impl RoundContainer for Packagev5 {
-    type Round = Roundv5;
+impl RoundContainer for Packagev4 {
+    type Round = Roundv4;
 
     fn get_rounds(&self) -> &Vec<Self::Round> {
         &self.rounds
@@ -91,53 +92,27 @@ impl RoundContainer for Packagev5 {
 }
 
 /// # IO and resource methods
-impl Packagev5 {
+impl Packagev4 {
     const CONTENT_TYPE_FILE_CONTENT: &'static str = r#"<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="si/xml" /></Types>"""#;
     const XML_VERSION_ENCODING: &'static str = r#"<?xml version="1.0" encoding="utf-8"?>"#;
-    const CONTROLS_ASCII_SET: &'static AsciiSet = &CONTROLS.add(b' ');
 
-    pub fn get_resource(&self, atom: &Atomv5) -> Option<&Vec<u8>> {
-        // Atom xml content or ("resource name" as stated in official docs) begins
-        // with '@' in package to distinguish plain text and links to
-        // resources. This is how it looks like in package:
-        //
-        // ```xml
-        // <atom>Откуда данный опенинг ?</atom>
-        // <atom type="voice">@3.mp3</atom>
-        // ```
-        // All links is just a part of filename, so we want to trim '@' from
-        // beginning to make our life easier while working with files from the pack.
-        // It also percent-encoded so we need to decode links.
-
-        let body = atom.body.as_ref()?;
-        let resource_name = utf8_percent_encode(body, Self::CONTROLS_ASCII_SET).to_string();
-        let variant: &str = atom.variant.as_ref()?;
-
-        let key = match variant {
-            "voice" => Some(Resource::Audio(format!("Audio/{}", resource_name))),
-            "image" => Some(Resource::Image(format!("Images/{}", resource_name))),
-            "video" => Some(Resource::Video(format!("Video/{}", resource_name))),
-            _ => None,
-        };
-
-        match key {
-            Some(key) => self.resource.get(&key),
-            None => None,
-        }
+    pub fn get_resource(&self, atom: &Atomv4) -> Option<&Vec<u8>> {
+        let resource = atom.resource()?;
+        self.resource.get(&resource)
     }
 
     // Expecting byte array of zip file
-    pub fn from_zip_buffer(bytes: impl AsRef<[u8]>) -> Result<Packagev5, Error> {
+    pub fn from_zip_buffer(bytes: impl AsRef<[u8]>) -> Result<Packagev4, Error> {
         let cursor = io::Cursor::new(bytes);
         Self::get_package_from_zip(cursor)
     }
 
-    pub fn open_zip_file(path: impl AsRef<Path>) -> Result<Packagev5, Error> {
+    pub fn open_zip_file(path: impl AsRef<Path>) -> Result<Packagev4, Error> {
         let package_file = File::open(path)?;
         Self::get_package_from_zip(package_file)
     }
 
-    fn get_package_from_zip<T: Read + io::Seek>(source: T) -> Result<Packagev5, Error> {
+    fn get_package_from_zip<T: Read + io::Seek>(source: T) -> Result<Packagev4, Error> {
         let mut zip_archive = ZipArchive::new(source)?;
         let mut resources = HashMap::new();
 
@@ -153,14 +128,14 @@ impl Packagev5 {
                         continue;
                     }
 
-                    match Self::get_resource_type(filename) {
-                        Ok(key) => {
+                    match ResourceIdv4::try_new(filename) {
+                        Some(key) => {
                             let mut value = Vec::new();
                             zip_file.read_to_end(&mut value)?;
 
                             resources.insert(key, value);
                         },
-                        Err(_) => {
+                        None => {
                             println!("Unknown resource type for {}", filename)
                         },
                     }
@@ -173,21 +148,7 @@ impl Packagev5 {
         content_file.read_to_string(&mut contents)?;
 
         let package = from_str(&contents).map_err(|e| Error::new(ErrorKind::InvalidData, e));
-        package.map(|p| Packagev5 { resource: resources, ..p })
-    }
-
-    fn get_resource_type(filename: &str) -> Result<Resource, Error> {
-        if filename.starts_with("Audio") {
-            Ok(Resource::Audio(filename.to_owned()))
-        } else if filename.starts_with("Images") {
-            Ok(Resource::Image(filename.to_owned()))
-        } else if filename.starts_with("Video") {
-            Ok(Resource::Video(filename.to_owned()))
-        } else if filename.starts_with("Texts") {
-            Ok(Resource::Texts(filename.to_owned()))
-        } else {
-            Err(Error::new(ErrorKind::InvalidData, "Unknown resource type"))
-        }
+        package.map(|p| Packagev4 { resource: resources, ..p })
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
@@ -207,32 +168,12 @@ impl Packagev5 {
 
         let resources = &self.resource;
         for (key, value) in resources.into_iter() {
-            zip.start_file(key.extract_key(), options)?;
+            zip.start_file(key.path(), options)?;
             zip.write_all(&value)?
         }
 
         let result = zip.finish()?;
 
         Ok(result.into_inner())
-    }
-}
-
-/// Single resource handle inside [`Package`].
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Resource {
-    Audio(String),
-    Video(String),
-    Image(String),
-    Texts(String),
-}
-
-impl Resource {
-    fn extract_key(&self) -> &str {
-        match self {
-            Resource::Audio(key)
-            | Resource::Video(key)
-            | Resource::Image(key)
-            | Resource::Texts(key) => key,
-        }
     }
 }
