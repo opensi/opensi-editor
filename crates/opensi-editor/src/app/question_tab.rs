@@ -5,11 +5,16 @@ use crate::{
     icon, icon_str,
 };
 
-pub fn question_tab(question: &mut Question, ui: &mut egui::Ui) {
+pub fn question_tab(package: &mut Package, idx: QuestionIdx, ui: &mut egui::Ui) {
+    let package_id = package.id.clone();
+
     Sections::new("question-sections")
         .line(egui_extras::Size::initial(200.0), 2)
         .line(egui_extras::Size::remainder(), 2)
         .show(ui, |mut body| {
+            let Some(question) = package.get_question_mut(idx) else {
+                return;
+            };
             body.line(|mut line| {
                 line.section("Вопрос", |ui| {
                     question_info_edit(question, ui);
@@ -20,7 +25,7 @@ pub fn question_tab(question: &mut Question, ui: &mut egui::Ui) {
             });
             body.line(|mut line| {
                 line.section("Сценарий", |ui| {
-                    question_scenario(question, ui);
+                    question_scenario(question, &package_id, ui);
                 });
                 line.section("Ответы", |ui| {
                     question_answers(question, ui);
@@ -40,15 +45,15 @@ fn question_info_edit(question: &mut Question, ui: &mut egui::Ui) {
     });
 }
 
-fn question_scenario(question: &mut Question, ui: &mut egui::Ui) {
-    ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
+fn question_scenario(question: &mut Question, package_id: &str, ui: &mut egui::Ui) {
+    egui::ScrollArea::vertical().show(ui, |ui| {
         for atom in &mut question.scenario {
-            atom_ui(atom, ui);
+            atom_ui(atom, package_id, ui);
         }
     });
 }
 
-fn atom_ui(atom: &mut Atom, ui: &mut egui::Ui) {
+fn atom_ui(atom: &mut Atom, package_id: &str, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         match atom.kind {
             AtomKind::Image => unselectable_label(icon!(IMAGE), ui),
@@ -57,8 +62,8 @@ fn atom_ui(atom: &mut Atom, ui: &mut egui::Ui) {
             AtomKind::Text => unselectable_label(icon!(CHAT_CIRCLE_TEXT), ui),
         };
 
-        match atom.kind {
-            AtomKind::Text => {
+        match (atom.kind, atom.resource()) {
+            (AtomKind::Text, _) => {
                 if atom.body.is_empty() {
                     ui.add(
                         egui::Label::new(egui::WidgetText::from("Пусто...").weak())
@@ -67,6 +72,13 @@ fn atom_ui(atom: &mut Atom, ui: &mut egui::Ui) {
                 } else {
                     ui.strong(&atom.body);
                 }
+            },
+            (AtomKind::Image, Some(id)) => {
+                ui.add(
+                    egui::Image::new(format!("package://{}/{}", package_id, id.path()))
+                        .fit_to_original_size(1.0)
+                        .max_width(ui.available_width()),
+                );
             },
             _ => {
                 unselectable_label(format!("{atom:?}"), ui);

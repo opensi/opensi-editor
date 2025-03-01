@@ -6,6 +6,8 @@ mod round_tab;
 mod theme_tab;
 mod workarea;
 
+use std::sync::Arc;
+
 use itertools::Itertools;
 use log::error;
 use opensi_core::prelude::*;
@@ -25,12 +27,15 @@ const FONT_REGULAR_ID: &'static str = "regular";
 pub struct EditorApp {
     package_state: PackageState,
     theme_name: String,
+    #[serde(skip)]
+    storage: SharedPackageBytesStorage,
 }
 
 impl Default for EditorApp {
     fn default() -> Self {
         Self {
             package_state: PackageState::None,
+            storage: SharedPackageBytesStorage::default(),
             theme_name: style::default_theme().name().to_string(),
         }
     }
@@ -68,8 +73,10 @@ impl EditorApp {
         }
 
         egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Fill);
-
         cc.egui_ctx.set_fonts(fonts);
+
+        egui_extras::install_image_loaders(&cc.egui_ctx);
+        cc.egui_ctx.add_bytes_loader(Arc::new(PackageBytesLoader { storage: app.storage.clone() }));
 
         app
     }
@@ -87,7 +94,28 @@ impl eframe::App for EditorApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        self.package_state.update();
+        match &mut self.package_state {
+            PackageState::Loading(receiver) => match receiver.try_recv() {
+                Ok(Ok(package)) => {
+                    // load all images into memory
+                    for (id, bytes) in &package.resources {
+                        if !matches!(id, ResourceId::Image(..)) {
+                            continue;
+                        }
+
+                        let path = format!("{}/{}", package.id, id.path());
+                        self.storage.insert(path, bytes.clone());
+                    }
+
+                    self.package_state = PackageState::Active { package, selected: None };
+                },
+                Ok(Err(err)) => {
+                    error!("Error loading package: {err}");
+                },
+                Err(_) => {},
+            },
+            _ => {},
+        }
 
         let mut new_pack_modal = ModalWrapper::new(ctx, "new-pack-modal");
         let mut authors_modal = ModalWrapper::new(ctx, "authors-modal");
@@ -265,19 +293,51 @@ enum PackageState {
     },
 }
 
-impl PackageState {
-    fn update(&mut self) {
-        match self {
-            Self::Loading(receiver) => match receiver.try_recv() {
-                Ok(Ok(package)) => {
-                    *self = Self::Active { package, selected: None };
-                },
-                Ok(Err(err)) => {
-                    error!("Error loading package: {err}");
-                },
-                Err(_) => {},
-            },
-            _ => {},
-        }
+#[derive(Clone, Default, Debug)]
+pub struct SharedPackageBytesStorage {
+    cache: Arc<dashmap::DashMap<String, egui::load::Bytes>>,
+}
+
+impl SharedPackageBytesStorage {
+    fn get(&self, path: impl AsRef<str>) -> Option<egui::load::Bytes> {
+        let path = path.as_ref();
+        self.cache.as_ref().get(path).map(|r| r.value().clone())
+    }
+
+    fn insert(&self, path: impl AsRef<str>, bytes: Arc<[u8]>) {
+        let path = path.as_ref();
+        self.cache.as_ref().insert(path.to_string(), egui::load::Bytes::Shared(bytes));
+    }
+}
+
+struct PackageBytesLoader {
+    storage: SharedPackageBytesStorage,
+}
+
+impl egui::load::BytesLoader for PackageBytesLoader {
+    fn id(&self) -> &str {
+        egui::load::generate_loader_id!(PackageBytesLoader)
+    }
+
+    fn load(&self, _ctx: &egui::Context, uri: &str) -> egui::load::BytesLoadResult {
+        let Some(path) = uri.strip_prefix("package://") else {
+            return Err(egui::load::LoadError::NotSupported);
+        };
+
+        let Some(bytes) = self.storage.get(path) else {
+            return Err(egui::load::LoadError::Loading(format!(
+                "Package image for '{path}' isn't loaded into app's cache!"
+            )));
+        };
+
+        Ok(egui::load::BytesPoll::Ready { size: None, bytes, mime: None })
+    }
+
+    fn forget(&self, _uri: &str) {}
+
+    fn forget_all(&self) {}
+
+    fn byte_size(&self) -> usize {
+        0
     }
 }

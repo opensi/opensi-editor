@@ -1,5 +1,5 @@
 use crate::app::{package_tab, question_tab, round_tab, theme_tab};
-use crate::element::{error_label, node_name};
+use crate::element::node_name;
 use crate::icon_string;
 
 use opensi_core::prelude::*;
@@ -31,12 +31,7 @@ fn selected_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &
             theme_tab::theme_tab(package, idx, selected, ui);
         },
         &mut Some(PackageNode::Question(idx)) => {
-            if let Some(question) = package.get_question_mut(idx) {
-                question_tab::question_tab(question, ui);
-            } else {
-                let error = format!("Невозможно найти вопрос с индексом {idx}");
-                error_label(error, ui);
-            }
+            question_tab::question_tab(package, idx, ui);
         },
         None => {
             package_tab::package_tab(package, selected, ui);
