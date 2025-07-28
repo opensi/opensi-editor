@@ -6,7 +6,7 @@ use crate::{
         card::{CardStyle, CardTable},
         info_edit,
     },
-    icon_str,
+    icon, icon_str,
 };
 
 /// Workarea tab to edit round info and its themes.
@@ -41,10 +41,9 @@ pub fn round_tab(
 
 fn round_edit(round: &mut Round, ui: &mut egui::Ui) {
     PropertyTable::new("round-properties").show(ui, |mut properties| {
-        properties.row(icon_str!(STICKER, "Название"), |ui| {
-            ui.text_edit_singleline(&mut round.name)
-        });
-        properties.row(icon_str!(STAR, "Тип"), |ui| {
+        properties
+            .row(icon!(STICKER), "Название", |ui| ui.text_edit_singleline(&mut round.name));
+        properties.row(icon!(STAR), "Тип", |ui| {
             ui.add_enabled_ui(false, |ui| ui.label(format!("{:?}?", round.kind))).inner
         });
     });

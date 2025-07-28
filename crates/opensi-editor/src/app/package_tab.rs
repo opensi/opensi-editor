@@ -6,13 +6,13 @@ use crate::{
         card::{CardStyle, CardTable},
         info_properties, string_list,
     },
-    icon_str,
+    icon, icon_str,
 };
 
 /// Workarea tab to edit package info.
 pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
     Sections::new("package-sections")
-        .line(egui_extras::Size::initial(400.0), 2)
+        .line(egui_extras::Size::initial(600.0), 2)
         .line(egui_extras::Size::remainder(), 1)
         .show(ui, |mut body| {
             body.line(|mut line| {
@@ -33,25 +33,24 @@ pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui
 
 fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
     PropertyTable::new("package-info-properties").show(ui, |mut properties| {
-        properties.row(icon_str!(STICKER, "Название"), |ui| {
+        properties.row(icon!(STICKER), "Название", |ui| {
             ui.text_edit_singleline(&mut package.name)
         });
-        properties.row(icon_str!(TROPHY, "Сложность"), |ui| {
+        properties.row(icon!(TROPHY), "Сложность", |ui| {
             ui.add(egui::DragValue::new(&mut package.difficulty).range(0..=10))
         });
-        properties.row(icon_str!(TRAFFIC_CONE, "Ограничения"), |ui| {
+        properties.row(icon!(TRAFFIC_CONE), "Ограничения", |ui| {
             ui.text_edit_singleline(&mut package.restriction)
         });
-        properties.row(icon_str!(CALENDAR, "Дата создания"), |ui| {
+        properties.row(icon!(CALENDAR), "Дата создания", |ui| {
             ui.text_edit_singleline(&mut package.date)
         });
-        properties.row(icon_str!(IDENTIFICATION_BADGE, "Издатель"), |ui| {
+        properties.row(icon!(IDENTIFICATION_BADGE), "Издатель", |ui| {
             ui.text_edit_singleline(&mut package.publisher)
         });
-        properties.row(icon_str!(TRANSLATE, "Язык"), |ui| {
-            ui.text_edit_singleline(&mut package.language)
-        });
-        properties.multiline_row(icon_str!(TAG, "Тэги"), 2, |ui| {
+        properties
+            .row(icon!(TRANSLATE), "Язык", |ui| ui.text_edit_singleline(&mut package.language));
+        properties.multiline_row(icon!(TAG), "Тэги", 2, |ui| {
             string_list("package-tags", &mut package.tags, ui)
         });
 
@@ -61,8 +60,8 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
 
 fn package_metadata_edit(package: &Package, ui: &mut egui::Ui) {
     PropertyTable::new("package-metadata-properties").readonly(true).show(ui, |mut properties| {
-        properties.row(icon_str!(HASH, "ID пакета"), |ui| ui.label(&package.id));
-        properties.row(icon_str!(GIT_BRANCH, "Версия пакета"), |ui| {
+        properties.row(icon!(HASH), "ID пакета", |ui| ui.label(&package.id));
+        properties.row(icon!(GIT_BRANCH), "Версия пакета", |ui| {
             ui.label(format!("{:.1}", package.version))
         });
     });

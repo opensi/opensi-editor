@@ -36,10 +36,10 @@ pub fn question_tab(package: &mut Package, idx: QuestionIdx, ui: &mut egui::Ui) 
 
 fn question_info_edit(question: &mut Question, ui: &mut egui::Ui) {
     PropertyTable::new("question-info-properties").show(ui, |mut properties| {
-        properties.row(icon_str!(COINS, "Стоимость"), |ui| {
+        properties.row(icon!(COINS), "Стоимость", |ui| {
             ui.add(egui::DragValue::new(&mut question.price).range(0..=usize::MAX))
         });
-        properties.row(icon_str!(STAR, "Тип вопроса"), |ui| {
+        properties.row(icon!(STAR), "Тип вопроса", |ui| {
             unselectable_label(format!("{:?}", question.question_type), ui)
         });
     });

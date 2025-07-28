@@ -166,16 +166,16 @@ pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
 }
 
 pub fn info_properties(info: &mut Info, properties: &mut Properties) {
-    properties.multiline_row(icon_str!(USERS, "Авторы"), 2, |ui| {
+    properties.multiline_row(icon!(USERS), "Авторы", 2, |ui| {
         string_list("info-properties-authors", &mut info.authors, ui)
     });
-    properties.multiline_row(icon_str!(ARCHIVE, "Источники"), 2, |ui| {
+    properties.multiline_row(icon!(ARCHIVE), "Источники", 2, |ui| {
         string_list("info-properties-sources", &mut info.sources, ui)
     });
-    properties.row(icon_str!(CHAT_DOTS, "Комментарий"), |ui| {
+    properties.row(icon!(CHAT_DOTS), "Комментарий", |ui| {
         ui.text_edit_singleline(&mut info.comments)
     });
-    properties.row(icon_str!(PUZZLE_PIECE, "Расширения"), |ui| {
+    properties.row(icon!(PUZZLE_PIECE), "Расширения", |ui| {
         ui.text_edit_singleline(&mut info.extension)
     });
 }
