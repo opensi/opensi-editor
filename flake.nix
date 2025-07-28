@@ -5,7 +5,6 @@
     };
     utils = {
       url = "github:numtide/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
@@ -13,7 +12,6 @@
     };
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -33,22 +31,22 @@
 
         # Compiletime/Runtime deps (native linux build)
         requiredLibsLinux = with pkgs; [
-            # misc. libraries
-            openssl
+          # misc. libraries
+          openssl
 
-            # GUI libs
-            libxkbcommon
-            libGL
-            fontconfig
+          # GUI libs
+          libxkbcommon
+          libGL
+          fontconfig
 
-            # wayland libraries
-            wayland
+          # wayland libraries
+          wayland
 
-            # x11 libraries
-            xorg.libXcursor
-            xorg.libXrandr
-            xorg.libXi
-            xorg.libX11
+          # x11 libraries
+          xorg.libXcursor
+          xorg.libXrandr
+          xorg.libXi
+          xorg.libX11
         ];
 
         # IDE/shell dependencies
@@ -78,6 +76,11 @@
           strictDeps = true;
           nativeBuildInputs = requiredPrograms;
         };
+        mkLinuxLdLibraryPathExport = libs: ''
+          FLAKE_LIBDIR="${pkgs.lib.makeLibraryPath libs}"
+          RUST_LIBDIR=$(rustc --print target-libdir)
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$FLAKE_LIBDIR:$RUST_LIBDIR:target/debug/deps:target/debug:${pkgs.stdenv.cc.cc.lib}/lib"
+        '';
       in
       rec {
         # `nix develop`
@@ -86,9 +89,7 @@
           buildInputs = requiredLibsLinux;
 
           shellHook = ''
-            RUST_LIBDIR=$(rustc --print target-libdir)
-            FLAKE_LIBDIR="${pkgs.lib.makeLibraryPath buildInputs}"
-            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$FLAKE_LIBDIR:$RUST_LIBDIR:target/debug/deps"
+            ${mkLinuxLdLibraryPathExport buildInputs}
           '';
         };
       });
