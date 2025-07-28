@@ -1,7 +1,7 @@
 pub mod catppuccin;
 
 const DEFAULT_FONT_STYLE: FontStyle =
-    FontStyle { heading_size: 18.0, regular_size: 13.0, button_size: 13.0, small_size: 10.0 };
+    FontStyle { heading_size: 20.0, regular_size: 14.0, button_size: 14.0, small_size: 12.0 };
 
 pub fn all_themes() -> impl Iterator<Item = &'static dyn AppTheme> {
     [&catppuccin::Mocha as &dyn AppTheme, &catppuccin::Latte as &dyn AppTheme].into_iter()
