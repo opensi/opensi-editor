@@ -21,7 +21,7 @@ eframe = { version = "0.31", default-features = false, features = [
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.
 ] }
-egui-phosphor = { version = "0.9", default-features = false, features = ["fill"] }
+egui-phosphor = { version = "0.9", default-features = false, features = ["regular"] }
 egui_extras = { version = "0.31.0", features = ["image"] }
 image = { version = "0.25", features = ["jpeg", "png"] }
 rfd = { version = "0.15.2", default-features = false, features = ["xdg-portal", "tokio"] }

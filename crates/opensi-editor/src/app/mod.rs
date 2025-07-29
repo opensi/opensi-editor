@@ -85,7 +85,7 @@ impl EditorApp {
             .families
             .insert(egui::FontFamily::Name(FONT_BOLD_ID.into()), vec![FONT_BOLD_ID.into()]);
 
-        egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Fill);
+        egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
         cc.egui_ctx.set_fonts(fonts);
 
         egui_extras::install_image_loaders(&cc.egui_ctx);

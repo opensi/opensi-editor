@@ -8,7 +8,7 @@ use opensi_core::prelude::*;
 #[macro_export]
 macro_rules! icon {
     ($icon:ident) => {
-        egui_phosphor::fill::$icon
+        egui_phosphor::regular::$icon
     };
 }
 
@@ -28,8 +28,11 @@ macro_rules! icon_string {
 
 #[macro_export]
 macro_rules! icon_format {
-    ($icon:ident, $fmt:literal $(,)? $($t:tt)*) => {
-        format!("{} {}", crate::icon!($icon), format_args!($fmt, $($t,)*))
+    ($icon:ident, $fmt:literal, $($args:tt)*) => {
+        format!("{} {}", crate::icon!($icon), format_args!($fmt, $($args)*))
+    };
+    ($icon:ident, $fmt:literal) => {
+        format!("{} {}", crate::icon!($icon), format_args!($fmt))
     };
 }
 

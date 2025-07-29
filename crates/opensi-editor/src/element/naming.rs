@@ -1,6 +1,7 @@
-use egui_phosphor::fill as icon;
 use opensi_core::prelude::*;
 use std::borrow::Cow;
+
+use crate::{icon_format, icon_string};
 
 const UNKNOWN_ROUND: &'static str = "<Неизвестный раунд>";
 const UNKNOWN_THEME: &'static str = "<Неизвестная тема>";
@@ -24,13 +25,13 @@ pub fn node_name<'a>(node: PackageNode, package: &'a Package) -> Cow<'a, str> {
 }
 
 pub fn round_name(round: &Round) -> String {
-    format!("{} {}", icon::ROWS, round.name)
+    icon_string!(ROWS, round.name)
 }
 
 pub fn theme_name(theme: &Theme) -> String {
-    format!("{} {}", icon::STACK, theme.name)
+    icon_string!(STACK, theme.name)
 }
 
 pub fn question_name(question: &Question) -> String {
-    format!("{} ({})", icon::NOTE, question.price)
+    icon_format!(NOTE, "({})", question.price)
 }
