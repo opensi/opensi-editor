@@ -63,9 +63,8 @@ fn package_info_edit(package: &mut Package, ui: &mut egui::Ui) {
         });
         properties
             .row(icon!(TRANSLATE), "Язык", |ui| ui.text_edit_singleline(&mut package.language));
-        properties.multiline_row(icon!(TAG), "Тэги", 2, |ui| {
-            string_list("package-tags", &mut package.tags, ui)
-        });
+        properties
+            .row(icon!(TAG), "Тэги", |ui| string_list("package-tags", &mut package.tags, ui));
 
         info_properties(&mut package.info, &mut properties);
     });

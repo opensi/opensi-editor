@@ -87,9 +87,7 @@ pub fn string_list(
                 .with_cross_justify(true)
                 .with_main_align(egui::Align::Center),
             |ui| {
-                if list.is_empty() {
-                    unselectable_label("Пусто...", ui);
-                } else {
+                if !list.is_empty() {
                     ui.horizontal(|ui| {
                         let mut deleted_index = None;
 
@@ -166,10 +164,10 @@ pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
 }
 
 pub fn info_properties(info: &mut Info, properties: &mut Properties) {
-    properties.multiline_row(icon!(USERS), "Авторы", 2, |ui| {
+    properties.row(icon!(USERS), "Авторы", |ui| {
         string_list("info-properties-authors", &mut info.authors, ui)
     });
-    properties.multiline_row(icon!(ARCHIVE), "Источники", 2, |ui| {
+    properties.row(icon!(ARCHIVE), "Источники", |ui| {
         string_list("info-properties-sources", &mut info.sources, ui)
     });
     properties.row(icon!(CHAT_DOTS), "Комментарий", |ui| {

@@ -28,11 +28,13 @@ impl<'t> Properties<'t> {
     ) {
         self.body.row(self.row_height * lines as f32, |mut row| {
             row.col(|ui| {
-                ui.add(
-                    egui::Label::new(egui::RichText::new(icon).size(26.0))
-                        .halign(egui::Align::RIGHT)
-                        .selectable(false),
-                );
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::RIGHT), |ui| {
+                    ui.add(
+                        egui::Label::new(egui::RichText::new(icon).size(26.0))
+                            .halign(egui::Align::RIGHT)
+                            .selectable(false),
+                    );
+                });
             });
             row.col(|ui| {
                 egui::Frame::new()
