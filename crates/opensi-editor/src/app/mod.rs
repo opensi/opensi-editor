@@ -18,7 +18,8 @@ use crate::{
     icon_format, icon_str, icon_string, style,
 };
 
-const FONT_REGULAR_ID: &'static str = "regular";
+pub const FONT_REGULAR_ID: &'static str = "regular";
+pub const FONT_BOLD_ID: &'static str = "bold";
 
 /// Main context for the whole app.
 /// Serialized fields are saved and restored.
@@ -65,12 +66,20 @@ impl EditorApp {
         let mut fonts = egui::FontDefinitions::default();
         fonts.font_data.insert(
             FONT_REGULAR_ID.into(),
-            egui::FontData::from_static(include_bytes!("../../assets/fonts/Rubik-Medium.ttf"))
+            egui::FontData::from_static(include_bytes!("../../assets/fonts/Manrope-Regular.ttf"))
+                .into(),
+        );
+        fonts.font_data.insert(
+            FONT_BOLD_ID.into(),
+            egui::FontData::from_static(include_bytes!("../../assets/fonts/Manrope-SemiBold.ttf"))
                 .into(),
         );
         if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
             family.insert(0, FONT_REGULAR_ID.into());
         }
+        fonts
+            .families
+            .insert(egui::FontFamily::Name(FONT_BOLD_ID.into()), vec![FONT_BOLD_ID.into()]);
 
         egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Fill);
         cc.egui_ctx.set_fonts(fonts);

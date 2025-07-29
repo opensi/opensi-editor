@@ -1,3 +1,5 @@
+use crate::app::FONT_BOLD_ID;
+
 /// Row builder for [`PropertyTable`].
 pub struct Properties<'t> {
     row_height: f32,
@@ -40,8 +42,13 @@ impl<'t> Properties<'t> {
                             ui.horizontal(|ui| {
                                 ui.add_space(2.0);
                                 ui.add(
-                                    egui::Label::new(egui::RichText::new(name).strong().size(16.0))
-                                        .selectable(false),
+                                    egui::Label::new(
+                                        egui::RichText::new(name)
+                                            .strong()
+                                            .size(16.0)
+                                            .family(egui::FontFamily::Name(FONT_BOLD_ID.into())),
+                                    )
+                                    .selectable(false),
                                 );
                             });
                             ui.add_enabled_ui(!self.readonly, |ui| {
