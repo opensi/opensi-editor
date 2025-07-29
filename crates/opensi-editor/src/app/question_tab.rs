@@ -61,31 +61,84 @@ fn question_info_edit(question: &mut Question, ui: &mut egui::Ui) {
 
 fn question_scenario(question: &mut Question, package_id: &str, ui: &mut egui::Ui) {
     egui::ScrollArea::vertical().show(ui, |ui| {
-        for atom in &mut question.scenario {
-            atom_ui(atom, package_id, ui);
-        }
+        ui.scope(|ui| {
+            ui.style_mut().spacing.item_spacing.y = 10.0;
+            for atom in &mut question.scenario {
+                atom_ui(atom, package_id, ui);
+            }
+        });
+
+        ui.add_space(20.0);
+
+        egui_extras::TableBuilder::new(ui)
+            .cell_layout(
+                egui::Layout::centered_and_justified(egui::Direction::TopDown)
+                    .with_main_justify(false),
+            )
+            .columns(egui_extras::Column::remainder(), 2)
+            .body(|mut body| {
+                body.row(30.0, |mut row| {
+                    row.col(|ui| {
+                        if ui.button(icon_str!(IMAGE, "Добавить изображение")).clicked()
+                        {
+                            question
+                                .scenario
+                                .push(Atom { kind: AtomKind::Image, ..Atom::default() });
+                        }
+                    });
+                    row.col(|ui| {
+                        if ui.button(icon_str!(CHAT_CIRCLE_TEXT, "Добавить текст")).clicked()
+                        {
+                            question
+                                .scenario
+                                .push(Atom { kind: AtomKind::Text, ..Atom::default() });
+                        }
+                    });
+                });
+                body.row(30.0, |mut row| {
+                    row.col(|ui| {
+                        if ui.button(icon_str!(HEADPHONES, "Добавить аудио")).clicked()
+                        {
+                            question
+                                .scenario
+                                .push(Atom { kind: AtomKind::Voice, ..Atom::default() });
+                        }
+                    });
+                    row.col(|ui| {
+                        if ui.button(icon_str!(VIDEO, "Добавить видео")).clicked() {
+                            question
+                                .scenario
+                                .push(Atom { kind: AtomKind::Video, ..Atom::default() });
+                        }
+                    });
+                });
+            });
     });
 }
 
 fn atom_ui(atom: &mut Atom, package_id: &str, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
-        match atom.kind {
-            AtomKind::Image => unselectable_label(icon!(IMAGE), ui),
-            AtomKind::Voice => unselectable_label(icon!(HEADPHONES), ui),
-            AtomKind::Video => unselectable_label(icon!(VIDEO), ui),
-            AtomKind::Text => unselectable_label(icon!(CHAT_CIRCLE_TEXT), ui),
+        let icon = match atom.kind {
+            AtomKind::Image => icon!(IMAGE),
+            AtomKind::Voice => icon!(HEADPHONES),
+            AtomKind::Video => icon!(VIDEO),
+            AtomKind::Text => icon!(CHAT_CIRCLE_TEXT),
         };
+        ui.add(
+            egui::Label::new(
+                egui::RichText::new(icon).size(20.0).color(ui.visuals().hyperlink_color),
+            )
+            .selectable(false),
+        );
+        let start_position = ui.next_widget_position() + egui::vec2(-18.0, 11.0);
 
         match (atom.kind, atom.resource()) {
             (AtomKind::Text, _) => {
-                if atom.body.is_empty() {
-                    ui.add(
-                        egui::Label::new(egui::WidgetText::from("Пусто...").weak())
-                            .selectable(false),
-                    );
-                } else {
-                    ui.strong(&atom.body);
-                }
+                ui.add(
+                    egui::TextEdit::multiline(&mut atom.body)
+                        .desired_width(ui.available_width())
+                        .margin(egui::Margin::symmetric(10, 6)),
+                );
             },
             (AtomKind::Image, Some(id)) => {
                 ui.add(
@@ -98,6 +151,12 @@ fn atom_ui(atom: &mut Atom, package_id: &str, ui: &mut egui::Ui) {
                 unselectable_label(format!("{atom:?}"), ui);
             },
         }
+
+        ui.painter().vline(
+            start_position.x,
+            start_position.y..=(start_position.y + ui.min_size().y - 26.0),
+            ui.visuals().noninteractive().fg_stroke,
+        );
     });
 }
 
