@@ -277,6 +277,7 @@ impl CardTable {
                                 });
                             }
                         });
+                    ui.add_space(10.0);
                 });
             });
     }
