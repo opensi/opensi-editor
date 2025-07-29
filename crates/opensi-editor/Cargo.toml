@@ -29,7 +29,6 @@ thiserror = "2.0.11"
 serde = { version = "1", features = ["derive"] }
 itertools = "0.14.0"
 const_format = "0.2.34"
-bincode = "1.3.3"
 log = "0.4"
 dashmap = "6.1.0"
 

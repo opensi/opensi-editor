@@ -26,11 +26,12 @@ pub const FONT_BOLD_ID: &'static str = "bold";
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(default)]
 pub struct EditorApp {
-    package_state: PackageState,
     theme_name: String,
     show_tree: bool,
     show_properties: bool,
     recent_files: BTreeSet<PathBuf>,
+    #[serde(skip)]
+    package_state: PackageState,
     #[serde(skip)]
     storage: SharedPackageBytesStorage,
 }
@@ -54,9 +55,7 @@ impl EditorApp {
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         let mut app: Self = if let Some(storage) = cc.storage {
-            eframe::get_value::<Vec<u8>>(storage, eframe::APP_KEY)
-                .and_then(|binary| bincode::deserialize(&binary).ok())
-                .unwrap_or_default()
+            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
         } else {
             Default::default()
         };
@@ -100,12 +99,7 @@ impl EditorApp {
 impl eframe::App for EditorApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        match bincode::serialize(self) {
-            Ok(binary) => {
-                eframe::set_value(storage, eframe::APP_KEY, &binary);
-            },
-            Err(err) => error!("Unable to bincode app state: {err}"),
-        }
+        eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
@@ -334,17 +328,37 @@ impl eframe::App for EditorApp {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Default, Debug)]
+#[derive(Default, Debug)]
 enum PackageState {
     #[default]
     None,
-    #[serde(skip)]
-    Loading(LoadingPackageReceiver),
     Active {
+        // #[serde(with = "package_state_serde")]
         package: Package,
         selected: Option<PackageNode>,
     },
+    Loading(LoadingPackageReceiver),
 }
+
+// mod package_state_serde {
+//     use opensi_core::prelude::Package;
+//     use serde::{Deserialize, Serialize};
+
+//     pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+//         deserializer: D,
+//     ) -> Result<Package, D::Error> {
+//         let buffer = Vec::<u8>::deserialize(deserializer)?;
+//         Package::from_zip_buffer(buffer).map_err(serde::de::Error::custom)
+//     }
+
+//     pub fn serialize<S: serde::Serializer>(
+//         data: &Package,
+//         serializer: S,
+//     ) -> Result<S::Ok, S::Error> {
+//         let buffer = data.to_bytes().map_err(serde::ser::Error::custom)?;
+//         buffer.serialize(serializer)
+//     }
+// }
 
 #[derive(Clone, Default, Debug)]
 pub struct SharedPackageBytesStorage {
