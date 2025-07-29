@@ -55,6 +55,10 @@ pub fn todo_label(ui: &mut egui::Ui) {
     ui.add(egui::Label::new(text).selectable(false).extend());
 }
 
+pub fn empty_label(ui: &mut egui::Ui) {
+    ui.add(egui::Label::new(egui::RichText::new("Пусто...").weak()).selectable(false));
+}
+
 pub fn danger_button(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) -> egui::Response {
     ui.scope(|ui| {
         let error = ui.style().visuals.error_fg_color;

@@ -6,7 +6,7 @@ mod round_tab;
 mod theme_tab;
 mod workarea;
 
-use std::sync::Arc;
+use std::{collections::BTreeSet, path::PathBuf, sync::Arc};
 
 use itertools::Itertools;
 use log::error;
@@ -14,7 +14,7 @@ use opensi_core::prelude::*;
 
 use crate::{
     app::file_dialogs::LoadingPackageReceiver,
-    element::{ModalExt, ModalWrapper},
+    element::{ModalExt, ModalWrapper, empty_label},
     icon, icon_format, icon_str, icon_string, style,
 };
 
@@ -30,6 +30,7 @@ pub struct EditorApp {
     theme_name: String,
     show_tree: bool,
     show_properties: bool,
+    recent_files: BTreeSet<PathBuf>,
     #[serde(skip)]
     storage: SharedPackageBytesStorage,
 }
@@ -42,6 +43,7 @@ impl Default for EditorApp {
             theme_name: style::default_theme().name().to_string(),
             show_tree: true,
             show_properties: true,
+            recent_files: BTreeSet::new(),
         }
     }
 }
@@ -109,7 +111,7 @@ impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         match &mut self.package_state {
             PackageState::Loading(receiver) => match receiver.try_recv() {
-                Ok(Ok(package)) => {
+                Ok(Ok((package, file))) => {
                     // load all images into memory
                     for (id, bytes) in &package.resources {
                         if !matches!(id, ResourceId::Image(..)) {
@@ -121,6 +123,10 @@ impl eframe::App for EditorApp {
                     }
 
                     self.package_state = PackageState::Active { package, selected: None };
+                    self.recent_files.remove(&file);
+                    self.recent_files.insert(file);
+                    self.recent_files =
+                        std::mem::take(&mut self.recent_files).into_iter().take(10).collect();
                 },
                 Ok(Err(err)) => {
                     error!("Error loading package: {err}");
@@ -138,7 +144,7 @@ impl eframe::App for EditorApp {
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
                     ui.menu_button("Файл", |ui| {
-                        if ui.button(icon_str!(FOLDER_SIMPLE_PLUS, "Новый пак")).clicked() {
+                        if ui.button(icon_str!(FOLDER_SIMPLE_PLUS, "Новый")).clicked() {
                             match self.package_state {
                                 PackageState::Active { .. } => {
                                     new_pack_modal.open();
@@ -168,6 +174,26 @@ impl eframe::App for EditorApp {
                         }
 
                         if !cfg!(target_arch = "wasm32") {
+                            ui.menu_button(icon_str!(CLOCK_COUNTER_CLOCKWISE, "Недавние файлы"), |ui| {
+                                if self.recent_files.is_empty() {
+                                    empty_label(ui);
+                                }
+                                ui.set_min_width(300.0);
+                                self.recent_files.retain(|recent| {
+                                    let Some(name) = recent.file_name().map(|filename| filename.to_string_lossy()) else {
+                                        return false;
+                                    };
+                                    if ui.button(egui::RichText::new(name).monospace()).clicked() {
+                                        let package_receiver = file_dialogs::import_file(recent);
+                                        self.package_state = PackageState::Loading(package_receiver);
+                                        ui.close_menu();
+                                    }
+                                    true
+                                });
+                            });
+
+                            ui.separator();
+
                             ui.separator();
                             if ui.button("Выйти").clicked() {
                                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -182,13 +208,6 @@ impl eframe::App for EditorApp {
                             }
                         });
                     }
-
-                    ui.menu_button("Справка", |ui| {
-                        if ui.button(icon_str!(STUDENT, "Авторы")).clicked() {
-                            authors_modal.open();
-                            ui.close_menu();
-                        }
-                    });
 
                     ui.menu_button("Настройки", |ui| {
                         ui.menu_button(icon_str!(SWATCHES, "Тема"), |ui| {
@@ -210,6 +229,13 @@ impl eframe::App for EditorApp {
                                 }
                             }
                         });
+                    });
+
+                    ui.menu_button("Справка", |ui| {
+                        if ui.button(icon_str!(STUDENT, "Авторы")).clicked() {
+                            authors_modal.open();
+                            ui.close_menu();
+                        }
                     });
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

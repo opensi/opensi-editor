@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use log::error;
 use opensi_core::prelude::*;
@@ -10,7 +10,7 @@ use tokio_with_wasm::alias as tokio;
 use tokio::sync::oneshot;
 
 /// Custom result for in-progress loading [`Package`] and its [`PackageError`]s.
-pub type LoadingPackageResult = Result<Package, PackageError>;
+pub type LoadingPackageResult = Result<(Package, PathBuf), PackageError>;
 /// Receiver of a singular [`LoadingPackageResult`].
 pub type LoadingPackageReceiver = oneshot::Receiver<LoadingPackageResult>;
 
@@ -48,7 +48,27 @@ async fn import_package() -> LoadingPackageResult {
         .ok_or(PackageError::NoFileSelected)?;
 
     let buffer = file.read().await;
-    Package::from_zip_buffer(buffer).map_err(PackageError::ArchiveError)
+    let package = Package::from_zip_buffer(buffer).map_err(PackageError::ArchiveError)?;
+    Ok((package, file.path().to_owned()))
+}
+
+/// Import [`Package`] directly from a file.
+/// Doesn't work on wasm.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn import_file(file: impl AsRef<Path>) -> LoadingPackageReceiver {
+    fn read(file: impl AsRef<Path>) -> LoadingPackageResult {
+        let file = file.as_ref();
+        let buffer = std::fs::read(file).map_err(PackageError::ArchiveError)?;
+        let package = Package::from_zip_buffer(buffer).map_err(PackageError::ArchiveError)?;
+        Ok((package, file.to_owned()))
+    }
+
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    match sender.send(read(file)) {
+        Ok(_) => {},
+        Err(_) => error!("Error sending imported package !"),
+    };
+    receiver
 }
 
 /// Show a dialog for saving existing [`Package`] asynchronously.
