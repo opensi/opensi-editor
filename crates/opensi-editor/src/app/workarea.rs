@@ -60,15 +60,21 @@ fn selected_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &
 /// Selection breadcrumbs ui.
 fn breadcrumbs(package: &Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
     fn breadcrumb(text: impl AsRef<str>, ui: &mut egui::Ui) -> bool {
-        let text = egui::RichText::new(text.as_ref()).size(20.0);
-        let response =
-            ui.add(egui::Label::new(text).extend().sense(egui::Sense::click()).selectable(false));
-        response.clicked()
+        ui.scope(|ui| {
+            ui.visuals_mut().widgets.hovered.fg_stroke.color = ui.visuals().text_color();
+            ui.visuals_mut().widgets.inactive.fg_stroke.color = ui.visuals().weak_text_color();
+
+            let text = egui::RichText::new(text.as_ref()).size(18.0);
+            let response = ui
+                .add(egui::Label::new(text).extend().sense(egui::Sense::click()).selectable(false));
+            response.clicked()
+        })
+        .inner
     }
 
     fn breadcrump_separator(ui: &mut egui::Ui) {
         ui.add_space(8.0);
-        let text = egui::RichText::new("/").size(8.0).weak();
+        let text = egui::RichText::new("/").size(14.0).weak();
         ui.add(egui::Label::new(text).wrap().selectable(false));
         ui.add_space(8.0);
     }

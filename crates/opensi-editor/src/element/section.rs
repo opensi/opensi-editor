@@ -15,13 +15,26 @@ impl SectionLine<'_, '_> {
             panic!("Selection is over line limit");
         }
 
+        let margin = 20;
+        let left_margin = if self.current == 0 { 0 } else { margin };
+        let right_margin = if self.current == (self.len as usize - 1) { 0 } else { margin };
+
         self.line_strip.cell(|ui| {
             ui.push_id(
                 ui.id().with(format!("section-{}-{}", self.line_index, self.current)),
                 |ui| {
-                    unselectable_heading(name.as_ref(), ui);
-                    ui.separator();
-                    add_contents(ui);
+                    egui::Frame::new()
+                        .inner_margin(egui::Margin {
+                            left: left_margin,
+                            right: right_margin,
+                            top: 0,
+                            bottom: 0,
+                        })
+                        .show(ui, |ui| {
+                            unselectable_heading(name.as_ref(), ui);
+                            ui.separator();
+                            add_contents(ui);
+                        });
                 },
             );
         });

@@ -249,14 +249,14 @@ impl eframe::App for EditorApp {
 
         if let PackageState::Active { package, selected } = &mut self.package_state {
             egui::SidePanel::right("properties-list-side")
-                .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(20.0))
+                .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(20))
                 .width_range(280.0..=400.0)
                 .show_animated(ctx, self.show_properties, |ui| {
                     workarea::properties(package, selected, ui);
                 });
 
             egui::SidePanel::left("question-tree-side")
-                .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(20.0))
+                .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(20))
                 .width_range(280.0..=400.0)
                 .max_width(400.0)
                 .show_animated(ctx, self.show_tree, |ui| {
@@ -267,7 +267,7 @@ impl eframe::App for EditorApp {
         egui::CentralPanel::default()
             .frame(
                 egui::Frame::central_panel(&ctx.style())
-                    .inner_margin(20.0)
+                    .inner_margin(egui::Margin::symmetric(40, 20))
                     .fill(ctx.style().visuals.widgets.noninteractive.weak_bg_fill),
             )
             .show(ctx, |ui| {
