@@ -110,16 +110,33 @@ fn question_answers(question: &mut Question, ui: &mut egui::Ui) {
             answer_ui(question, n, true, ui);
         }
 
-        ui.horizontal_top(|ui| {
-            if ui.button(icon_str!(CHECK_FAT, "Добавить правильный")).clicked() {
-                question.right.push(format!("Правильный ответ #{}", question.right.len() + 1));
-            }
+        ui.add_space(20.0);
 
-            if ui.button(icon_str!(PLACEHOLDER, "Добавить неправильный")).clicked()
-            {
-                question.wrong.push(format!("Неправильный ответ #{}", question.wrong.len() + 1));
-            }
-        });
+        egui_extras::StripBuilder::new(ui)
+            .cell_layout(
+                egui::Layout::centered_and_justified(egui::Direction::TopDown)
+                    .with_main_justify(false),
+            )
+            .sizes(egui_extras::Size::remainder(), 2)
+            .horizontal(|mut strip| {
+                strip.cell(|ui| {
+                    if ui.button(icon_str!(CHECK, "Добавить правильный")).clicked()
+                    {
+                        question
+                            .right
+                            .push(format!("Правильный ответ #{}", question.right.len() + 1));
+                    }
+                });
+
+                strip.cell(|ui| {
+                    if ui.button(icon_str!(X, "Добавить неправильный")).clicked()
+                    {
+                        question
+                            .wrong
+                            .push(format!("Неправильный ответ #{}", question.wrong.len() + 1));
+                    }
+                });
+            });
     });
 }
 
@@ -133,17 +150,18 @@ fn answer_ui(question: &mut Question, n: usize, is_wrong: bool, ui: &mut egui::U
         let is_edit = ui.memory(|memory| memory.data.get_temp::<bool>(edit_id)).unwrap_or_default();
 
         let (icon, color) = if is_wrong {
-            (icon!(PLACEHOLDER), ui.visuals().error_fg_color)
+            (icon!(X), ui.visuals().error_fg_color)
         } else {
-            (icon!(CHECK_FAT), ui.visuals().widgets.hovered.text_color())
+            (icon!(CHECK), ui.visuals().hyperlink_color)
         };
 
-        ui.set_max_height(22.0);
-
+        ui.set_max_height(30.0);
+        ui.set_max_width(ui.available_width());
         egui_extras::StripBuilder::new(ui)
-            .size(egui_extras::Size::initial(20.0))
+            .clip(true)
+            .size(egui_extras::Size::exact(20.0))
             .size(egui_extras::Size::remainder())
-            .size(egui_extras::Size::initial(50.0))
+            .size(egui_extras::Size::exact(50.0))
             .cell_layout(
                 egui::Layout::left_to_right(egui::Align::Min).with_main_align(egui::Align::Min),
             )
@@ -160,8 +178,10 @@ fn answer_ui(question: &mut Question, n: usize, is_wrong: bool, ui: &mut egui::U
                         if is_wrong { &mut question.wrong[n] } else { &mut question.right[n] };
 
                     if is_edit {
-                        let response =
-                            ui.add(egui::TextEdit::singleline(answer).desired_width(f32::INFINITY));
+                        let response = ui.add(
+                            egui::TextEdit::singleline(answer)
+                                .desired_width(ui.available_width() - n as f32 * 2.0),
+                        );
                         response.request_focus();
 
                         if response.has_focus()
