@@ -54,7 +54,7 @@ fn question_info_edit(question: &mut Question, ui: &mut egui::Ui) {
             ui.add(egui::DragValue::new(&mut question.price).range(0..=usize::MAX))
         });
         properties.row(icon!(STAR), "Тип вопроса", |ui| {
-            unselectable_label(format!("{:?}", question.question_type), ui)
+            unselectable_label(question.question_type.to_string(), ui)
         });
     });
 }

@@ -141,6 +141,20 @@ pub struct QuestionTypev4 {
     pub params: Option<Vec<Paramv4>>,
 }
 
+impl std::fmt::Display for QuestionTypev4 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let display = match self.name.as_str() {
+            "simple" | "" => "Обычный вопрос",
+            "auction" => "Вопрос со ставкой",
+            "cat" => "Вопрос с секретом",
+            "bagcat" => "Обобщённый Вопрос с секретом",
+            "sponsored" => "Вопрос без риска",
+            _ => "Неизвестно",
+        };
+        f.write_str(display)
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Paramv4 {
     #[serde(rename = "@name")]
