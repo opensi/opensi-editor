@@ -8,7 +8,12 @@
 
 ## Пакеты с игрой
 
-OpenSI Editor совместим с пакетами формата `*.siq` из SIGame.
+OpenSI Editor совместим с некоторыми пакетами формата `*.siq` из SIGame. Ведется работа над полной совместимостью.
+
+|Версия|Совместимость|
+|------|-------------|
+|[Version 4](https://github.com/VladimirKhil/SI/wiki/SIQ-file-format-(version-4))|✔️ *Совместимо*|
+|[Version 5](https://github.com/VladimirKhil/SI/wiki/SIQ-file-format-version-5)|⚙️ *В работе*|
 
 ## Сборка и запуск
 
