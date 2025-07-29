@@ -49,7 +49,13 @@ async fn import_package() -> LoadingPackageResult {
 
     let buffer = file.read().await;
     let package = Package::from_zip_buffer(buffer).map_err(PackageError::ArchiveError)?;
-    Ok((package, file.path().to_owned()))
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let path = file.path().to_owned();
+    #[cfg(target_arch = "wasm32")]
+    let path = file.file_name().into();
+
+    Ok((package, path))
 }
 
 /// Import [`Package`] directly from a file.

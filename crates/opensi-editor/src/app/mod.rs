@@ -167,7 +167,8 @@ impl eframe::App for EditorApp {
                             ui.close_menu();
                         }
 
-                        if !cfg!(target_arch = "wasm32") {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
                             ui.menu_button(icon_str!(CLOCK_COUNTER_CLOCKWISE, "Недавние файлы"), |ui| {
                                 if self.recent_files.is_empty() {
                                     empty_label(ui);
