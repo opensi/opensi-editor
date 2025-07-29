@@ -60,14 +60,6 @@ impl EditorApp {
             Default::default()
         };
 
-        if let Some(theme) = style::choose(&app.theme_name) {
-            theme.apply(&cc.egui_ctx);
-        } else {
-            error!("Unknown theme: {}", &app.theme_name);
-            app.theme_name = style::default_theme().name().to_string();
-            style::default_theme().apply(&cc.egui_ctx);
-        }
-
         let mut fonts = egui::FontDefinitions::default();
         fonts.font_data.insert(
             FONT_REGULAR_ID.into(),
@@ -91,6 +83,14 @@ impl EditorApp {
 
         egui_extras::install_image_loaders(&cc.egui_ctx);
         cc.egui_ctx.add_bytes_loader(Arc::new(PackageBytesLoader { storage: app.storage.clone() }));
+
+        if let Some(theme) = style::choose(&app.theme_name) {
+            theme.apply(&cc.egui_ctx);
+        } else {
+            error!("Unknown theme: {}", &app.theme_name);
+            app.theme_name = style::default_theme().name().to_string();
+            style::default_theme().apply(&cc.egui_ctx);
+        }
 
         app
     }
@@ -206,7 +206,12 @@ impl eframe::App for EditorApp {
 
                     ui.menu_button("Настройки", |ui| {
                         ui.menu_button(icon_str!(SWATCHES, "Тема"), |ui| {
-                            ui.label(format!("Текущая тема: {}", self.theme_name));
+                            ui.horizontal(|ui| {
+                                ui.label("Текущая тема:");
+                                ui.label(egui::RichText::new(&self.theme_name));
+                            });
+
+                            ui.separator();
 
                             for theme in style::all_themes() {
                                 let title = if theme.color_scheme().dark {

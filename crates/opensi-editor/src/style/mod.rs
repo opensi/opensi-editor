@@ -48,7 +48,7 @@ pub struct ColorScheme {
 
 impl ColorScheme {
     pub fn apply(&self, ctx: &egui::Context) {
-        ctx.style_mut(|style| {
+        ctx.all_styles_mut(|style| {
             style.spacing.menu_margin = egui::Margin::same(10);
             style.spacing.button_padding = egui::vec2(4.0, 2.0);
 
@@ -141,7 +141,7 @@ impl Default for FontStyle {
 
 impl FontStyle {
     pub fn apply(&self, ctx: &egui::Context) {
-        ctx.style_mut(|style| {
+        ctx.all_styles_mut(|style| {
             style.text_styles = [
                 (
                     egui::TextStyle::Heading,
