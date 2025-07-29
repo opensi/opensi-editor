@@ -11,7 +11,7 @@ macro_rules! generate_serde_mod {
             ) -> Result<Vec<$type>, D::Error> {
                 #[derive(serde::Deserialize)]
                 struct List {
-                    #[serde(rename = "$value")]
+                    #[serde(rename = "$value", default)]
                     element: Vec<$type>,
                 }
                 Ok(List::deserialize(deserializer)?.element)
