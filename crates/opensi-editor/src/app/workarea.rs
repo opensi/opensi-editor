@@ -7,7 +7,7 @@ use opensi_core::prelude::*;
 /// UI for general area of [`Package`] editing.
 pub fn workarea(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
     egui_extras::StripBuilder::new(ui)
-        .size(egui_extras::Size::initial(30.0))
+        .size(egui_extras::Size::initial(40.0))
         .size(egui_extras::Size::remainder())
         .cell_layout(egui::Layout::top_down(egui::Align::Min))
         .vertical(|mut strip| {
@@ -19,6 +19,24 @@ pub fn workarea(package: &mut Package, selected: &mut Option<PackageNode>, ui: &
                 selected_tab(package, selected, ui);
             });
         });
+}
+
+/// UI for selected node properties.
+pub fn properties(package: &mut Package, selected: &Option<PackageNode>, ui: &mut egui::Ui) {
+    match selected {
+        &Some(PackageNode::Round(idx)) => {
+            round_tab::round_properties(package, idx, ui);
+        },
+        &Some(PackageNode::Theme(idx)) => {
+            theme_tab::theme_properties(package, idx, ui);
+        },
+        &Some(PackageNode::Question(idx)) => {
+            question_tab::question_properties(package, idx, ui);
+        },
+        None => {
+            package_tab::package_properties(package, ui);
+        },
+    }
 }
 
 /// Tab ui based on what package node is selected.

@@ -7,28 +7,42 @@ use crate::{
 
 pub fn question_tab(package: &mut Package, idx: QuestionIdx, ui: &mut egui::Ui) {
     let package_id = package.id.clone();
+    let Some(question) = package.get_question_mut(idx) else {
+        return;
+    };
 
-    Sections::new("question-sections")
-        .line(egui_extras::Size::initial(200.0), 2)
-        .line(egui_extras::Size::remainder(), 2)
-        .show(ui, |mut body| {
-            let Some(question) = package.get_question_mut(idx) else {
-                return;
-            };
-            body.line(|mut line| {
-                line.section("Вопрос", |ui| {
-                    question_info_edit(question, ui);
-                });
-                line.section("Дополнительная информация", |ui| {
-                    info_edit(&mut question.info, ui);
-                });
-            });
+    Sections::new("question-sections").line(egui_extras::Size::remainder(), 2).show(
+        ui,
+        |mut body| {
             body.line(|mut line| {
                 line.section("Сценарий", |ui| {
                     question_scenario(question, &package_id, ui);
                 });
                 line.section("Ответы", |ui| {
                     question_answers(question, ui);
+                });
+            });
+        },
+    );
+}
+
+pub fn question_properties(package: &mut Package, idx: QuestionIdx, ui: &mut egui::Ui) {
+    let Some(question) = package.get_question_mut(idx) else {
+        return;
+    };
+
+    Sections::new("question-properties")
+        .line(egui_extras::Size::relative(0.75), 1)
+        .line(egui_extras::Size::remainder(), 1)
+        .show(ui, |mut body| {
+            body.line(|mut line| {
+                line.section("Вопрос", |ui| {
+                    question_info_edit(question, ui);
+                });
+            });
+            body.line(|mut line| {
+                line.section("Дополнительная информация", |ui| {
+                    info_edit(&mut question.info, ui);
                 });
             });
         });

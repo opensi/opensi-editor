@@ -15,7 +15,7 @@ use opensi_core::prelude::*;
 use crate::{
     app::file_dialogs::LoadingPackageReceiver,
     element::{ModalExt, ModalWrapper},
-    icon_format, icon_str, icon_string, style,
+    icon, icon_format, icon_str, icon_string, style,
 };
 
 pub const FONT_REGULAR_ID: &'static str = "regular";
@@ -28,6 +28,8 @@ pub const FONT_BOLD_ID: &'static str = "bold";
 pub struct EditorApp {
     package_state: PackageState,
     theme_name: String,
+    show_tree: bool,
+    show_properties: bool,
     #[serde(skip)]
     storage: SharedPackageBytesStorage,
 }
@@ -38,6 +40,8 @@ impl Default for EditorApp {
             package_state: PackageState::None,
             storage: SharedPackageBytesStorage::default(),
             theme_name: style::default_theme().name().to_string(),
+            show_tree: true,
+            show_properties: true,
         }
     }
 }
@@ -130,10 +134,9 @@ impl eframe::App for EditorApp {
         let mut authors_modal = ModalWrapper::new(ctx, "authors-modal");
 
         egui::TopBottomPanel::top("top_panel")
-            .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(4.0))
+            .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(egui::Margin::symmetric(20, 8)))
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
-                    ui.add_space(16.0);
                     ui.menu_button("Файл", |ui| {
                         if ui.button(icon_str!(FOLDER_SIMPLE_PLUS, "Новый пак")).clicked() {
                             match self.package_state {
@@ -208,14 +211,29 @@ impl eframe::App for EditorApp {
                             }
                         });
                     });
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.toggle_value(&mut self.show_properties, icon!(LIST_BULLETS)).on_hover_text("Включить/выключить правую панель с параметрами выбранного элемента");
+                        ui.toggle_value(&mut self.show_tree, icon!(TREE_VIEW)).on_hover_text(
+                            "Включить/выключить левую панель с деревом пакета вопросов",
+                        );
+                    });
                 });
             });
 
         if let PackageState::Active { package, selected } = &mut self.package_state {
-            egui::SidePanel::left("question-tree")
+            egui::SidePanel::right("properties-list-side")
                 .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(20.0))
-                .min_width(320.0)
-                .show(ctx, |ui| {
+                .width_range(280.0..=400.0)
+                .show_animated(ctx, self.show_properties, |ui| {
+                    workarea::properties(package, selected, ui);
+                });
+
+            egui::SidePanel::left("question-tree-side")
+                .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(20.0))
+                .width_range(280.0..=400.0)
+                .max_width(400.0)
+                .show_animated(ctx, self.show_tree, |ui| {
                     package_tree::package_tree(package, selected, ui);
                 });
         }

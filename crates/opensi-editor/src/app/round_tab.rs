@@ -16,45 +16,6 @@ pub fn round_tab(
     selected: &mut Option<PackageNode>,
     ui: &mut egui::Ui,
 ) {
-    Sections::new("round-sections")
-        .line(egui_extras::Size::initial(200.0), 2)
-        .line(egui_extras::Size::remainder(), 1)
-        .show(ui, |mut body| {
-            body.line(|mut line| {
-                let Some(round) = package.get_round_mut(idx) else {
-                    return;
-                };
-                line.section("Раунд", |ui| {
-                    round_edit(round, ui);
-                });
-                line.section("Дополнительная информация", |ui| {
-                    info_edit(&mut round.info, ui);
-                });
-            });
-            body.line(|mut line| {
-                line.section("Темы", |ui| {
-                    round_themes(package, idx, selected, ui);
-                });
-            });
-        });
-}
-
-fn round_edit(round: &mut Round, ui: &mut egui::Ui) {
-    PropertyTable::new("round-properties").show(ui, |mut properties| {
-        properties
-            .row(icon!(STICKER), "Название", |ui| ui.text_edit_singleline(&mut round.name));
-        properties.row(icon!(STAR), "Тип", |ui| {
-            ui.add_enabled_ui(false, |ui| ui.label(format!("{:?}?", round.kind))).inner
-        });
-    });
-}
-
-fn round_themes(
-    package: &mut Package,
-    idx: RoundIdx,
-    selected: &mut Option<PackageNode>,
-    ui: &mut egui::Ui,
-) {
     let count = {
         let Some(round) = package.get_round(idx) else {
             return;
@@ -93,5 +54,37 @@ fn round_themes(
                 package.allocate_theme(idx.parent());
             }
         }
+    });
+}
+
+pub fn round_properties(package: &mut Package, idx: RoundIdx, ui: &mut egui::Ui) {
+    let Some(round) = package.get_round_mut(idx) else {
+        return;
+    };
+
+    Sections::new("round-properties")
+        .line(egui_extras::Size::relative(0.75), 1)
+        .line(egui_extras::Size::remainder(), 1)
+        .show(ui, |mut body| {
+            body.line(|mut line| {
+                line.section("Раунд", |ui| {
+                    round_edit(round, ui);
+                });
+            });
+            body.line(|mut line| {
+                line.section("Дополнительная информация", |ui| {
+                    info_edit(&mut round.info, ui);
+                });
+            });
+        });
+}
+
+fn round_edit(round: &mut Round, ui: &mut egui::Ui) {
+    PropertyTable::new("round-properties").show(ui, |mut properties| {
+        properties
+            .row(icon!(STICKER), "Название", |ui| ui.text_edit_singleline(&mut round.name));
+        properties.row(icon!(STAR), "Тип", |ui| {
+            ui.add_enabled_ui(false, |ui| ui.label(format!("{:?}?", round.kind))).inner
+        });
     });
 }

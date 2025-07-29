@@ -11,21 +11,34 @@ use crate::{
 
 /// Workarea tab to edit package info.
 pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-    Sections::new("package-sections")
-        .line(egui_extras::Size::initial(600.0), 2)
+    CardTable::new("package-rounds").show(ui, (1, package.rounds.len() + 1), |mut row| {
+        let idx = row.index();
+        if package.contains_round(idx) {
+            if row.round(package, idx, CardStyle::Important).clicked() {
+                *selected = Some(idx.into());
+            }
+        } else {
+            if row.custom(icon_str!(ROWS_PLUS_BOTTOM, "Добавить раунд"), CardStyle::Weak).clicked()
+            {
+                package.allocate_round();
+            }
+        }
+    });
+}
+
+pub fn package_properties(package: &mut Package, ui: &mut egui::Ui) {
+    Sections::new("package-properties")
+        .line(egui_extras::Size::relative(0.75), 1)
         .line(egui_extras::Size::remainder(), 1)
         .show(ui, |mut body| {
             body.line(|mut line| {
                 line.section("Пакет вопросов", |ui| {
                     package_info_edit(package, ui);
                 });
-                line.section("Метаданные", |ui| {
-                    package_metadata_edit(package, ui);
-                });
             });
             body.line(|mut line| {
-                line.section("Раунды", |ui| {
-                    package_rounds(package, selected, ui);
+                line.section("Метаданные", |ui| {
+                    package_metadata_edit(package, ui);
                 });
             });
         });
@@ -64,21 +77,5 @@ fn package_metadata_edit(package: &Package, ui: &mut egui::Ui) {
         properties.row(icon!(GIT_BRANCH), "Версия пакета", |ui| {
             ui.label(format!("{:.1}", package.version))
         });
-    });
-}
-
-fn package_rounds(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-    CardTable::new("package-rounds").show(ui, (1, package.rounds.len() + 1), |mut row| {
-        let idx = row.index();
-        if package.contains_round(idx) {
-            if row.round(package, idx, CardStyle::Important).clicked() {
-                *selected = Some(idx.into());
-            }
-        } else {
-            if row.custom(icon_str!(ROWS_PLUS_BOTTOM, "Добавить раунд"), CardStyle::Weak).clicked()
-            {
-                package.allocate_round();
-            }
-        }
     });
 }
