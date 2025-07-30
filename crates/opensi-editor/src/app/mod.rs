@@ -1,4 +1,4 @@
-mod file_dialogs;
+mod files;
 mod package_tab;
 mod package_tree;
 mod question_tab;
@@ -6,14 +6,18 @@ mod round_tab;
 mod theme_tab;
 mod workarea;
 
-use std::{collections::BTreeSet, path::PathBuf, sync::Arc};
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use itertools::Itertools;
 use log::error;
 use opensi_core::prelude::*;
 
 use crate::{
-    app::file_dialogs::LoadingPackageReceiver,
+    app::files::{FileError, FileLoader, LoadingResult},
     element::{ModalExt, ModalWrapper, empty_label},
     icon, icon_format, icon_str, icon_string, style,
 };
@@ -23,7 +27,7 @@ pub const FONT_BOLD_ID: &'static str = "bold";
 
 /// Main context for the whole app.
 /// Serialized fields are saved and restored.
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct EditorApp {
     theme_name: String,
@@ -34,6 +38,8 @@ pub struct EditorApp {
     package_state: PackageState,
     #[serde(skip)]
     storage: SharedPackageBytesStorage,
+    #[serde(skip)]
+    loaders: Vec<FileLoader>,
 }
 
 impl Default for EditorApp {
@@ -45,6 +51,7 @@ impl Default for EditorApp {
             show_tree: true,
             show_properties: true,
             recent_files: BTreeSet::new(),
+            loaders: vec![],
         }
     }
 }
@@ -103,32 +110,9 @@ impl eframe::App for EditorApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        match &mut self.package_state {
-            PackageState::Loading(receiver) => match receiver.try_recv() {
-                Ok(Ok((package, file))) => {
-                    // load all images into memory
-                    for (id, bytes) in &package.resources {
-                        if !matches!(id, ResourceId::Image(..)) {
-                            continue;
-                        }
-
-                        let path = format!("{}/{}", package.id, id.path());
-                        self.storage.insert(path, bytes.clone());
-                    }
-
-                    self.package_state = PackageState::Active { package, selected: None };
-                    self.recent_files.remove(&file);
-                    self.recent_files.insert(file);
-                    self.recent_files =
-                        std::mem::take(&mut self.recent_files).into_iter().take(10).collect();
-                },
-                Ok(Err(err)) => {
-                    error!("Error loading package: {err}");
-                },
-                Err(_) => {},
-            },
-            _ => {},
-        }
+        let mut loaders = std::mem::take(&mut self.loaders);
+        loaders.retain_mut(|loader| !loader.update(self));
+        self.loaders.extend(loaders);
 
         let mut new_pack_modal = ModalWrapper::new(ctx, "new-pack-modal");
         let mut authors_modal = ModalWrapper::new(ctx, "authors-modal");
@@ -154,8 +138,8 @@ impl eframe::App for EditorApp {
                         }
                         ui.separator();
                         if ui.button(icon_str!(FOLDER_OPEN, "Открыть")).clicked() {
-                            let package_receiver = file_dialogs::import_dialog();
-                            self.package_state = PackageState::Loading(package_receiver);
+                            let loader= files::pick_file("Выбрать файл с вопросами для импорта", ("SIGame Pack", ["siq"]), package_loader);
+                            self.loaders.push(loader);
                             ui.close_menu();
                         }
                         if ui.button(icon_str!(FLOPPY_DISK_BACK, "Сохранить")).clicked() {
@@ -163,7 +147,11 @@ impl eframe::App for EditorApp {
                             else {
                                 return;
                             };
-                            file_dialogs::export_dialog(package);
+
+                            let package = package.clone();
+                            files::save_to("Сохранить пакет с вопросами", "pack.siq", move || {
+                                package.to_bytes().ok()
+                            });
                             ui.close_menu();
                         }
 
@@ -179,8 +167,8 @@ impl eframe::App for EditorApp {
                                         return false;
                                     };
                                     if ui.button(egui::RichText::new(name).monospace()).clicked() {
-                                        let package_receiver = file_dialogs::import_file(recent);
-                                        self.package_state = PackageState::Loading(package_receiver);
+                                        let loader = files::load_file(recent, package_loader);
+                                        self.loaders.push(loader);
                                         ui.close_menu();
                                     }
                                     true
@@ -339,32 +327,34 @@ enum PackageState {
     #[default]
     None,
     Active {
-        // #[serde(with = "package_state_serde")]
         package: Package,
         selected: Option<PackageNode>,
     },
-    Loading(LoadingPackageReceiver),
 }
 
-// mod package_state_serde {
-//     use opensi_core::prelude::Package;
-//     use serde::{Deserialize, Serialize};
+/// Adapter for [`Package`] to use with [`FileLoader`].
+pub fn package_loader(buffer: Vec<u8>, path: &Path, app: &mut EditorApp) -> LoadingResult<()> {
+    let package = Package::from_zip_buffer(buffer).map_err(FileError::ArchiveError)?;
 
-//     pub fn deserialize<'de, D: serde::Deserializer<'de>>(
-//         deserializer: D,
-//     ) -> Result<Package, D::Error> {
-//         let buffer = Vec::<u8>::deserialize(deserializer)?;
-//         Package::from_zip_buffer(buffer).map_err(serde::de::Error::custom)
-//     }
+    // load all images into memory
+    for (id, bytes) in &package.resources {
+        if !matches!(id, ResourceId::Image(..)) {
+            continue;
+        }
 
-//     pub fn serialize<S: serde::Serializer>(
-//         data: &Package,
-//         serializer: S,
-//     ) -> Result<S::Ok, S::Error> {
-//         let buffer = data.to_bytes().map_err(serde::ser::Error::custom)?;
-//         buffer.serialize(serializer)
-//     }
-// }
+        let path = format!("{}/{}", package.id, id.path());
+        app.storage.insert(path, bytes.clone());
+    }
+
+    app.package_state = PackageState::Active { package, selected: None };
+
+    // update recent files
+    app.recent_files.remove(path);
+    app.recent_files.insert(path.to_owned());
+    app.recent_files = std::mem::take(&mut app.recent_files).into_iter().take(10).collect();
+
+    Ok(())
+}
 
 #[derive(Clone, Default, Debug)]
 pub struct SharedPackageBytesStorage {
