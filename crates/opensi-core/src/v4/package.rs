@@ -137,7 +137,10 @@ impl Packagev4 {
                             resources.insert(key, Arc::from(value.into_boxed_slice()));
                         },
                         None => {
-                            println!("Unknown resource type for {}", filename)
+                            return Err(io::Error::new(
+                                ErrorKind::InvalidInput,
+                                format!("Unknown resource type for {}", filename),
+                            ));
                         },
                     }
                 }
