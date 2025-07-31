@@ -1,6 +1,7 @@
 use opensi_core::prelude::*;
 
 use crate::{
+    app::context::PackageContext,
     element::{
         PropertyTable, Sections,
         card::{CardStyle, CardTable},
@@ -10,14 +11,9 @@ use crate::{
 };
 
 /// Workarea tab to edit round info and its themes.
-pub fn round_tab(
-    package: &mut Package,
-    idx: RoundIdx,
-    selected: &mut Option<PackageNode>,
-    ui: &mut egui::Ui,
-) {
+pub fn round_tab(ctx: &mut PackageContext, idx: RoundIdx, ui: &mut egui::Ui) {
     let count = {
-        let Some(round) = package.get_round(idx) else {
+        let Some(round) = ctx.package().get_round(idx) else {
             return;
         };
         if round.themes.is_empty() {
@@ -32,33 +28,33 @@ pub fn round_tab(
     CardTable::new("round-themes").show(ui, count, |mut row| {
         let idx = idx.theme(row.index());
 
-        if package.contains_theme(idx) {
-            if row.theme(package, idx, CardStyle::Important).clicked() {
-                *selected = Some(idx.into());
+        if ctx.package().contains_theme(idx) {
+            if row.theme(ctx.package(), idx, CardStyle::Important).clicked() {
+                ctx.select(idx.into());
             }
 
-            for question_idx in 0..package.count_questions(idx).min(count.0 - 2) {
+            for question_idx in 0..ctx.package().count_questions(idx).min(count.0 - 2) {
                 let idx = idx.question(question_idx);
-                if row.question(package, idx, CardStyle::Normal).clicked() {
-                    *selected = Some(idx.into());
+                if row.question(ctx.package(), idx, CardStyle::Normal).clicked() {
+                    ctx.select(idx.into());
                 }
             }
 
             if row.custom(icon_str!(FILE_PLUS, "Добавить вопрос"), CardStyle::Weak).clicked()
             {
-                package.allocate_question(idx);
+                ctx.package().allocate_question(idx);
             }
         } else {
             if row.custom(icon_str!(STACK_PLUS, "Добавить тему"), CardStyle::Weak).clicked()
             {
-                package.allocate_theme(idx.parent());
+                ctx.package().allocate_theme(idx.parent());
             }
         }
     });
 }
 
-pub fn round_properties(package: &mut Package, idx: RoundIdx, ui: &mut egui::Ui) {
-    let Some(round) = package.get_round_mut(idx) else {
+pub fn round_properties(ctx: &mut PackageContext, idx: RoundIdx, ui: &mut egui::Ui) {
+    let Some(round) = ctx.package().get_round_mut(idx) else {
         return;
     };
 

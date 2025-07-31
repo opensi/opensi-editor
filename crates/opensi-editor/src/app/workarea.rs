@@ -1,3 +1,4 @@
+use crate::app::context::PackageContext;
 use crate::app::{package_tab, question_tab, round_tab, theme_tab};
 use crate::element::node_name;
 use crate::icon_string;
@@ -5,60 +6,60 @@ use crate::icon_string;
 use opensi_core::prelude::*;
 
 /// UI for general area of [`Package`] editing.
-pub fn workarea(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
+pub fn workarea(ctx: &mut PackageContext, ui: &mut egui::Ui) {
     egui_extras::StripBuilder::new(ui)
         .size(egui_extras::Size::initial(40.0))
         .size(egui_extras::Size::remainder())
         .cell_layout(egui::Layout::top_down(egui::Align::Min))
         .vertical(|mut strip| {
             strip.cell(|ui| {
-                breadcrumbs(package, selected, ui);
+                breadcrumbs(ctx, ui);
             });
 
             strip.cell(|ui| {
-                selected_tab(package, selected, ui);
+                selected_tab(ctx, ui);
             });
         });
 }
 
 /// UI for selected node properties.
-pub fn properties(package: &mut Package, selected: &Option<PackageNode>, ui: &mut egui::Ui) {
-    match selected {
-        &Some(PackageNode::Round(idx)) => {
-            round_tab::round_properties(package, idx, ui);
+pub fn properties(ctx: &mut PackageContext, ui: &mut egui::Ui) {
+    match ctx.selected() {
+        Some(PackageNode::Round(idx)) => {
+            round_tab::round_properties(ctx, idx, ui);
         },
-        &Some(PackageNode::Theme(idx)) => {
-            theme_tab::theme_properties(package, idx, ui);
+        Some(PackageNode::Theme(idx)) => {
+            theme_tab::theme_properties(ctx, idx, ui);
         },
-        &Some(PackageNode::Question(idx)) => {
-            question_tab::question_properties(package, idx, ui);
+        Some(PackageNode::Question(idx)) => {
+            question_tab::question_properties(ctx, idx, ui);
         },
         None => {
-            package_tab::package_properties(package, ui);
+            package_tab::package_properties(ctx, ui);
         },
     }
 }
 
 /// Tab ui based on what package node is selected.
-fn selected_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-    match selected {
-        &mut Some(PackageNode::Round(idx)) => {
-            round_tab::round_tab(package, idx, selected, ui);
+fn selected_tab(ctx: &mut PackageContext, ui: &mut egui::Ui) {
+    match ctx.selected() {
+        Some(PackageNode::Round(idx)) => {
+            round_tab::round_tab(ctx, idx, ui);
         },
-        &mut Some(PackageNode::Theme(idx)) => {
-            theme_tab::theme_tab(package, idx, selected, ui);
+        Some(PackageNode::Theme(idx)) => {
+            theme_tab::theme_tab(ctx, idx, ui);
         },
-        &mut Some(PackageNode::Question(idx)) => {
-            question_tab::question_tab(package, idx, ui);
+        Some(PackageNode::Question(idx)) => {
+            question_tab::question_tab(ctx, idx, ui);
         },
         None => {
-            package_tab::package_tab(package, selected, ui);
+            package_tab::package_tab(ctx, ui);
         },
     }
 }
 
 /// Selection breadcrumbs ui.
-fn breadcrumbs(package: &Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
+fn breadcrumbs(ctx: &mut PackageContext, ui: &mut egui::Ui) {
     fn breadcrumb(text: impl AsRef<str>, ui: &mut egui::Ui) -> bool {
         ui.scope(|ui| {
             ui.visuals_mut().widgets.hovered.fg_stroke.color = ui.visuals().text_color();
@@ -79,45 +80,40 @@ fn breadcrumbs(package: &Package, selected: &mut Option<PackageNode>, ui: &mut e
         ui.add_space(8.0);
     }
 
-    fn root_breadcrumb(package: &Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-        if breadcrumb(icon_string!(HOUSE, package.name), ui) {
-            *selected = None;
+    fn root_breadcrumb(ctx: &mut PackageContext, ui: &mut egui::Ui) {
+        if breadcrumb(icon_string!(HOUSE, ctx.package().name), ui) {
+            ctx.deselect();
         }
     }
 
-    fn node_breadcrumb(
-        node: PackageNode,
-        package: &Package,
-        selected: &mut Option<PackageNode>,
-        ui: &mut egui::Ui,
-    ) {
-        let name = node_name(node, package);
+    fn node_breadcrumb(ctx: &mut PackageContext, node: PackageNode, ui: &mut egui::Ui) {
+        let name = node_name(node, ctx.package());
         if breadcrumb(name, ui) {
-            *selected = Some(node);
+            ctx.select(node);
         }
     }
 
     ui.horizontal(|ui| {
-        root_breadcrumb(package, selected, ui);
+        root_breadcrumb(ctx, ui);
 
-        match *selected {
+        match ctx.selected() {
             Some(node @ PackageNode::Round(_)) => {
                 breadcrump_separator(ui);
-                node_breadcrumb(node, package, selected, ui);
+                node_breadcrumb(ctx, node, ui);
             },
             Some(node @ PackageNode::Theme(idx)) => {
                 breadcrump_separator(ui);
-                node_breadcrumb(idx.parent().into(), package, selected, ui);
+                node_breadcrumb(ctx, idx.parent().into(), ui);
                 breadcrump_separator(ui);
-                node_breadcrumb(node, package, selected, ui);
+                node_breadcrumb(ctx, node, ui);
             },
             Some(node @ PackageNode::Question(idx)) => {
                 breadcrump_separator(ui);
-                node_breadcrumb(idx.parent().parent().into(), package, selected, ui);
+                node_breadcrumb(ctx, idx.parent().parent().into(), ui);
                 breadcrump_separator(ui);
-                node_breadcrumb(idx.parent().into(), package, selected, ui);
+                node_breadcrumb(ctx, idx.parent().into(), ui);
                 breadcrump_separator(ui);
-                node_breadcrumb(node, package, selected, ui);
+                node_breadcrumb(ctx, node, ui);
             },
             None => {},
         }

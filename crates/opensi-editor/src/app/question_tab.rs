@@ -1,13 +1,14 @@
 use opensi_core::prelude::*;
 
 use crate::{
+    app::context::PackageContext,
     element::{PropertyTable, Sections, danger_button, info_edit, unselectable_label},
     icon, icon_str,
 };
 
-pub fn question_tab(package: &mut Package, idx: QuestionIdx, ui: &mut egui::Ui) {
-    let package_id = package.id.clone();
-    let Some(question) = package.get_question_mut(idx) else {
+pub fn question_tab(ctx: &mut PackageContext, idx: QuestionIdx, ui: &mut egui::Ui) {
+    let package_id = ctx.package().id.clone();
+    let Some(question) = ctx.package().get_question_mut(idx) else {
         return;
     };
 
@@ -26,8 +27,8 @@ pub fn question_tab(package: &mut Package, idx: QuestionIdx, ui: &mut egui::Ui) 
     );
 }
 
-pub fn question_properties(package: &mut Package, idx: QuestionIdx, ui: &mut egui::Ui) {
-    let Some(question) = package.get_question_mut(idx) else {
+pub fn question_properties(ctx: &mut PackageContext, idx: QuestionIdx, ui: &mut egui::Ui) {
+    let Some(question) = ctx.package().get_question_mut(idx) else {
         return;
     };
 
@@ -136,6 +137,7 @@ fn atom_ui(atom: &mut Atom, package_id: &str, ui: &mut egui::Ui) {
             (AtomKind::Text, _) => {
                 ui.add(
                     egui::TextEdit::multiline(&mut atom.body)
+                        .desired_rows(2)
                         .desired_width(ui.available_width())
                         .margin(egui::Margin::symmetric(10, 6)),
                 );
@@ -143,6 +145,7 @@ fn atom_ui(atom: &mut Atom, package_id: &str, ui: &mut egui::Ui) {
             (AtomKind::Image, Some(id)) => {
                 ui.add(
                     egui::Image::new(format!("package://{}/{}", package_id, id.path()))
+                        .corner_radius(8.0)
                         .fit_to_original_size(1.0)
                         .max_width(ui.available_width()),
                 );

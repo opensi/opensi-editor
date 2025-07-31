@@ -1,64 +1,62 @@
 use egui::collapsing_header::CollapsingState;
 use opensi_core::prelude::*;
 
-use crate::element::{node_context::PackageNodeContextMenu, node_name};
+use crate::{
+    app::context::PackageContext,
+    element::{node_context::PackageNodeContextMenu, node_name},
+};
 
 /// Ui for a whole [`Package`] in a form of a tree.
 ///
 /// It can add new rounds, themes and questions, edit
 /// names/prices of existing ones and select them.
-pub fn package_tree(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
+pub fn package_tree(ctx: &mut PackageContext, ui: &mut egui::Ui) {
     ui.vertical_centered_justified(|ui| {
-        let text = egui::RichText::new(&package.name).heading();
+        let text = egui::RichText::new(&ctx.package().name).heading();
         if ui.add(egui::Label::new(text).sense(egui::Sense::click()).selectable(false)).clicked() {
-            *selected = None;
+            ctx.deselect();
         }
     });
 
     ui.separator();
 
     egui::ScrollArea::vertical().show(ui, |ui| {
-        tree_node_ui(package, None, selected, ui);
+        tree_node_ui(ctx, None, ui);
     });
 }
 
 /// Recursive [`PackageNode`] ui.
-fn tree_node_ui<'a>(
-    package: &mut Package,
-    node: Option<PackageNode>,
-    selected: &mut Option<PackageNode>,
-    ui: &mut egui::Ui,
-) {
+fn tree_node_ui<'a>(ctx: &mut PackageContext, node: Option<PackageNode>, ui: &mut egui::Ui) {
     fn node_button(
-        package: &mut Package,
+        ctx: &mut PackageContext,
         node: PackageNode,
         is_selected: bool,
         ui: &mut egui::Ui,
     ) -> bool {
-        let node_name = node_name(node, package);
+        let node_name = node_name(node, ctx.package());
         let button =
             egui::Button::new(node_name.as_ref()).frame(false).fill(egui::Color32::TRANSPARENT);
         let response = ui.add(button);
         let response = if is_selected { response.highlight() } else { response };
 
-        PackageNodeContextMenu { package, node }.show(&response, ui);
+        PackageNodeContextMenu { package: ctx.package(), node }.show(&response, ui);
 
         return response.clicked();
     }
 
     let Some(node) = node else {
         ui.push_id(format!("package-tree"), |ui| {
-            if package.rounds.is_empty() {
+            if ctx.package().rounds.is_empty() {
                 ui.weak("Нет раундов");
             } else {
-                for index in 0..package.rounds.len() {
-                    tree_node_ui(package, Some(index.into()), selected, ui);
+                for index in 0..ctx.package().rounds.len() {
+                    tree_node_ui(ctx, Some(index.into()), ui);
                 }
             }
         });
         ui.allocate_response(ui.available_size(), egui::Sense::click()).context_menu(|ui| {
             if ui.button(format!("➕ Добавить раунд")).clicked() {
-                package.allocate_round();
+                ctx.package().allocate_round();
                 ui.close_menu();
             }
         });
@@ -66,17 +64,17 @@ fn tree_node_ui<'a>(
     };
 
     let id = egui::Id::new(node.index()).with(ui.id());
-    let is_selected = selected.is_some_and(|selected| selected == node);
+    let is_selected = ctx.selected().is_some_and(|selected| selected == node);
     match node {
         PackageNode::Round(idx) => {
             let mut state = CollapsingState::load_with_default_open(ui.ctx(), id, true)
                 .show_header(ui, |ui| {
-                    if node_button(package, node, is_selected, ui) {
-                        *selected = Some(node);
+                    if node_button(ctx, node, is_selected, ui) {
+                        ctx.select(node);
                     };
                 });
 
-            if !state.is_open() && selected.is_some_and(|selected| {
+            if !state.is_open() && ctx.selected().is_some_and(|selected| {
                 matches!(
                     selected,
                     PackageNode::Question(QuestionIdx { round_index, .. })
@@ -88,22 +86,25 @@ fn tree_node_ui<'a>(
             }
 
             state.body(|ui| {
-                for theme_index in
-                    0..package.get_round(idx).map(|round| round.themes.len()).unwrap_or_default()
+                for theme_index in 0..ctx
+                    .package()
+                    .get_round(idx)
+                    .map(|round| round.themes.len())
+                    .unwrap_or_default()
                 {
-                    tree_node_ui(package, Some(idx.theme(theme_index).into()), selected, ui);
+                    tree_node_ui(ctx, Some(idx.theme(theme_index).into()), ui);
                 }
             });
         },
         PackageNode::Theme(idx) => {
             let mut state = CollapsingState::load_with_default_open(ui.ctx(), id, false)
                 .show_header(ui, |ui| {
-                    if node_button(package, node, is_selected, ui) {
-                        *selected = Some(node);
+                    if node_button(ctx, node, is_selected, ui) {
+                        ctx.select(node);
                     };
                 });
 
-            if !state.is_open() && selected.is_some_and(|selected| {
+            if !state.is_open() && ctx.selected().is_some_and(|selected| {
                 matches!(
                     selected,
                     PackageNode::Question(QuestionIdx { theme_index, .. })
@@ -114,16 +115,19 @@ fn tree_node_ui<'a>(
             }
 
             state.body(|ui| {
-                for question_index in
-                    0..package.get_theme(idx).map(|theme| theme.questions.len()).unwrap_or_default()
+                for question_index in 0..ctx
+                    .package()
+                    .get_theme(idx)
+                    .map(|theme| theme.questions.len())
+                    .unwrap_or_default()
                 {
-                    tree_node_ui(package, Some(idx.question(question_index).into()), selected, ui);
+                    tree_node_ui(ctx, Some(idx.question(question_index).into()), ui);
                 }
             });
         },
         PackageNode::Question(idx) => {
-            if node_button(package, idx.into(), is_selected, ui) {
-                *selected = Some(node);
+            if node_button(ctx, idx.into(), is_selected, ui) {
+                ctx.select(node);
             }
         },
     }

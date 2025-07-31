@@ -1,6 +1,7 @@
 use opensi_core::prelude::*;
 
 use crate::{
+    app::context::PackageContext,
     element::{
         PropertyTable, Sections,
         card::{CardStyle, CardTable},
@@ -9,33 +10,28 @@ use crate::{
     icon, icon_str,
 };
 
-pub fn theme_tab(
-    package: &mut Package,
-    idx: ThemeIdx,
-    selected: &mut Option<PackageNode>,
-    ui: &mut egui::Ui,
-) {
-    let Some(theme) = package.get_theme_mut(idx) else {
+pub fn theme_tab(ctx: &mut PackageContext, idx: ThemeIdx, ui: &mut egui::Ui) {
+    let Some(theme) = ctx.package().get_theme_mut(idx) else {
         return;
     };
 
     CardTable::new("theme-questions").show(ui, (1, theme.questions.len() + 1), |mut row| {
         let idx = idx.question(row.index());
-        if package.contains_question(idx) {
-            if row.question(package, idx, CardStyle::Important).clicked() {
-                *selected = Some(idx.into());
+        if ctx.package().contains_question(idx) {
+            if row.question(ctx.package(), idx, CardStyle::Important).clicked() {
+                ctx.select(idx.into());
             }
         } else {
             if row.custom(icon_str!(FILE_PLUS, "Добавить вопрос"), CardStyle::Weak).clicked()
             {
-                package.allocate_question(idx.parent());
+                ctx.package().allocate_question(idx.parent());
             }
         }
     });
 }
 
-pub fn theme_properties(package: &mut Package, idx: ThemeIdx, ui: &mut egui::Ui) {
-    let Some(theme) = package.get_theme_mut(idx) else {
+pub fn theme_properties(ctx: &mut PackageContext, idx: ThemeIdx, ui: &mut egui::Ui) {
+    let Some(theme) = ctx.package().get_theme_mut(idx) else {
         return;
     };
 

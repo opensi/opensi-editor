@@ -16,7 +16,7 @@ use opensi_core::prelude::*;
 
 use crate::{
     app::{
-        context::AppContext,
+        context::{AppContext, PackageContext},
         files::FilesQueue,
         storage::{EguiPackageBytesLoader, SharedPackageBytesStorage},
     },
@@ -106,6 +106,14 @@ impl EditorApp {
 
     pub fn ctx(&mut self) -> AppContext {
         self.into()
+    }
+
+    pub fn package_ctx(&mut self) -> Option<PackageContext> {
+        PackageContext::try_new(self)
+    }
+
+    pub fn has_active_package(&self) -> bool {
+        matches!(self.package_state, PackageState::Active { .. })
     }
 }
 
@@ -231,12 +239,14 @@ impl eframe::App for EditorApp {
                 });
             });
 
-        if let PackageState::Active { package, selected } = &mut self.package_state {
+        if self.has_active_package() {
             egui::SidePanel::right("properties-list-side")
                 .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(20))
                 .width_range(280.0..=400.0)
                 .show_animated(ctx, self.show_properties, |ui| {
-                    workarea::properties(package, selected, ui);
+                    if let Some(mut pkg_ctx) = self.package_ctx() {
+                        workarea::properties(&mut pkg_ctx, ui);
+                    }
                 });
 
             egui::SidePanel::left("question-tree-side")
@@ -244,7 +254,9 @@ impl eframe::App for EditorApp {
                 .width_range(280.0..=400.0)
                 .max_width(400.0)
                 .show_animated(ctx, self.show_tree, |ui| {
-                    package_tree::package_tree(package, selected, ui);
+                    if let Some(mut pkg_ctx) = self.package_ctx() {
+                        package_tree::package_tree(&mut pkg_ctx, ui);
+                    }
                 });
         }
 
@@ -258,9 +270,8 @@ impl eframe::App for EditorApp {
                 ui.with_layout(
                     egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
                     |ui| {
-                        if let PackageState::Active { package, selected } = &mut self.package_state
-                        {
-                            workarea::workarea(package, selected, ui);
+                        if let Some(mut ctx) = self.package_ctx() {
+                            workarea::workarea(&mut ctx, ui);
                         } else {
                             let text =
                                 egui::RichText::new(icon_str!(GRADUATION_CAP, "OpenSI Editor"))

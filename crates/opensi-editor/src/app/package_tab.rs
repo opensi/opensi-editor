@@ -1,6 +1,7 @@
 use opensi_core::prelude::*;
 
 use crate::{
+    app::context::PackageContext,
     element::{
         PropertyTable, Sections,
         card::{CardStyle, CardTable},
@@ -10,35 +11,35 @@ use crate::{
 };
 
 /// Workarea tab to edit package info.
-pub fn package_tab(package: &mut Package, selected: &mut Option<PackageNode>, ui: &mut egui::Ui) {
-    CardTable::new("package-rounds").show(ui, (1, package.rounds.len() + 1), |mut row| {
+pub fn package_tab(ctx: &mut PackageContext, ui: &mut egui::Ui) {
+    CardTable::new("package-rounds").show(ui, (1, ctx.package().rounds.len() + 1), |mut row| {
         let idx = row.index();
-        if package.contains_round(idx) {
-            if row.round(package, idx, CardStyle::Important).clicked() {
-                *selected = Some(idx.into());
+        if ctx.package().contains_round(idx) {
+            if row.round(ctx.package(), idx, CardStyle::Important).clicked() {
+                ctx.select(idx.into());
             }
         } else {
             if row.custom(icon_str!(ROWS_PLUS_BOTTOM, "Добавить раунд"), CardStyle::Weak).clicked()
             {
-                package.allocate_round();
+                ctx.package().allocate_round();
             }
         }
     });
 }
 
-pub fn package_properties(package: &mut Package, ui: &mut egui::Ui) {
+pub fn package_properties(ctx: &mut PackageContext, ui: &mut egui::Ui) {
     Sections::new("package-properties")
         .line(egui_extras::Size::relative(0.75), 1)
         .line(egui_extras::Size::remainder(), 1)
         .show(ui, |mut body| {
             body.line(|mut line| {
                 line.section("Пакет вопросов", |ui| {
-                    package_info_edit(package, ui);
+                    package_info_edit(ctx.package(), ui);
                 });
             });
             body.line(|mut line| {
                 line.section("Метаданные", |ui| {
-                    package_metadata_edit(package, ui);
+                    package_metadata_edit(ctx.package(), ui);
                 });
             });
         });
