@@ -1,23 +1,25 @@
+mod context;
 mod files;
 mod package_tab;
 mod package_tree;
 mod question_tab;
 mod round_tab;
+mod storage;
 mod theme_tab;
 mod workarea;
 
-use std::{
-    collections::BTreeSet,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{collections::BTreeSet, path::PathBuf, sync::Arc};
 
 use itertools::Itertools;
 use log::error;
 use opensi_core::prelude::*;
 
 use crate::{
-    app::files::{FileError, FileLoader, LoadingResult},
+    app::{
+        context::AppContext,
+        files::FileLoader,
+        storage::{EguiPackageBytesLoader, SharedPackageBytesStorage},
+    },
     element::{ModalExt, ModalWrapper, empty_label},
     icon, icon_format, icon_str, icon_string, style,
 };
@@ -89,7 +91,7 @@ impl EditorApp {
         cc.egui_ctx.set_fonts(fonts);
 
         egui_extras::install_image_loaders(&cc.egui_ctx);
-        cc.egui_ctx.add_bytes_loader(Arc::new(PackageBytesLoader { storage: app.storage.clone() }));
+        cc.egui_ctx.add_bytes_loader(Arc::new(EguiPackageBytesLoader::new(&app.storage)));
 
         if let Some(theme) = style::choose(&app.theme_name) {
             theme.apply(&cc.egui_ctx);
@@ -100,6 +102,10 @@ impl EditorApp {
         }
 
         app
+    }
+
+    pub fn ctx(&mut self) -> AppContext {
+        self.into()
     }
 }
 
@@ -138,20 +144,11 @@ impl eframe::App for EditorApp {
                         }
                         ui.separator();
                         if ui.button(icon_str!(FOLDER_OPEN, "Открыть")).clicked() {
-                            let loader= files::pick_file("Выбрать файл с вопросами для импорта", ("SIGame Pack", ["siq"]), package_loader);
-                            self.loaders.push(loader);
+                            self.ctx().pick_new_package();
                             ui.close_menu();
                         }
                         if ui.button(icon_str!(FLOPPY_DISK_BACK, "Сохранить")).clicked() {
-                            let PackageState::Active { ref package, .. } = self.package_state
-                            else {
-                                return;
-                            };
-
-                            let package = package.clone();
-                            files::save_to("Сохранить пакет с вопросами", "pack.siq", move || {
-                                package.to_bytes().ok()
-                            });
+                            self.ctx().save_package();
                             ui.close_menu();
                         }
 
@@ -161,18 +158,17 @@ impl eframe::App for EditorApp {
                                 if self.recent_files.is_empty() {
                                     empty_label(ui);
                                 }
-                                ui.set_min_width(300.0);
-                                self.recent_files.retain(|recent| {
+                                ui.set_min_width(200.0);
+                                let to_open = self.recent_files.iter().find(|recent| {
                                     let Some(name) = recent.file_name().map(|filename| filename.to_string_lossy()) else {
                                         return false;
                                     };
-                                    if ui.button(egui::RichText::new(name).monospace()).clicked() {
-                                        let loader = files::load_file(recent, package_loader);
-                                        self.loaders.push(loader);
-                                        ui.close_menu();
-                                    }
-                                    true
-                                });
+                                    ui.button(egui::RichText::new(name).monospace()).clicked()
+                                }).cloned();
+                                if let Some(to_open) = to_open {
+                                    self.ctx().load_new_package(to_open);
+                                    ui.close_menu();
+                                }
                             });
 
                             ui.separator();
@@ -330,77 +326,4 @@ enum PackageState {
         package: Package,
         selected: Option<PackageNode>,
     },
-}
-
-/// Adapter for [`Package`] to use with [`FileLoader`].
-pub fn package_loader(buffer: Vec<u8>, path: &Path, app: &mut EditorApp) -> LoadingResult<()> {
-    let package = Package::from_zip_buffer(buffer).map_err(FileError::ArchiveError)?;
-
-    // load all images into memory
-    for (id, bytes) in &package.resources {
-        if !matches!(id, ResourceId::Image(..)) {
-            continue;
-        }
-
-        let path = format!("{}/{}", package.id, id.path());
-        app.storage.insert(path, bytes.clone());
-    }
-
-    app.package_state = PackageState::Active { package, selected: None };
-
-    // update recent files
-    app.recent_files.remove(path);
-    app.recent_files.insert(path.to_owned());
-    app.recent_files = std::mem::take(&mut app.recent_files).into_iter().take(10).collect();
-
-    Ok(())
-}
-
-#[derive(Clone, Default, Debug)]
-pub struct SharedPackageBytesStorage {
-    cache: Arc<dashmap::DashMap<String, egui::load::Bytes>>,
-}
-
-impl SharedPackageBytesStorage {
-    fn get(&self, path: impl AsRef<str>) -> Option<egui::load::Bytes> {
-        let path = path.as_ref();
-        self.cache.as_ref().get(path).map(|r| r.value().clone())
-    }
-
-    fn insert(&self, path: impl AsRef<str>, bytes: Arc<[u8]>) {
-        let path = path.as_ref();
-        self.cache.as_ref().insert(path.to_string(), egui::load::Bytes::Shared(bytes));
-    }
-}
-
-struct PackageBytesLoader {
-    storage: SharedPackageBytesStorage,
-}
-
-impl egui::load::BytesLoader for PackageBytesLoader {
-    fn id(&self) -> &str {
-        egui::load::generate_loader_id!(PackageBytesLoader)
-    }
-
-    fn load(&self, _ctx: &egui::Context, uri: &str) -> egui::load::BytesLoadResult {
-        let Some(path) = uri.strip_prefix("package://") else {
-            return Err(egui::load::LoadError::NotSupported);
-        };
-
-        let Some(bytes) = self.storage.get(path) else {
-            return Err(egui::load::LoadError::Loading(format!(
-                "Package image for '{path}' isn't loaded into app's cache!"
-            )));
-        };
-
-        Ok(egui::load::BytesPoll::Ready { size: None, bytes, mime: None })
-    }
-
-    fn forget(&self, _uri: &str) {}
-
-    fn forget_all(&self) {}
-
-    fn byte_size(&self) -> usize {
-        0
-    }
 }
