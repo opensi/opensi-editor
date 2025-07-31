@@ -17,7 +17,7 @@ use opensi_core::prelude::*;
 use crate::{
     app::{
         context::AppContext,
-        files::FileLoader,
+        files::FilesQueue,
         storage::{EguiPackageBytesLoader, SharedPackageBytesStorage},
     },
     element::{ModalExt, ModalWrapper, empty_label},
@@ -41,7 +41,7 @@ pub struct EditorApp {
     #[serde(skip)]
     storage: SharedPackageBytesStorage,
     #[serde(skip)]
-    loaders: Vec<FileLoader>,
+    files_queue: Vec<FilesQueue>,
 }
 
 impl Default for EditorApp {
@@ -53,7 +53,7 @@ impl Default for EditorApp {
             show_tree: true,
             show_properties: true,
             recent_files: BTreeSet::new(),
-            loaders: vec![],
+            files_queue: vec![],
         }
     }
 }
@@ -116,9 +116,9 @@ impl eframe::App for EditorApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        let mut loaders = std::mem::take(&mut self.loaders);
-        loaders.retain_mut(|loader| !loader.update(self));
-        self.loaders.extend(loaders);
+        let mut files_queue = std::mem::take(&mut self.files_queue);
+        files_queue.retain_mut(|queue| !queue.update(self));
+        self.files_queue.extend(files_queue);
 
         let mut new_pack_modal = ModalWrapper::new(ctx, "new-pack-modal");
         let mut authors_modal = ModalWrapper::new(ctx, "authors-modal");

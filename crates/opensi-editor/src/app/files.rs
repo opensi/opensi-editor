@@ -27,18 +27,18 @@ pub enum FileError {
     ArchiveError(std::io::Error),
 }
 
-/// Async file loader that can mutate [`EditorApp`] upon loading.
-pub struct FileLoader {
+/// Async file loader queue that can mutate [`EditorApp`] upon loading.
+pub struct FilesQueue {
     receiver: LoadingFileReceiver,
-    op: Option<Box<dyn FnOnce(Vec<u8>, &Path, &mut EditorApp) -> LoadingResult<()>>>,
+    op: Option<Box<dyn FileLoader>>,
 }
 
-impl FileLoader {
+impl FilesQueue {
     pub fn update(&mut self, app: &mut EditorApp) -> bool {
         match self.receiver.try_recv() {
             Ok(Ok((data, file))) => {
                 if let Some(op) = self.op.take() {
-                    let _ = op(data, file.as_path(), app).inspect_err(|err| {
+                    let _ = op.load(data, file.as_path(), app).inspect_err(|err| {
                         error!("Error running a loader: {err}");
                     });
                 }
@@ -53,15 +53,25 @@ impl FileLoader {
     }
 }
 
+pub trait FileLoader {
+    fn load(&self, bytes: Vec<u8>, path: &Path, app: &mut EditorApp) -> LoadingResult<()>;
+}
+
+impl<F> FileLoader for F
+where
+    F: Fn(Vec<u8>, &Path, &mut EditorApp) -> LoadingResult<()>,
+{
+    fn load(&self, bytes: Vec<u8>, path: &Path, app: &mut EditorApp) -> LoadingResult<()> {
+        self(bytes, path, app)
+    }
+}
+
 /// Read a file directly from a file on systems that support
 /// direct file systems and return a [`FileLoader`]: it will
 /// run `op` once the file is loaded.
 #[cfg(not(target_arch = "wasm32"))]
 #[must_use = "Use loader to properly load a file"]
-pub fn load_file(
-    path: impl AsRef<Path>,
-    loader: impl FnOnce(Vec<u8>, &Path, &mut EditorApp) -> LoadingResult<()> + 'static,
-) -> FileLoader {
+pub fn load_file(path: impl AsRef<Path>, loader: impl FileLoader + 'static) -> FilesQueue {
     fn read_file(file: impl AsRef<Path>) -> LoadingFileResult {
         let file = file.as_ref();
         let buffer = std::fs::read(file).map_err(FileError::ArchiveError)?;
@@ -74,7 +84,7 @@ pub fn load_file(
         Err(_) => error!("Error sending imported package !"),
     };
 
-    FileLoader { receiver, op: Some(Box::new(loader)) }
+    FilesQueue { receiver, op: Some(Box::new(loader)) }
 }
 
 /// Show a file picker and return a [`FileLoader`] with this file:
@@ -83,8 +93,8 @@ pub fn load_file(
 pub fn pick_file(
     title: impl ToString,
     file_filter: (impl ToString, impl IntoIterator<Item = &'static str>),
-    loader: impl FnOnce(Vec<u8>, &Path, &mut EditorApp) -> LoadingResult<()> + 'static,
-) -> FileLoader {
+    loader: impl FileLoader + 'static,
+) -> FilesQueue {
     async fn show_file_picker(
         title: &String,
         file_filter: &(String, Vec<&'static str>),
@@ -119,7 +129,7 @@ pub fn pick_file(
             Err(_) => error!("Error sending picked file"),
         };
     });
-    FileLoader { receiver, op: Some(Box::new(loader)) }
+    FilesQueue { receiver, op: Some(Box::new(loader)) }
 }
 
 /// Show a dialog to save file.
