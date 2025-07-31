@@ -14,7 +14,12 @@ impl SharedPackageBytesStorage {
         self.cache.as_ref().get(path).map(|r| r.value().clone())
     }
 
-    pub fn insert(&self, id: &ResourceId, package: &Package, bytes: Arc<[u8]>) -> Option<String> {
+    pub fn insert<'id>(
+        &self,
+        id: &'id ResourceId,
+        package: &Package,
+        bytes: Arc<[u8]>,
+    ) -> Option<&'id str> {
         if !matches!(id, ResourceId::Image(..)) {
             return None;
         }
@@ -22,7 +27,9 @@ impl SharedPackageBytesStorage {
         let path = format!("{}/{}", package.id, id.path());
         self.cache.as_ref().insert(path.clone(), egui::load::Bytes::Shared(bytes));
 
-        Some(path)
+        log::info!("Cached new resource: {path}");
+
+        Some(id.name())
     }
 }
 

@@ -180,6 +180,15 @@ impl AppContext<'_> {
         let package = package.clone();
         files::save_to("Сохранить пакет с вопросами", "pack.siq", move || package.to_bytes().ok());
     }
+
+    pub fn pick_new_image_for(&mut self, idx: QuestionIdx) {
+        let loader = files::pick_file(
+            "Выберите изображение",
+            ("Image", ["png", "jpg", "jpeg"]),
+            image_loader(idx),
+        );
+        self.app.files_queue.push(loader);
+    }
 }
 
 /// Adapter for [`Package`] to use with [`FileLoader`].
@@ -199,4 +208,40 @@ fn package_loader(buffer: Vec<u8>, path: &Path, app: &mut EditorApp) -> LoadingR
     app.recent_files = std::mem::take(&mut app.recent_files).into_iter().take(10).collect();
 
     Ok(())
+}
+
+/// Adapter for [`Atom`] images to use with [`FileLoader`].
+fn image_loader(idx: QuestionIdx) -> impl FileLoader {
+    move |bytes: Vec<u8>, path: &Path, app: &mut EditorApp| -> LoadingResult<()> {
+        let PackageState::Active { ref mut package, .. } = app.package_state else {
+            return Err(FileError::LoaderError("No active package to load an image".into()));
+        };
+
+        let id = ResourceId::image(
+            path.file_name()
+                .map(|file_name| file_name.to_string_lossy().to_string())
+                .unwrap_or_else(|| uuid::Uuid::new_v4().to_string()),
+        );
+        let bytes = Arc::from(bytes.into_boxed_slice());
+        package.resources.insert(id.clone(), bytes);
+
+        let Some(body) =
+            app.storage.insert(&id, package, package.resources.get(&id).unwrap().clone())
+        else {
+            return Err(FileError::LoaderError("Can't load image bytes into memory".into()));
+        };
+
+        let Some(question) = package.get_question_mut(idx) else {
+            return Err(FileError::LoaderError(
+                format!("Can't add image '{body}' to question with idx {idx}").into(),
+            ));
+        };
+        question.scenario.push(Atom {
+            kind: AtomKind::Image,
+            body: body.to_string(),
+            ..Atom::default()
+        });
+
+        Ok(())
+    }
 }

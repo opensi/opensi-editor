@@ -74,9 +74,8 @@ fn question_scenario(ctx: &mut QuestionContext, ui: &mut egui::Ui) {
                     row.col(|ui| {
                         if ui.button(icon_str!(IMAGE, "Добавить изображение")).clicked()
                         {
-                            ctx.question()
-                                .scenario
-                                .push(Atom { kind: AtomKind::Image, ..Atom::default() });
+                            let idx = ctx.idx();
+                            ctx.pick_new_image_for(idx);
                         }
                     });
                     row.col(|ui| {

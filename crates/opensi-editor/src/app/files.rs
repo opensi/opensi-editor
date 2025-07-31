@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    borrow::Cow,
+    path::{Path, PathBuf},
+};
 
 use log::{error, warn};
 #[cfg(not(target_arch = "wasm32"))]
@@ -21,6 +24,8 @@ pub type LoadingFileResult = Result<(Vec<u8>, PathBuf), FileError>;
 /// Error for loading files.
 #[derive(thiserror::Error, Debug)]
 pub enum FileError {
+    #[error("Files loader error: {0}")]
+    LoaderError(Cow<'static, str>),
     #[error("No file was selected")]
     NoFileSelected,
     #[error("Archive error: {0}")]
