@@ -1,7 +1,7 @@
 use opensi_core::prelude::*;
 
 use crate::{
-    app::context::PackageContext,
+    app::context::ThemeContext,
     element::{
         PropertyTable, Sections,
         card::{CardStyle, CardTable},
@@ -10,13 +10,9 @@ use crate::{
     icon, icon_str,
 };
 
-pub fn theme_tab(ctx: &mut PackageContext, idx: ThemeIdx, ui: &mut egui::Ui) {
-    let Some(theme) = ctx.package().get_theme_mut(idx) else {
-        return;
-    };
-
-    CardTable::new("theme-questions").show(ui, (1, theme.questions.len() + 1), |mut row| {
-        let idx = idx.question(row.index());
+pub fn theme_tab(ctx: &mut ThemeContext, ui: &mut egui::Ui) {
+    CardTable::new("theme-questions").show(ui, (1, ctx.theme().questions.len() + 1), |mut row| {
+        let idx = ctx.idx().question(row.index());
         if ctx.package().contains_question(idx) {
             if row.question(ctx.package(), idx, CardStyle::Important).clicked() {
                 ctx.select(idx.into());
@@ -30,23 +26,19 @@ pub fn theme_tab(ctx: &mut PackageContext, idx: ThemeIdx, ui: &mut egui::Ui) {
     });
 }
 
-pub fn theme_properties(ctx: &mut PackageContext, idx: ThemeIdx, ui: &mut egui::Ui) {
-    let Some(theme) = ctx.package().get_theme_mut(idx) else {
-        return;
-    };
-
+pub fn theme_properties(ctx: &mut ThemeContext, ui: &mut egui::Ui) {
     Sections::new("theme-properties")
         .line(egui_extras::Size::relative(0.75), 1)
         .line(egui_extras::Size::remainder(), 1)
         .show(ui, |mut body| {
             body.line(|mut line| {
                 line.section("Тема", |ui| {
-                    theme_edit(theme, ui);
+                    theme_edit(ctx.theme(), ui);
                 });
             });
             body.line(|mut line| {
                 line.section("Дополнительная информация", |ui| {
-                    info_edit(&mut theme.info, ui);
+                    info_edit(&mut ctx.theme().info, ui);
                 });
             });
         });

@@ -1,49 +1,40 @@
 use opensi_core::prelude::*;
 
 use crate::{
-    app::context::PackageContext,
+    app::context::QuestionContext,
     element::{PropertyTable, Sections, danger_button, info_edit, unselectable_label},
     icon, icon_str,
 };
 
-pub fn question_tab(ctx: &mut PackageContext, idx: QuestionIdx, ui: &mut egui::Ui) {
-    let package_id = ctx.package().id.clone();
-    let Some(question) = ctx.package().get_question_mut(idx) else {
-        return;
-    };
-
+pub fn question_tab(ctx: &mut QuestionContext, ui: &mut egui::Ui) {
     Sections::new("question-sections").line(egui_extras::Size::remainder(), 2).show(
         ui,
         |mut body| {
             body.line(|mut line| {
                 line.section("Сценарий", |ui| {
-                    question_scenario(question, &package_id, ui);
+                    question_scenario(ctx, ui);
                 });
                 line.section("Ответы", |ui| {
-                    question_answers(question, ui);
+                    question_answers(ctx.question(), ui);
                 });
             });
         },
     );
 }
 
-pub fn question_properties(ctx: &mut PackageContext, idx: QuestionIdx, ui: &mut egui::Ui) {
-    let Some(question) = ctx.package().get_question_mut(idx) else {
-        return;
-    };
-
+pub fn question_properties(ctx: &mut QuestionContext, ui: &mut egui::Ui) {
     Sections::new("question-properties")
         .line(egui_extras::Size::relative(0.75), 1)
         .line(egui_extras::Size::remainder(), 1)
         .show(ui, |mut body| {
             body.line(|mut line| {
                 line.section("Вопрос", |ui| {
-                    question_info_edit(question, ui);
+                    question_info_edit(ctx.question(), ui);
                 });
             });
             body.line(|mut line| {
                 line.section("Дополнительная информация", |ui| {
-                    info_edit(&mut question.info, ui);
+                    info_edit(&mut ctx.question().info, ui);
                 });
             });
         });
@@ -60,12 +51,13 @@ fn question_info_edit(question: &mut Question, ui: &mut egui::Ui) {
     });
 }
 
-fn question_scenario(question: &mut Question, package_id: &str, ui: &mut egui::Ui) {
+fn question_scenario(ctx: &mut QuestionContext, ui: &mut egui::Ui) {
     egui::ScrollArea::vertical().show(ui, |ui| {
         ui.scope(|ui| {
             ui.style_mut().spacing.item_spacing.y = 10.0;
-            for atom in &mut question.scenario {
-                atom_ui(atom, package_id, ui);
+            let id = ctx.package().id.clone();
+            for atom in &mut ctx.question().scenario {
+                atom_ui(atom, &id, ui);
             }
         });
 
@@ -82,7 +74,7 @@ fn question_scenario(question: &mut Question, package_id: &str, ui: &mut egui::U
                     row.col(|ui| {
                         if ui.button(icon_str!(IMAGE, "Добавить изображение")).clicked()
                         {
-                            question
+                            ctx.question()
                                 .scenario
                                 .push(Atom { kind: AtomKind::Image, ..Atom::default() });
                         }
@@ -90,7 +82,7 @@ fn question_scenario(question: &mut Question, package_id: &str, ui: &mut egui::U
                     row.col(|ui| {
                         if ui.button(icon_str!(CHAT_CIRCLE_TEXT, "Добавить текст")).clicked()
                         {
-                            question
+                            ctx.question()
                                 .scenario
                                 .push(Atom { kind: AtomKind::Text, ..Atom::default() });
                         }
@@ -100,14 +92,14 @@ fn question_scenario(question: &mut Question, package_id: &str, ui: &mut egui::U
                     row.col(|ui| {
                         if ui.button(icon_str!(HEADPHONES, "Добавить аудио")).clicked()
                         {
-                            question
+                            ctx.question()
                                 .scenario
                                 .push(Atom { kind: AtomKind::Voice, ..Atom::default() });
                         }
                     });
                     row.col(|ui| {
                         if ui.button(icon_str!(VIDEO, "Добавить видео")).clicked() {
-                            question
+                            ctx.question()
                                 .scenario
                                 .push(Atom { kind: AtomKind::Video, ..Atom::default() });
                         }

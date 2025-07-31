@@ -1,9 +1,8 @@
-use std::{
-    ops::{Deref, DerefMut},
-    path::Path,
-    sync::Arc,
-};
+#![allow(unused)]
 
+use std::{path::Path, sync::Arc};
+
+use derive_more::{Deref, DerefMut};
 use opensi_core::prelude::*;
 
 use crate::{
@@ -14,23 +13,99 @@ use crate::{
     },
 };
 
+/// [`AppContext`] subset for a certain [`Question`].
+#[derive(Deref, DerefMut)]
+pub struct QuestionContext<'a, 'ctx> {
+    #[deref]
+    #[deref_mut]
+    ctx: &'ctx mut PackageContext<'a>,
+    idx: QuestionIdx,
+}
+
+impl<'a, 'ctx> QuestionContext<'a, 'ctx> {
+    pub fn try_new(ctx: &'ctx mut PackageContext<'a>, idx: QuestionIdx) -> Option<Self> {
+        if !ctx.package().contains_question(idx) {
+            return None;
+        }
+        Some(Self { ctx, idx })
+    }
+
+    pub fn question(&mut self) -> &mut Question {
+        match self.ctx.package().get_question_mut(self.idx) {
+            Some(question) => question,
+            _ => unimplemented!("QuestionContext state is invalid"),
+        }
+    }
+
+    pub fn idx(&self) -> QuestionIdx {
+        self.idx
+    }
+}
+
+/// [`AppContext`] subset for a certain [`Theme`].
+#[derive(Deref, DerefMut)]
+pub struct ThemeContext<'a, 'ctx> {
+    #[deref]
+    #[deref_mut]
+    ctx: &'ctx mut PackageContext<'a>,
+    idx: ThemeIdx,
+}
+
+impl<'a, 'ctx> ThemeContext<'a, 'ctx> {
+    pub fn try_new(ctx: &'ctx mut PackageContext<'a>, idx: ThemeIdx) -> Option<Self> {
+        if !ctx.package().contains_theme(idx) {
+            return None;
+        }
+        Some(Self { ctx, idx })
+    }
+
+    pub fn theme(&mut self) -> &mut Theme {
+        match self.ctx.package().get_theme_mut(self.idx) {
+            Some(theme) => theme,
+            _ => unimplemented!("ThemeContext state is invalid"),
+        }
+    }
+
+    pub fn idx(&self) -> ThemeIdx {
+        self.idx
+    }
+}
+
+/// [`AppContext`] subset for a certain [`Round`].
+#[derive(Deref, DerefMut)]
+pub struct RoundContext<'a, 'ctx> {
+    #[deref]
+    #[deref_mut]
+    ctx: &'ctx mut PackageContext<'a>,
+    idx: RoundIdx,
+}
+
+impl<'a, 'ctx> RoundContext<'a, 'ctx> {
+    pub fn try_new(ctx: &'ctx mut PackageContext<'a>, idx: RoundIdx) -> Option<Self> {
+        if !ctx.package().contains_round(idx) {
+            return None;
+        }
+        Some(Self { ctx, idx })
+    }
+
+    pub fn round(&mut self) -> &mut Round {
+        match self.ctx.package().get_round_mut(self.idx) {
+            Some(round) => round,
+            _ => unimplemented!("RoundContext state is invalid"),
+        }
+    }
+
+    pub fn idx(&self) -> RoundIdx {
+        self.idx
+    }
+}
+
 /// [`AppContext`] subset when there is an active package.
+#[derive(Deref, DerefMut)]
 pub struct PackageContext<'a> {
+    #[deref]
+    #[deref_mut]
     ctx: AppContext<'a>,
-}
-
-impl<'a> Deref for PackageContext<'a> {
-    type Target = AppContext<'a>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.ctx
-    }
-}
-
-impl<'a> DerefMut for PackageContext<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.ctx
-    }
 }
 
 impl<'a> PackageContext<'a> {

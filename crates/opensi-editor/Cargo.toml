@@ -31,6 +31,7 @@ itertools = "0.14.0"
 const_format = "0.2.34"
 log = "0.4"
 dashmap = "6.1.0"
+derive_more = { version = "2", features = ["deref", "deref_mut"] }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

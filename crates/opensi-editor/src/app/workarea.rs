@@ -1,4 +1,4 @@
-use crate::app::context::PackageContext;
+use crate::app::context::{PackageContext, QuestionContext, RoundContext, ThemeContext};
 use crate::app::{package_tab, question_tab, round_tab, theme_tab};
 use crate::element::node_name;
 use crate::icon_string;
@@ -26,13 +26,19 @@ pub fn workarea(ctx: &mut PackageContext, ui: &mut egui::Ui) {
 pub fn properties(ctx: &mut PackageContext, ui: &mut egui::Ui) {
     match ctx.selected() {
         Some(PackageNode::Round(idx)) => {
-            round_tab::round_properties(ctx, idx, ui);
+            if let Some(mut ctx) = RoundContext::try_new(ctx, idx) {
+                round_tab::round_properties(&mut ctx, ui);
+            }
         },
         Some(PackageNode::Theme(idx)) => {
-            theme_tab::theme_properties(ctx, idx, ui);
+            if let Some(mut ctx) = ThemeContext::try_new(ctx, idx) {
+                theme_tab::theme_properties(&mut ctx, ui);
+            }
         },
         Some(PackageNode::Question(idx)) => {
-            question_tab::question_properties(ctx, idx, ui);
+            if let Some(mut ctx) = QuestionContext::try_new(ctx, idx) {
+                question_tab::question_properties(&mut ctx, ui);
+            }
         },
         None => {
             package_tab::package_properties(ctx, ui);
@@ -44,13 +50,19 @@ pub fn properties(ctx: &mut PackageContext, ui: &mut egui::Ui) {
 fn selected_tab(ctx: &mut PackageContext, ui: &mut egui::Ui) {
     match ctx.selected() {
         Some(PackageNode::Round(idx)) => {
-            round_tab::round_tab(ctx, idx, ui);
+            if let Some(mut ctx) = RoundContext::try_new(ctx, idx) {
+                round_tab::round_tab(&mut ctx, ui);
+            }
         },
         Some(PackageNode::Theme(idx)) => {
-            theme_tab::theme_tab(ctx, idx, ui);
+            if let Some(mut ctx) = ThemeContext::try_new(ctx, idx) {
+                theme_tab::theme_tab(&mut ctx, ui);
+            }
         },
         Some(PackageNode::Question(idx)) => {
-            question_tab::question_tab(ctx, idx, ui);
+            if let Some(mut ctx) = QuestionContext::try_new(ctx, idx) {
+                question_tab::question_tab(&mut ctx, ui);
+            }
         },
         None => {
             package_tab::package_tab(ctx, ui);
