@@ -1,10 +1,18 @@
-pub mod catppuccin;
+pub mod themes;
 
 const DEFAULT_FONT_STYLE: FontStyle =
     FontStyle { heading_size: 20.0, regular_size: 14.0, button_size: 14.0, small_size: 12.0 };
 
 pub fn all_themes() -> impl Iterator<Item = &'static dyn AppTheme> {
-    [&catppuccin::Mocha as &dyn AppTheme, &catppuccin::Latte as &dyn AppTheme].into_iter()
+    [
+        &themes::Gruvbox as &dyn AppTheme,
+        &themes::Dracula as &dyn AppTheme,
+        &themes::Nord as &dyn AppTheme,
+        &themes::OneDark as &dyn AppTheme,
+        &themes::CatppuccinMocha as &dyn AppTheme,
+        &themes::CatppuccinLatte as &dyn AppTheme,
+    ]
+    .into_iter()
 }
 
 pub fn choose(name: impl AsRef<str>) -> Option<&'static dyn AppTheme> {
