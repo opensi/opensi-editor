@@ -1,9 +1,10 @@
+<div align="center">
 
 ![banner](assets/banner.png)
 
----
+# OpenSI Editor
 
-# opensi-editor 
+</div>
 
 ![Rust](https://github.com/opensi/opensi/workflows/Rust/badge.svg)
 
