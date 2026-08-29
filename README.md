@@ -1,3 +1,8 @@
+
+![banner](assets/banner.png)
+
+---
+
 # opensi-editor 
 
 ![Rust](https://github.com/opensi/opensi/workflows/Rust/badge.svg)
