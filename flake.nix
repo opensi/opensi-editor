@@ -40,6 +40,7 @@
           # GUI libs
           libxkbcommon
           libGL
+          vulkan-loader
           fontconfig
 
           # wayland libraries

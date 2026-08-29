@@ -18,7 +18,7 @@ opensi-core = { version = "*", path = "../opensi-core" }
 
 egui = "0.31"
 eframe = { version = "0.31", default-features = false, features = [
-    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "glow",          # OpenGL backend: WebGL2 on web, and the native fallback renderer.
     "persistence",   # Enable restoring app state when restarting the app.
 ] }
 egui-phosphor = { version = "0.9", default-features = false, features = ["regular"] }
@@ -36,6 +36,8 @@ derive_more = { version = "2", features = ["deref", "deref_mut"] }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# wgpu is native-only: the preferred renderer (Vulkan/Metal/DX12), with glow as fallback.
+eframe = { version = "0.31", default-features = false, features = ["wgpu"] }
 dirs = "6.0.0"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 humantime = "2.1.0"

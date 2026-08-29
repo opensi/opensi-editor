@@ -45,7 +45,7 @@ fn setup_logger() -> Result<(), fern::InitError> {
 async fn main() -> eframe::Result {
     setup_logger().expect("logger init");
 
-    let native_options = eframe::NativeOptions {
+    let make_options = |renderer: eframe::Renderer| eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([400.0, 300.0])
             .with_min_inner_size([300.0, 220.0])
@@ -55,13 +55,38 @@ async fn main() -> eframe::Result {
             ),
         centered: true,
         persist_window: true,
+        renderer,
+        wgpu_options: eframe::egui_wgpu::WgpuConfiguration {
+            wgpu_setup: eframe::egui_wgpu::WgpuSetup::CreateNew(
+                eframe::egui_wgpu::WgpuSetupCreateNew {
+                    instance_descriptor: eframe::wgpu::InstanceDescriptor {
+                        backends: eframe::wgpu::Backends::PRIMARY,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        },
         ..Default::default()
     };
-    eframe::run_native(
-        "OpenSI Editor",
-        native_options,
-        Box::new(|cc| Ok(Box::new(opensi_editor::EditorApp::new(cc)))),
-    )
+
+    let run = |renderer| {
+        eframe::run_native(
+            "OpenSI Editor",
+            make_options(renderer),
+            Box::new(|cc| Ok(Box::new(opensi_editor::EditorApp::new(cc)))),
+        )
+    };
+
+    // Prefer wgpu (Vulkan/Metal/DX12); fall back to glow (OpenGL) if wgpu fails to init.
+    match run(eframe::Renderer::Wgpu) {
+        Err(eframe::Error::Wgpu(err)) => {
+            log::warn!("wgpu renderer failed ({err}); falling back to glow (OpenGL)");
+            run(eframe::Renderer::Glow)
+        },
+        result => result,
+    }
 }
 
 // When compiling to web using trunk:
