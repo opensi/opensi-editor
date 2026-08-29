@@ -4,9 +4,10 @@
 
 # OpenSI Editor
 
-</div>
+[![CI](https://github.com/opensi/opensi-editor/actions/workflows/rust.yml/badge.svg)](https://github.com/opensi/opensi-editor/actions/workflows/rust.yml)
+[![Github Pages](https://github.com/opensi/opensi-editor/actions/workflows/pages.yml/badge.svg)](https://github.com/opensi/opensi-editor/actions/workflows/pages.yml)
 
-![Rust](https://github.com/opensi/opensi/workflows/Rust/badge.svg)
+</div>
 
 Редактор вопросов для популярной реализации "Своей игры": [SiGame](https://vladimirkhil.com/si/game)
 
@@ -25,7 +26,7 @@ OpenSI Editor совместим с некоторыми пакетами фор
 
 ```shell
 # Обычный запуск нативной версии
-$ cargo run opensi-editor
+$ cargo run
 
 # Запуск веб-версии (потребуется установка trunk)
 $ trunk serve --config crates/opensi-editor/Cargo.toml --release false
