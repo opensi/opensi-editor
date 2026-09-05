@@ -175,9 +175,10 @@ pub fn mix(a: egui::Color32, b: egui::Color32, t: f32) -> egui::Color32 {
 }
 
 /// Which of a theme's two color-scheme variants is active.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum ColorMode {
     Day,
+    #[default]
     Night,
 }
 
@@ -198,12 +199,6 @@ impl std::fmt::Display for ColorMode {
             ColorMode::Night => "Ночь",
         };
         f.write_str(label)
-    }
-}
-
-impl Default for ColorMode {
-    fn default() -> Self {
-        ColorMode::Night
     }
 }
 
@@ -337,7 +332,7 @@ impl ColorScheme {
             };
             visuals.widgets.open = egui::style::WidgetVisuals {
                 bg_stroke: egui::Stroke::new(1.0_f32, border_strong),
-                ..visuals.widgets.active.clone()
+                ..visuals.widgets.active
             };
 
             visuals.window_shadow = egui::Shadow {

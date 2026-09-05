@@ -10,24 +10,24 @@ macro_rules! icon {
 #[macro_export]
 macro_rules! icon_str {
     ($icon:ident, $str:literal) => {
-        const_format::formatcp!("{} {}", crate::icon!($icon), $str)
+        const_format::formatcp!("{} {}", $crate::icon!($icon), $str)
     };
 }
 
 #[macro_export]
 macro_rules! icon_string {
     ($icon:ident, $string:expr) => {
-        format!("{} {}", crate::icon!($icon), $string)
+        format!("{} {}", $crate::icon!($icon), $string)
     };
 }
 
 #[macro_export]
 macro_rules! icon_format {
     ($icon:ident, $fmt:literal, $($args:tt)*) => {
-        format!("{} {}", crate::icon!($icon), format_args!($fmt, $($args)*))
+        format!("{} {}", $crate::icon!($icon), format_args!($fmt, $($args)*))
     };
     ($icon:ident, $fmt:literal) => {
-        format!("{} {}", crate::icon!($icon), format_args!($fmt))
+        format!("{} {}", $crate::icon!($icon), format_args!($fmt))
     };
 }
 

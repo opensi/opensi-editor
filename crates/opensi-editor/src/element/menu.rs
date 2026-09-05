@@ -33,17 +33,18 @@ fn menu_row(
     glyph: &str,
     label: &str,
     hint: &str,
-    glyph_color: egui::Color32,
-    label_color: egui::Color32,
-    hint_color: egui::Color32,
-    hover: egui::Color32,
+    palette: MenuPalette,
 ) -> egui::Response {
     let (rect, response) = ui.allocate_exact_size(
         egui::vec2(style::METRICS.menu_width, style::METRICS.menu_row_height),
         egui::Sense::click(),
     );
     if response.hovered() {
-        ui.painter().rect_filled(rect, egui::CornerRadius::same(style::METRICS.rounding), hover);
+        ui.painter().rect_filled(
+            rect,
+            egui::CornerRadius::same(style::METRICS.rounding),
+            palette.hover,
+        );
     }
     let cy = rect.center().y;
     let pad = style::METRICS.gap;
@@ -52,14 +53,14 @@ fn menu_row(
         egui::Align2::CENTER_CENTER,
         glyph,
         egui::FontId::proportional(style::METRICS.font_icon),
-        glyph_color,
+        palette.glyph,
     );
     ui.painter().text(
         egui::pos2(rect.left() + pad + style::METRICS.compact_size, cy),
         egui::Align2::LEFT_CENTER,
         label,
         egui::FontId::proportional(style::METRICS.font_body),
-        label_color,
+        palette.label,
     );
     if !hint.is_empty() {
         ui.painter().text(
@@ -67,7 +68,7 @@ fn menu_row(
             egui::Align2::RIGHT_CENTER,
             hint,
             egui::FontId::proportional(style::METRICS.font_small),
-            hint_color,
+            palette.hint,
         );
     }
     response
@@ -75,15 +76,15 @@ fn menu_row(
 
 /// A dropdown-menu row: [glyph | label | hint], full-width with a hover fill.
 pub fn menu_item(ui: &mut egui::Ui, glyph: &str, label: &str, hint: &str) -> egui::Response {
-    let p = MenuPalette::of(ui);
-    menu_row(ui, glyph, label, hint, p.glyph, p.label, p.hint, p.hover)
+    let palette = MenuPalette::of(ui);
+    menu_row(ui, glyph, label, hint, palette)
 }
 
 /// A destructive dropdown-menu row (glyph and label painted in the error color).
 pub fn menu_item_danger(ui: &mut egui::Ui, glyph: &str, label: &str, hint: &str) -> egui::Response {
-    let p = MenuPalette::of(ui);
     let danger = ui.visuals().error_fg_color;
-    menu_row(ui, glyph, label, hint, danger, danger, p.hint, p.hover)
+    let palette = MenuPalette { glyph: danger, label: danger, ..MenuPalette::of(ui) };
+    menu_row(ui, glyph, label, hint, palette)
 }
 
 /// A thin, inset divider between menu groups.

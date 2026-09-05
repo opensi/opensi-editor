@@ -73,14 +73,16 @@ fn tree_node(ctx: &mut PackageContext, node: PackageNode, ui: &mut egui::Ui) {
 
     let (response, toggled) = tree_row(
         ui,
-        id,
-        depth,
-        expandable.then_some(&mut open),
-        glyph,
-        glyph_color,
-        &label,
-        count.as_deref(),
-        selected,
+        TreeRow {
+            id,
+            depth,
+            toggle: expandable.then_some(&mut open),
+            glyph,
+            glyph_color,
+            text: &label,
+            trailing: count.as_deref(),
+            selected,
+        },
     );
     ui.data_mut(|d| d.insert_temp(id, open));
     PackageNodeContextMenu { package: ctx.package(), node }.show(&response, ui);
@@ -100,20 +102,24 @@ fn tree_node(ctx: &mut PackageContext, node: PackageNode, ui: &mut egui::Ui) {
     }
 }
 
+/// Everything [`tree_row`] paints, apart from the [`egui::Ui`] it goes into.
+struct TreeRow<'a> {
+    id: egui::Id,
+    depth: usize,
+    toggle: Option<&'a mut bool>,
+    glyph: &'a str,
+    glyph_color: egui::Color32,
+    text: &'a str,
+    trailing: Option<&'a str>,
+    selected: bool,
+}
+
 /// A single interactive tree row: disclosure triangle (expandable rows), icon
 /// marker, label and a muted trailing count. Returns (row response, whether
 /// the triangle was toggled).
-fn tree_row(
-    ui: &mut egui::Ui,
-    id: egui::Id,
-    depth: usize,
-    toggle: Option<&mut bool>,
-    glyph: &str,
-    glyph_color: egui::Color32,
-    text: &str,
-    trailing: Option<&str>,
-    selected: bool,
-) -> (egui::Response, bool) {
+fn tree_row(ui: &mut egui::Ui, row: TreeRow<'_>) -> (egui::Response, bool) {
+    let TreeRow { id, depth, toggle, glyph, glyph_color, text, trailing, selected } = row;
+
     let m = &METRICS;
     let height = m.compact_size;
     let width = ui.available_width();

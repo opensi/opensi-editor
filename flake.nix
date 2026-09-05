@@ -55,7 +55,6 @@
 
         # IDE/shell dependencies
         developPrograms = with pkgs; [
-          clippy
           rust-analyzer-unwrapped
           cargo-edit
         ];

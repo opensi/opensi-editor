@@ -3,9 +3,9 @@ use std::borrow::Cow;
 
 use crate::{icon_format, icon_string};
 
-const UNKNOWN_ROUND: &'static str = "<Неизвестный раунд>";
-const UNKNOWN_THEME: &'static str = "<Неизвестная тема>";
-const UNKNOWN_QUESTION: &'static str = "<Неизвестный вопрос>";
+const UNKNOWN_ROUND: &str = "<Неизвестный раунд>";
+const UNKNOWN_THEME: &str = "<Неизвестная тема>";
+const UNKNOWN_QUESTION: &str = "<Неизвестный вопрос>";
 
 /// Utility method to get a pretty name for a [`PackageNode`].
 pub fn node_name<'a>(node: PackageNode, package: &'a Package) -> Cow<'a, str> {

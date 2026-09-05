@@ -108,7 +108,7 @@ impl PackageNodeContextMenu<'_> {
 
                 if response.changed() {
                     if is_question {
-                        new_value.retain(|c| c.is_digit(10));
+                        new_value.retain(|c| c.is_ascii_digit());
                     }
                     ui.memory_mut(|memory| memory.data.insert_temp(new_value_id, new_value));
                 }

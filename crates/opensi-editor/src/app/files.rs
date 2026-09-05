@@ -4,8 +4,6 @@ use std::{
 };
 
 use log::{error, warn};
-#[cfg(not(target_arch = "wasm32"))]
-use tokio;
 #[cfg(target_arch = "wasm32")]
 use tokio_with_wasm::alias as tokio;
 

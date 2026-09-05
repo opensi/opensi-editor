@@ -158,7 +158,8 @@ impl<'a> From<&'a mut EditorApp> for AppContext<'a> {
 
 impl AppContext<'_> {
     pub fn new_package(&mut self) {
-        self.app.package_state = PackageState::Active { package: Package::new(), selected: None };
+        self.app.package_state =
+            PackageState::Active { package: Box::new(Package::new()), selected: None };
     }
 
     pub fn pick_new_package(&mut self) {
@@ -204,7 +205,7 @@ fn package_loader(buffer: Vec<u8>, path: &Path, app: &mut EditorApp) -> LoadingR
         app.storage.insert(id, &package, bytes.clone());
     }
 
-    app.package_state = PackageState::Active { package, selected: None };
+    app.package_state = PackageState::Active { package: Box::new(package), selected: None };
 
     // update recent files
     app.recent_files.remove(path);

@@ -30,8 +30,8 @@ use crate::{
     icon, style,
 };
 
-pub const FONT_REGULAR_ID: &'static str = "regular";
-pub const FONT_BOLD_ID: &'static str = "bold";
+pub const FONT_REGULAR_ID: &str = "regular";
+pub const FONT_BOLD_ID: &str = "bold";
 
 /// Main context for the whole app.
 /// Serialized fields are saved and restored.
@@ -104,7 +104,7 @@ impl EditorApp {
         if let Some(theme) = style::choose(&app.theme_name) {
             theme.apply(&cc.egui_ctx, app.color_mode);
         } else {
-            error!("Unknown theme: {}", &app.theme_name);
+            error!("Unknown theme: {}", app.theme_name);
             app.theme_name = style::default_theme().name().to_string();
             style::default_theme().apply(&cc.egui_ctx, app.color_mode);
         }
@@ -322,7 +322,7 @@ enum PackageState {
     #[default]
     None,
     Active {
-        package: Package,
+        package: Box<Package>,
         selected: Option<PackageNode>,
     },
 }
