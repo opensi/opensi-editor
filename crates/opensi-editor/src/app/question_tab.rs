@@ -2,270 +2,391 @@ use opensi_core::prelude::*;
 
 use crate::{
     app::context::QuestionContext,
-    element::{PropertyTable, Sections, danger_button, info_edit, unselectable_label},
-    icon, icon_str,
+    element::{
+        dashed_button, icon_button, outlined_button, plural,
+        props::{
+            chips_field, compact_input, field_block, field_label, meta_row, section_head,
+            section_label, text_field,
+        },
+    },
+    icon,
+    style::{METRICS, mix},
 };
 
 pub fn question_tab(ctx: &mut QuestionContext, ui: &mut egui::Ui) {
-    Sections::new("question-sections").line(egui_extras::Size::remainder(), 2).show(
-        ui,
-        |mut body| {
-            body.line(|mut line| {
-                line.section("Сценарий", |ui| {
-                    question_scenario(ctx, ui);
+    let package_id = ctx.package().id.clone();
+    let q_idx = ctx.idx();
+    let mut pick_image = false;
+
+    ui.spacing_mut().item_spacing.y = METRICS.padding;
+    let question = ctx.question();
+    scenario_section(question, &package_id, &mut pick_image, ui);
+    answers_section(question, ui);
+
+    if pick_image {
+        ctx.pick_new_image_for(q_idx);
+    }
+}
+
+fn scenario_section(
+    question: &mut Question,
+    package_id: &str,
+    pick_image: &mut bool,
+    ui: &mut egui::Ui,
+) {
+    ui.vertical(|ui| {
+        ui.spacing_mut().item_spacing.y = METRICS.padding_small;
+        let n = question.scenario.len();
+        let weak = ui.visuals().weak_text_color();
+        section_head(
+            ui,
+            "Сценарий",
+            weak,
+            &format!("{n} {}", plural(n, "фрагмент", "фрагмента", "фрагментов")),
+        );
+
+        let mut remove = None;
+        for (i, atom) in question.scenario.iter_mut().enumerate() {
+            if atom_card(atom, package_id, ui) {
+                remove = Some(i);
+            }
+        }
+        if let Some(i) = remove {
+            question.scenario.remove(i);
+        }
+
+        ui.horizontal(|ui| {
+            let gap = METRICS.gap_small;
+            ui.spacing_mut().item_spacing.x = gap;
+            let size = egui::vec2((ui.available_width() - gap * 3.0) / 4.0, METRICS.button_height);
+            if dashed_button(ui, size, "+ Текст", METRICS.font_label, None).clicked() {
+                question.scenario.push(Atom { kind: AtomKind::Text, ..Atom::default() });
+            }
+            if dashed_button(ui, size, "+ Изображение", METRICS.font_label, None).clicked()
+            {
+                *pick_image = true;
+            }
+            if dashed_button(ui, size, "+ Аудио", METRICS.font_label, None).clicked() {
+                question.scenario.push(Atom { kind: AtomKind::Voice, ..Atom::default() });
+            }
+            if dashed_button(ui, size, "+ Видео", METRICS.font_label, None).clicked() {
+                question.scenario.push(Atom { kind: AtomKind::Video, ..Atom::default() });
+            }
+        });
+    });
+}
+
+fn atom_card(atom: &mut Atom, package_id: &str, ui: &mut egui::Ui) -> bool {
+    let accent = ui.visuals().selection.stroke.color;
+    let border = ui.visuals().widgets.noninteractive.bg_stroke.color;
+    let raised = ui.visuals().window_fill;
+    let weak = ui.visuals().weak_text_color();
+
+    let mut delete = false;
+    egui::Frame::new()
+        .fill(raised)
+        .stroke(egui::Stroke::new(1.0, border))
+        .corner_radius(METRICS.rounding)
+        .inner_margin(METRICS.padding_small as i8)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.horizontal_top(|ui| {
+                badge(ui, kind_label(atom.kind), accent);
+                ui.add_space(METRICS.padding_small);
+
+                let content_w =
+                    (ui.available_width() - METRICS.compact_size - METRICS.padding_small)
+                        .max(5.0 * METRICS.padding);
+                ui.vertical(|ui| {
+                    ui.set_width(content_w);
+                    match (atom.kind, atom.resource()) {
+                        (AtomKind::Text, _) => {
+                            ui.add(
+                                egui::TextEdit::multiline(&mut atom.body)
+                                    .frame(false)
+                                    .desired_rows(1)
+                                    .desired_width(content_w)
+                                    .hint_text("Текст фрагмента"),
+                            );
+                        },
+                        (AtomKind::Image, Some(id)) => {
+                            ui.add(
+                                egui::Image::new(format!("package://{}/{}", package_id, id.path()))
+                                    .corner_radius(METRICS.rounding as f32)
+                                    .max_width(content_w)
+                                    .max_height(200.0),
+                            );
+                            ui.add(
+                                egui::Label::new(
+                                    egui::RichText::new(id.path())
+                                        .size(METRICS.font_small)
+                                        .color(weak),
+                                )
+                                .truncate()
+                                .selectable(false),
+                            );
+                        },
+                        (_, resource) => {
+                            let name = resource
+                                .map(|id| id.path().to_string())
+                                .filter(|s| !s.is_empty())
+                                .unwrap_or_else(|| "нет файла".to_string());
+                            ui.add(
+                                egui::Label::new(
+                                    egui::RichText::new(name).size(METRICS.font_body).color(weak),
+                                )
+                                .truncate()
+                                .selectable(false),
+                            );
+                        },
+                    }
                 });
-                line.section("Ответы", |ui| {
-                    question_answers(ctx.question(), ui);
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+                    delete = icon_button(
+                        ui,
+                        egui::Vec2::splat(METRICS.compact_size),
+                        icon!(X),
+                        weak,
+                        ui.visuals().error_fg_color,
+                        egui::Color32::TRANSPARENT,
+                    )
+                    .clicked();
                 });
             });
-        },
-    );
+        });
+    delete
+}
+
+fn answers_section(question: &mut Question, ui: &mut egui::Ui) {
+    ui.vertical(|ui| {
+        ui.spacing_mut().item_spacing.y = METRICS.padding_small;
+        let (r, w) = (question.right.len(), question.wrong.len());
+        let weak = ui.visuals().weak_text_color();
+        section_head(ui, "Ответы", weak, &format!("{r} верных · {w} неверных"));
+
+        ui.columns(2, |cols| {
+            answer_column(&mut cols[0], question, false);
+            answer_column(&mut cols[1], question, true);
+        });
+    });
+}
+
+fn answer_column(ui: &mut egui::Ui, question: &mut Question, wrong: bool) {
+    let accent = ui.visuals().selection.stroke.color;
+    let danger = ui.visuals().error_fg_color;
+    let base = ui.visuals().panel_fill;
+    let bar = if wrong { mix(danger, base, 0.45) } else { accent };
+    let head_color = if wrong { danger } else { accent };
+    let (title, add_label) = if wrong {
+        ("Неправильные", "+ Неправильный")
+    } else {
+        ("Правильные", "+ Правильный")
+    };
+
+    ui.vertical(|ui| {
+        ui.spacing_mut().item_spacing.y = METRICS.gap;
+        let count = if wrong { question.wrong.len() } else { question.right.len() };
+        section_head(ui, title, head_color, &count.to_string());
+
+        let mut remove = None;
+        ui.scope(|ui| {
+            ui.spacing_mut().item_spacing.y = METRICS.gap_small;
+            let list = if wrong { &mut question.wrong } else { &mut question.right };
+            for (i, answer) in list.iter_mut().enumerate() {
+                if answer_row(ui, answer, bar) {
+                    remove = Some(i);
+                }
+            }
+        });
+        if let Some(i) = remove {
+            if wrong {
+                question.wrong.remove(i);
+            } else {
+                question.right.remove(i);
+            }
+        }
+
+        if outlined_button(
+            ui,
+            egui::vec2(ui.available_width(), METRICS.button_height),
+            add_label,
+            head_color,
+        )
+        .clicked()
+        {
+            if wrong {
+                let next = question.wrong.len() + 1;
+                question.wrong.push(format!("Неправильный ответ #{next}"));
+            } else {
+                let next = question.right.len() + 1;
+                question.right.push(format!("Правильный ответ #{next}"));
+            }
+        }
+    });
+}
+
+fn answer_row(ui: &mut egui::Ui, answer: &mut String, bar_color: egui::Color32) -> bool {
+    let border = ui.visuals().widgets.noninteractive.bg_stroke.color;
+    let raised = ui.visuals().window_fill;
+
+    let mut delete = false;
+    let inner = egui::Frame::new()
+        .fill(raised)
+        .stroke(egui::Stroke::new(1.0, border))
+        .corner_radius(METRICS.rounding)
+        .inner_margin(egui::Margin::symmetric(METRICS.padding_small as i8, METRICS.gap as i8))
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.horizontal(|ui| {
+                let text_w = (ui.available_width() - METRICS.compact_size - METRICS.padding_small)
+                    .max(2.0 * METRICS.card_padding);
+                ui.add_sized(
+                    [text_w, 22.0],
+                    egui::TextEdit::singleline(answer).frame(false).desired_width(text_w),
+                );
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    delete = icon_button(
+                        ui,
+                        egui::Vec2::splat(METRICS.compact_size),
+                        icon!(X),
+                        ui.visuals().weak_text_color(),
+                        ui.visuals().error_fg_color,
+                        egui::Color32::TRANSPARENT,
+                    )
+                    .clicked();
+                });
+            });
+        });
+
+    // Coloured left bar.
+    let rect = inner.response.rect;
+    let bar =
+        egui::Rect::from_min_size(rect.min, egui::vec2(METRICS.accent_bar_width, rect.height()));
+    ui.painter().rect_filled(bar, egui::CornerRadius { nw: 4, sw: 4, ne: 0, se: 0 }, bar_color);
+    delete
 }
 
 pub fn question_properties(ctx: &mut QuestionContext, ui: &mut egui::Ui) {
-    Sections::new("question-properties")
-        .line(egui_extras::Size::relative(0.75), 1)
-        .line(egui_extras::Size::remainder(), 1)
-        .show(ui, |mut body| {
-            body.line(|mut line| {
-                line.section("Вопрос", |ui| {
-                    question_info_edit(ctx.question(), ui);
-                });
-            });
-            body.line(|mut line| {
-                line.section("Дополнительная информация", |ui| {
-                    info_edit(&mut ctx.question().info, ui);
-                });
-            });
-        });
-}
+    let theme_name = {
+        let theme_idx = ctx.idx().parent();
+        ctx.package().get_theme(theme_idx).map(|theme| theme.name.clone()).unwrap_or_default()
+    };
 
-fn question_info_edit(question: &mut Question, ui: &mut egui::Ui) {
-    PropertyTable::new("question-info-properties").show(ui, |mut properties| {
-        properties.row(icon!(COINS), "Стоимость", |ui| {
-            ui.add(egui::DragValue::new(&mut question.price).range(0..=usize::MAX))
-        });
-        properties.row(icon!(STAR), "Тип вопроса", |ui| {
-            unselectable_label(question.question_type.to_string(), ui)
-        });
-    });
-}
+    let question = ctx.question();
+    let fragments = question.scenario.len();
+    let answers = question.right.len() + question.wrong.len();
 
-fn question_scenario(ctx: &mut QuestionContext, ui: &mut egui::Ui) {
-    egui::ScrollArea::vertical().show(ui, |ui| {
-        ui.scope(|ui| {
-            ui.style_mut().spacing.item_spacing.y = 10.0;
-            let id = ctx.package().id.clone();
-            for atom in &mut ctx.question().scenario {
-                atom_ui(atom, &id, ui);
+    field_block(ui, |ui| {
+        field_label(ui, "Стоимость");
+        let mut value = question.price.to_string();
+        if compact_input(ui, &mut value, "0").changed() {
+            if let Ok(parsed) = value.parse::<usize>() {
+                question.price = parsed;
             }
-        });
+        }
+    });
 
-        ui.add_space(20.0);
+    field_block(ui, |ui| {
+        field_label(ui, "Тип вопроса");
+        question_type_selector(question, ui);
+    });
 
-        egui_extras::TableBuilder::new(ui)
-            .cell_layout(
-                egui::Layout::centered_and_justified(egui::Direction::TopDown)
-                    .with_main_justify(false),
-            )
-            .columns(egui_extras::Column::remainder(), 2)
-            .body(|mut body| {
-                body.row(30.0, |mut row| {
-                    row.col(|ui| {
-                        if ui.button(icon_str!(IMAGE, "Добавить изображение")).clicked()
-                        {
-                            let idx = ctx.idx();
-                            ctx.pick_new_image_for(idx);
-                        }
-                    });
-                    row.col(|ui| {
-                        if ui.button(icon_str!(CHAT_CIRCLE_TEXT, "Добавить текст")).clicked()
-                        {
-                            ctx.question()
-                                .scenario
-                                .push(Atom { kind: AtomKind::Text, ..Atom::default() });
-                        }
-                    });
-                });
-                body.row(30.0, |mut row| {
-                    row.col(|ui| {
-                        if ui.button(icon_str!(HEADPHONES, "Добавить аудио")).clicked()
-                        {
-                            ctx.question()
-                                .scenario
-                                .push(Atom { kind: AtomKind::Voice, ..Atom::default() });
-                        }
-                    });
-                    row.col(|ui| {
-                        if ui.button(icon_str!(VIDEO, "Добавить видео")).clicked() {
-                            ctx.question()
-                                .scenario
-                                .push(Atom { kind: AtomKind::Video, ..Atom::default() });
-                        }
-                    });
-                });
-            });
+    let info = question.info.get_or_insert_with(Default::default);
+    text_field(ui, "Комментарий ведущего", &mut info.comments, "Не указан");
+    text_field(ui, "Расширения", &mut info.extension, "");
+    chips_field(ui, "Авторы", "+ Добавить автора", "question-authors", &mut info.authors);
+    chips_field(ui, "Источники", "+ Добавить источник", "question-sources", &mut info.sources);
+
+    ui.add_space(METRICS.gap_small);
+    ui.separator();
+    ui.add_space(METRICS.padding);
+    section_label(ui, "Сводка");
+    ui.add_space(METRICS.padding_small);
+    meta_row(ui, "Фрагменты", &fragments.to_string());
+    meta_row(ui, "Ответы", &answers.to_string());
+    meta_row(ui, "Тема", &theme_name);
+}
+
+fn question_type_selector(question: &mut Question, ui: &mut egui::Ui) {
+    const OPTIONS: [(&str, &str); 3] =
+        [("Обычный вопрос", ""), ("Кот в мешке", "cat"), ("Аукцион", "auction")];
+    let current = question.question_type.name.clone();
+
+    ui.scope(|ui| {
+        ui.spacing_mut().item_spacing.y = METRICS.gap_tiny;
+        for (label, name) in OPTIONS {
+            let selected = current == name || (name.is_empty() && current == "simple");
+            if type_option(ui, label, selected).clicked() {
+                question.question_type.name = name.to_string();
+            }
+        }
     });
 }
 
-fn atom_ui(atom: &mut Atom, package_id: &str, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        let icon = match atom.kind {
-            AtomKind::Image => icon!(IMAGE),
-            AtomKind::Voice => icon!(HEADPHONES),
-            AtomKind::Video => icon!(VIDEO),
-            AtomKind::Text => icon!(CHAT_CIRCLE_TEXT),
-        };
-        ui.add(
-            egui::Label::new(
-                egui::RichText::new(icon).size(20.0).color(ui.visuals().hyperlink_color),
-            )
-            .selectable(false),
-        );
-        let start_position = ui.next_widget_position() + egui::vec2(-18.0, 11.0);
-
-        match (atom.kind, atom.resource()) {
-            (AtomKind::Text, _) => {
-                ui.add(
-                    egui::TextEdit::multiline(&mut atom.body)
-                        .desired_rows(2)
-                        .desired_width(ui.available_width())
-                        .margin(egui::Margin::symmetric(10, 6)),
-                );
-            },
-            (AtomKind::Image, Some(id)) => {
-                ui.add(
-                    egui::Image::new(format!("package://{}/{}", package_id, id.path()))
-                        .corner_radius(8.0)
-                        .fit_to_original_size(1.0)
-                        .max_width(ui.available_width()),
-                );
-            },
-            _ => {
-                unselectable_label(format!("{atom:?}"), ui);
-            },
-        }
-
-        ui.painter().vline(
-            start_position.x,
-            start_position.y..=(start_position.y + ui.min_size().y - 26.0),
-            ui.visuals().noninteractive().fg_stroke,
-        );
-    });
+fn badge(ui: &mut egui::Ui, text: &str, accent: egui::Color32) {
+    let base = ui.visuals().panel_fill;
+    let border = mix(accent, base, 0.45);
+    let font = egui::FontId::proportional(METRICS.font_small);
+    let galley = ui.fonts(|f| f.layout_no_wrap(text.to_uppercase(), font, accent));
+    let size = galley.size() + egui::vec2(METRICS.padding, METRICS.gap);
+    let (rect, _) = ui.allocate_exact_size(size, egui::Sense::hover());
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::same(METRICS.rounding),
+        egui::Color32::TRANSPARENT,
+        egui::Stroke::new(1.0, border),
+        egui::StrokeKind::Inside,
+    );
+    ui.painter().galley(rect.center() - galley.size() / 2.0, galley, accent);
 }
 
-fn question_answers(question: &mut Question, ui: &mut egui::Ui) {
-    ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
-        for n in 0..question.right.len() {
-            answer_ui(question, n, false, ui);
-        }
-        for n in 0..question.wrong.len() {
-            answer_ui(question, n, true, ui);
-        }
-
-        ui.add_space(20.0);
-
-        egui_extras::StripBuilder::new(ui)
-            .cell_layout(
-                egui::Layout::centered_and_justified(egui::Direction::TopDown)
-                    .with_main_justify(false),
-            )
-            .sizes(egui_extras::Size::remainder(), 2)
-            .horizontal(|mut strip| {
-                strip.cell(|ui| {
-                    if ui.button(icon_str!(CHECK, "Добавить правильный")).clicked()
-                    {
-                        question
-                            .right
-                            .push(format!("Правильный ответ #{}", question.right.len() + 1));
-                    }
-                });
-
-                strip.cell(|ui| {
-                    if ui.button(icon_str!(X, "Добавить неправильный")).clicked()
-                    {
-                        question
-                            .wrong
-                            .push(format!("Неправильный ответ #{}", question.wrong.len() + 1));
-                    }
-                });
-            });
-    });
+fn type_option(ui: &mut egui::Ui, label: &str, selected: bool) -> egui::Response {
+    let accent = ui.visuals().selection.stroke.color;
+    let border = ui.visuals().widgets.noninteractive.bg_stroke.color;
+    let border_strong = ui.visuals().widgets.hovered.bg_stroke.color;
+    let text = ui.visuals().text_color();
+    let weak = ui.visuals().weak_text_color();
+    let (rect, resp) = ui.allocate_exact_size(
+        egui::vec2(ui.available_width(), METRICS.button_height),
+        egui::Sense::click(),
+    );
+    let hovered = resp.hovered();
+    let (edge, fg, dot) = if selected {
+        (accent, accent, accent)
+    } else if hovered {
+        (border_strong, text, weak)
+    } else {
+        (border, weak, border_strong)
+    };
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::same(METRICS.rounding),
+        egui::Color32::TRANSPARENT,
+        egui::Stroke::new(1.0, edge),
+        egui::StrokeKind::Inside,
+    );
+    let cy = rect.center().y;
+    ui.painter().circle_filled(
+        egui::pos2(rect.left() + METRICS.padding_small, cy),
+        METRICS.gap_tiny,
+        dot,
+    );
+    ui.painter().text(
+        egui::pos2(rect.left() + 2.0 * METRICS.padding_small, cy),
+        egui::Align2::LEFT_CENTER,
+        label,
+        egui::FontId::proportional(METRICS.font_label),
+        fg,
+    );
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
-fn answer_ui(question: &mut Question, n: usize, is_wrong: bool, ui: &mut egui::Ui) {
-    if (is_wrong && n >= question.wrong.len()) || (!is_wrong && n >= question.right.len()) {
-        return;
+fn kind_label(kind: AtomKind) -> &'static str {
+    match kind {
+        AtomKind::Text => "текст",
+        AtomKind::Image => "изображение",
+        AtomKind::Voice => "аудио",
+        AtomKind::Video => "видео",
     }
-
-    ui.push_id(ui.id().with("answer").with(is_wrong).with(n), |ui| {
-        let edit_id = ui.id().with("edit");
-        let is_edit = ui.memory(|memory| memory.data.get_temp::<bool>(edit_id)).unwrap_or_default();
-
-        let (icon, color) = if is_wrong {
-            (icon!(X), ui.visuals().error_fg_color)
-        } else {
-            (icon!(CHECK), ui.visuals().hyperlink_color)
-        };
-
-        ui.set_max_height(30.0);
-        ui.set_max_width(ui.available_width());
-        egui_extras::StripBuilder::new(ui)
-            .clip(true)
-            .size(egui_extras::Size::exact(20.0))
-            .size(egui_extras::Size::remainder())
-            .size(egui_extras::Size::exact(50.0))
-            .cell_layout(
-                egui::Layout::left_to_right(egui::Align::Min).with_main_align(egui::Align::Min),
-            )
-            .horizontal(|mut strip| {
-                strip.cell(|ui| {
-                    ui.add(
-                        egui::Label::new(egui::WidgetText::from(icon).color(color))
-                            .selectable(false),
-                    );
-                });
-
-                strip.cell(|ui| {
-                    let answer =
-                        if is_wrong { &mut question.wrong[n] } else { &mut question.right[n] };
-
-                    if is_edit {
-                        let response = ui.add(
-                            egui::TextEdit::singleline(answer)
-                                .desired_width(ui.available_width() - n as f32 * 2.0),
-                        );
-                        response.request_focus();
-
-                        if response.has_focus()
-                            && ui.input(|input| input.key_pressed(egui::Key::Enter))
-                        {
-                            ui.memory_mut(|memory| memory.data.insert_temp(edit_id, false));
-                        }
-                    } else {
-                        ui.add(egui::Label::new(egui::RichText::new(answer.as_str()).color(color)));
-                    }
-                });
-
-                strip.cell(|ui| {
-                    if is_edit {
-                        if ui.button(icon!(FLOPPY_DISK)).clicked() {
-                            ui.memory_mut(|memory| memory.data.insert_temp(edit_id, false));
-                        }
-                    } else {
-                        if ui.button(icon!(PENCIL)).clicked() {
-                            ui.memory_mut(|memory| memory.data.insert_temp(edit_id, true));
-                        }
-                    }
-
-                    if danger_button(icon!(TRASH), ui).clicked() {
-                        if is_wrong {
-                            question.wrong.remove(n);
-                        } else {
-                            question.right.remove(n);
-                        }
-                    }
-                });
-            });
-    });
 }

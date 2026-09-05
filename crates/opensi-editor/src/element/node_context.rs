@@ -1,8 +1,12 @@
 use opensi_core::prelude::*;
 
-use crate::icon_str;
-
-use super::{ModalExt, ModalWrapper, danger_button};
+use crate::{
+    element::{
+        ModalExt, ModalWrapper,
+        menu::{menu_divider, menu_item, menu_item_danger, style_menu},
+    },
+    icon, icon_str,
+};
 
 /// Context menu for [`PackageNode`].
 pub struct PackageNodeContextMenu<'p> {
@@ -13,30 +17,43 @@ pub struct PackageNodeContextMenu<'p> {
 impl PackageNodeContextMenu<'_> {
     pub fn show(self, source: &egui::Response, ui: &mut egui::Ui) {
         let is_question = matches!(self.node, PackageNode::Question(..));
-        let change_text = if is_question {
+        let (change_glyph, change_label): (&str, &str) = if is_question {
+            (icon!(COINS), "Изменить цену")
+        } else {
+            (icon!(PENCIL), "Переименовать")
+        };
+        let add: Option<(&str, &str)> = match self.node {
+            PackageNode::Round(_) => Some((icon!(PLUS), "Добавить тему")),
+            PackageNode::Theme(_) => Some((icon!(PLUS), "Добавить вопрос")),
+            PackageNode::Question(_) => None,
+        };
+        // Accusative labels per node kind ("Дублировать тему", "Удалить раунд", ...).
+        let (duplicate_label, delete_label) = match self.node {
+            PackageNode::Round(_) => ("Дублировать раунд", "Удалить раунд"),
+            PackageNode::Theme(_) => ("Дублировать тему", "Удалить тему"),
+            PackageNode::Question(_) => ("Дублировать вопрос", "Удалить вопрос"),
+        };
+        let modal_title: &str = if is_question {
             icon_str!(COINS, "Изменить цену")
         } else {
             icon_str!(PENCIL, "Переименовать")
-        };
-        let add_text = match self.node {
-            PackageNode::Round { .. } => Some(icon_str!(STACK_PLUS, "Добавить тему")),
-            PackageNode::Theme { .. } => Some(icon_str!(FILE_PLUS, "Добавить вопрос")),
-            PackageNode::Question { .. } => None,
         };
         let new_value_id = source.id.with(egui::Id::new("new-value"));
 
         let mut modal = ModalWrapper::new(ui.ctx(), source.id.with("modal"));
 
         source.context_menu(|ui| {
-            if let Some(text) = add_text {
-                if ui.button(text).clicked() {
+            style_menu(ui);
+
+            if let Some((glyph, label)) = add {
+                if menu_item(ui, glyph, label, "").clicked() {
                     self.package.allocate_node(self.node.child(0).unwrap());
                     ui.close_menu();
                 }
-                ui.separator();
+                menu_divider(ui);
             }
 
-            if ui.button(change_text).clicked() {
+            if menu_item(ui, change_glyph, change_label, "").clicked() {
                 let value = match self.node {
                     PackageNode::Round(idx) => self
                         .package
@@ -58,12 +75,12 @@ impl PackageNodeContextMenu<'_> {
                 ui.close_menu();
                 modal.open();
             }
-            if ui.button(icon_str!(COPY, "Дублировать")).clicked() {
+            if menu_item(ui, icon!(COPY), duplicate_label, "").clicked() {
                 self.package.duplicate_node(self.node);
                 ui.close_menu();
             }
-            ui.separator();
-            if danger_button(icon_str!(TRASH, "Удалить"), ui).clicked() {
+            menu_divider(ui);
+            if menu_item_danger(ui, icon!(TRASH), delete_label, "").clicked() {
                 self.package.remove_node(self.node);
                 ui.close_menu();
             }
@@ -72,8 +89,8 @@ impl PackageNodeContextMenu<'_> {
         modal.show(ui.ctx(), |ui| {
             let mut is_renaming_done = false;
 
-            ui.modal_title(change_text);
-            ui.vertical(|ui| {
+            ui.modal_title(modal_title);
+            ui.modal_body(|ui| {
                 let body = match self.node {
                     PackageNode::Round(_) => "Введите новое название для раунда:",
                     PackageNode::Theme(_) => "Введите новое название для темы:",

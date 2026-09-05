@@ -157,6 +157,10 @@ impl<'a> From<&'a mut EditorApp> for AppContext<'a> {
 }
 
 impl AppContext<'_> {
+    pub fn new_package(&mut self) {
+        self.app.package_state = PackageState::Active { package: Package::new(), selected: None };
+    }
+
     pub fn pick_new_package(&mut self) {
         let loader = files::pick_file(
             "Выбрать файл с вопросами для импорта",

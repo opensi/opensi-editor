@@ -1,134 +1,194 @@
-use egui::collapsing_header::CollapsingState;
 use opensi_core::prelude::*;
 
 use crate::{
     app::context::PackageContext,
-    element::{node_context::PackageNodeContextMenu, node_name},
+    element::{node_context::PackageNodeContextMenu, panel_header, question_is_filled},
+    style::{METRICS, mix},
 };
 
 /// Ui for a whole [`Package`] in a form of a tree.
-///
-/// It can add new rounds, themes and questions, edit
-/// names/prices of existing ones and select them.
 pub fn package_tree(ctx: &mut PackageContext, ui: &mut egui::Ui) {
-    ui.vertical_centered_justified(|ui| {
-        let text = egui::RichText::new(&ctx.package().name).heading();
-        if ui.add(egui::Label::new(text).sense(egui::Sense::click()).selectable(false)).clicked() {
-            ctx.deselect();
-        }
+    let total: usize =
+        ctx.package().rounds.iter().flat_map(|r| &r.themes).map(|t| t.questions.len()).sum();
+    let weak = ui.visuals().weak_text_color();
+    let dim = mix(weak, ui.visuals().panel_fill, 0.35);
+    panel_header(ui, |ui| {
+        ui.add(
+            egui::Label::new(
+                egui::RichText::new("Пакет Вопросов").size(METRICS.font_body).color(weak),
+            )
+            .selectable(false),
+        );
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            ui.add(
+                egui::Label::new(
+                    egui::RichText::new(total.to_string()).size(METRICS.font_label).color(dim),
+                )
+                .selectable(false),
+            );
+        });
     });
 
-    ui.separator();
-
-    egui::ScrollArea::vertical().show(ui, |ui| {
-        tree_node_ui(ctx, None, ui);
+    egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+        egui::Frame::new()
+            .inner_margin(egui::Margin::symmetric(METRICS.gap_small as i8, METRICS.gap as i8))
+            .show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.spacing_mut().item_spacing.y = METRICS.gap_tiny / 2.0;
+                for r in 0..ctx.package().count_rounds() {
+                    tree_node(ctx, PackageNode::Round(r.into()), ui);
+                }
+            });
     });
 }
 
-/// Recursive [`PackageNode`] ui.
-fn tree_node_ui<'a>(ctx: &mut PackageContext, node: Option<PackageNode>, ui: &mut egui::Ui) {
-    fn node_button(
-        ctx: &mut PackageContext,
-        node: PackageNode,
-        is_selected: bool,
-        ui: &mut egui::Ui,
-    ) -> bool {
-        let node_name = node_name(node, ctx.package());
-        let button =
-            egui::Button::new(node_name.as_ref()).frame(false).fill(egui::Color32::TRANSPARENT);
-        let response = ui.add(button);
-        let response = if is_selected { response.highlight() } else { response };
+/// One tree node and, when expanded, its children.
+fn tree_node(ctx: &mut PackageContext, node: PackageNode, ui: &mut egui::Ui) {
+    let accent = ui.visuals().selection.stroke.color;
+    let weak = ui.visuals().weak_text_color();
 
-        PackageNodeContextMenu { package: ctx.package(), node }.show(&response, ui);
-
-        return response.clicked();
-    }
-
-    let Some(node) = node else {
-        ui.push_id(format!("package-tree"), |ui| {
-            if ctx.package().rounds.is_empty() {
-                ui.weak("Нет раундов");
-            } else {
-                for index in 0..ctx.package().rounds.len() {
-                    tree_node_ui(ctx, Some(index.into()), ui);
-                }
-            }
-        });
-        ui.allocate_response(ui.available_size(), egui::Sense::click()).context_menu(|ui| {
-            if ui.button(format!("➕ Добавить раунд")).clicked() {
-                ctx.package().allocate_round();
-                ui.close_menu();
-            }
-        });
-        return;
-    };
-
-    let id = egui::Id::new(node.index()).with(ui.id());
-    let is_selected = ctx.selected().is_some_and(|selected| selected == node);
-    match node {
+    let (glyph, glyph_color, label, count, depth, default_open) = match node {
         PackageNode::Round(idx) => {
-            let mut state = CollapsingState::load_with_default_open(ui.ctx(), id, true)
-                .show_header(ui, |ui| {
-                    if node_button(ctx, node, is_selected, ui) {
-                        ctx.select(node);
-                    };
-                });
-
-            if !state.is_open() && ctx.selected().is_some_and(|selected| {
-                matches!(
-                    selected,
-                    PackageNode::Question(QuestionIdx { round_index, .. })
-                    | PackageNode::Theme(ThemeIdx { round_index, .. })
-                    | PackageNode::Round(RoundIdx { index: round_index, .. }) if round_index == *idx
-                )
-            }) {
-                state.set_open(true);
-            }
-
-            state.body(|ui| {
-                for theme_index in 0..ctx
-                    .package()
-                    .get_round(idx)
-                    .map(|round| round.themes.len())
-                    .unwrap_or_default()
-                {
-                    tree_node_ui(ctx, Some(idx.theme(theme_index).into()), ui);
-                }
-            });
+            let Some(round) = ctx.package().get_round(idx) else { return };
+            let count: usize = round.themes.iter().map(|t| t.questions.len()).sum();
+            (crate::icon!(SQUARES_FOUR), accent, round.name.clone(), Some(count), 0, true)
         },
         PackageNode::Theme(idx) => {
-            let mut state = CollapsingState::load_with_default_open(ui.ctx(), id, false)
-                .show_header(ui, |ui| {
-                    if node_button(ctx, node, is_selected, ui) {
-                        ctx.select(node);
-                    };
-                });
-
-            if !state.is_open() && ctx.selected().is_some_and(|selected| {
-                matches!(
-                    selected,
-                    PackageNode::Question(QuestionIdx { theme_index, .. })
-                    | PackageNode::Theme(ThemeIdx { index: theme_index, .. }) if theme_index == *idx
-                )
-            }) {
-                state.set_open(true);
-            }
-
-            state.body(|ui| {
-                for question_index in 0..ctx
-                    .package()
-                    .get_theme(idx)
-                    .map(|theme| theme.questions.len())
-                    .unwrap_or_default()
-                {
-                    tree_node_ui(ctx, Some(idx.question(question_index).into()), ui);
-                }
-            });
+            let Some(theme) = ctx.package().get_theme(idx) else { return };
+            let color = mix(accent, egui::Color32::BLACK, 0.3);
+            (crate::icon!(SQUARE), color, theme.name.clone(), Some(theme.questions.len()), 1, false)
         },
         PackageNode::Question(idx) => {
-            if node_button(ctx, idx.into(), is_selected, ui) {
-                ctx.select(node);
-            }
+            let Some(question) = ctx.package().get_question(idx) else { return };
+            let color = if question_is_filled(question) { accent } else { weak };
+            (crate::icon!(QUESTION), color, question.price.to_string(), None, 2, false)
         },
+    };
+
+    let id = egui::Id::new(("tree", node));
+    let expandable = node.child(0).is_some();
+    let mut open = ui.data(|d| d.get_temp(id).unwrap_or(default_open));
+    let selected = ctx.selected() == Some(node);
+    let count = count.map(|c| c.to_string());
+
+    let (response, toggled) = tree_row(
+        ui,
+        id,
+        depth,
+        expandable.then_some(&mut open),
+        glyph,
+        glyph_color,
+        &label,
+        count.as_deref(),
+        selected,
+    );
+    ui.data_mut(|d| d.insert_temp(id, open));
+    PackageNodeContextMenu { package: ctx.package(), node }.show(&response, ui);
+    if response.clicked() && !toggled {
+        ctx.select(node);
     }
+
+    if expandable && open {
+        let children = match node {
+            PackageNode::Round(idx) => ctx.package().count_themes(idx),
+            PackageNode::Theme(idx) => ctx.package().count_questions(idx),
+            PackageNode::Question(_) => 0,
+        };
+        for i in 0..children {
+            tree_node(ctx, node.child(i).unwrap(), ui);
+        }
+    }
+}
+
+/// A single interactive tree row: disclosure triangle (expandable rows), icon
+/// marker, label and a muted trailing count. Returns (row response, whether
+/// the triangle was toggled).
+fn tree_row(
+    ui: &mut egui::Ui,
+    id: egui::Id,
+    depth: usize,
+    toggle: Option<&mut bool>,
+    glyph: &str,
+    glyph_color: egui::Color32,
+    text: &str,
+    trailing: Option<&str>,
+    selected: bool,
+) -> (egui::Response, bool) {
+    let m = &METRICS;
+    let height = m.compact_size;
+    let width = ui.available_width();
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::click());
+
+    let visuals = ui.visuals();
+    let accent = visuals.selection.stroke.color;
+    let base = visuals.panel_fill;
+    let text_color = visuals.text_color();
+    let weak = visuals.weak_text_color();
+    let bg = if selected {
+        mix(base, accent, 0.20)
+    } else if response.hovered() {
+        mix(base, text_color, 0.06)
+    } else {
+        egui::Color32::TRANSPARENT
+    };
+    let painter = ui.painter();
+    if bg != egui::Color32::TRANSPARENT {
+        painter.rect_filled(rect, egui::CornerRadius::same(m.rounding), bg);
+    }
+
+    let cy = rect.center().y;
+    let mut x = rect.left() + m.gap + depth as f32 * m.padding;
+
+    let mut toggled = false;
+    let tri_center = egui::pos2(x + m.gap_small, cy);
+    if let Some(open) = toggle.as_deref() {
+        let glyph = if *open { crate::icon!(CARET_DOWN) } else { crate::icon!(CARET_RIGHT) };
+        painter.text(
+            tri_center,
+            egui::Align2::CENTER_CENTER,
+            glyph,
+            egui::FontId::proportional(m.font_small),
+            weak,
+        );
+    }
+    x += m.padding;
+
+    painter.text(
+        egui::pos2(x + m.gap, cy),
+        egui::Align2::CENTER_CENTER,
+        glyph,
+        egui::FontId::proportional(m.font_icon),
+        glyph_color,
+    );
+    x += m.card_padding;
+
+    painter.text(
+        egui::pos2(x, cy),
+        egui::Align2::LEFT_CENTER,
+        text,
+        egui::FontId::proportional(m.font_body),
+        text_color,
+    );
+
+    if let Some(trailing) = trailing {
+        painter.text(
+            egui::pos2(rect.right() - m.gap, cy),
+            egui::Align2::RIGHT_CENTER,
+            trailing,
+            egui::FontId::proportional(m.font_small),
+            weak,
+        );
+    }
+
+    // Route clicks on the triangle to toggling instead of selection.
+    if let Some(open) = toggle {
+        let tri_rect = egui::Rect::from_center_size(tri_center, egui::vec2(m.padding, height));
+        let tri_response = ui.interact(tri_rect, id.with("toggle"), egui::Sense::click());
+        if tri_response.clicked() {
+            *open = !*open;
+            toggled = true;
+        }
+    }
+
+    (response, toggled)
 }

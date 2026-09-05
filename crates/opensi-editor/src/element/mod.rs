@@ -1,13 +1,11 @@
-pub mod card;
 pub mod common;
+pub mod menu;
 pub mod modal;
 pub mod naming;
+pub mod navbar;
 pub mod node_context;
-pub mod property;
-pub mod section;
+pub mod props;
 
 pub use common::*;
 pub use modal::{ModalExt, ModalWrapper};
 pub use naming::*;
-pub use property::PropertyTable;
-pub use section::Sections;

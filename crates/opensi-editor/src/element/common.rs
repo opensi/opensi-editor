@@ -1,9 +1,4 @@
-#![allow(dead_code)]
-
-use std::fmt::Display;
-
-use super::{PropertyTable, property::Properties};
-use opensi_core::prelude::*;
+use crate::style::mix;
 
 #[macro_export]
 macro_rules! icon {
@@ -36,151 +31,170 @@ macro_rules! icon_format {
     };
 }
 
-/// A generic error label.
-pub fn error_label(error: impl Display, ui: &mut egui::Ui) {
-    let text = egui::RichText::new(icon_string!(WARNING, error))
-        .color(ui.style().visuals.error_fg_color)
-        .size(24.0);
-    ui.add(egui::Label::new(text).selectable(true).wrap());
+/// Paint a dashed rectangular border just inside `rect`, dashed outline
+/// every dashed element (add buttons, chip add-fields) is drawn with.
+pub fn dashed_border(painter: &egui::Painter, rect: egui::Rect, color: egui::Color32) {
+    let r = rect.shrink(0.5);
+    let points = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+    painter.extend(egui::Shape::dashed_line(&points, egui::Stroke::new(1.0, color), 4.0, 4.0));
 }
 
-/// A stub todo label.
-pub fn todo_label(ui: &mut egui::Ui) {
-    let warn_bg = ui.style().visuals.warn_fg_color.linear_multiply(0.1);
-    let text = egui::RichText::new("< TODO >")
-        .monospace()
-        .color(ui.style().visuals.warn_fg_color)
-        .background_color(warn_bg)
-        .size(24.0);
-    ui.add(egui::Label::new(text).selectable(false).extend());
+/// A dashed "+ ..." button over an exact `size`.
+pub fn dashed_button(
+    ui: &mut egui::Ui,
+    size: egui::Vec2,
+    label: &str,
+    font_size: f32,
+    left_pad: Option<f32>,
+) -> egui::Response {
+    let strong = ui.visuals().strong_text_color();
+    let weak = ui.visuals().weak_text_color();
+    let border = ui.visuals().widgets.noninteractive.bg_stroke.color;
+    let border_strong = ui.visuals().widgets.hovered.bg_stroke.color;
+    let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
+    let hovered = response.hovered();
+    let (fg, edge) = if hovered { (strong, border_strong) } else { (weak, border) };
+    dashed_border(ui.painter(), rect, edge);
+    let font = egui::FontId::proportional(font_size);
+    match left_pad {
+        Some(pad) => {
+            ui.painter().text(
+                egui::pos2(rect.left() + pad, rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                label,
+                font,
+                fg,
+            );
+        },
+        None => {
+            ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, label, font, fg);
+        },
+    }
+    response.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A dashed "+ ..." chip sized to its label (inline add affordances).
+pub fn dashed_chip(ui: &mut egui::Ui, label: &str) -> egui::Response {
+    let font = egui::FontId::proportional(crate::style::METRICS.font_label);
+    let color = ui.visuals().weak_text_color();
+    let galley_size = ui.fonts(|f| f.layout_no_wrap(label.to_owned(), font, color)).size();
+    dashed_button(
+        ui,
+        galley_size + egui::vec2(crate::style::METRICS.card_padding, crate::style::METRICS.padding),
+        label,
+        crate::style::METRICS.font_label,
+        None,
+    )
+}
+
+/// A full-width dashed "+ ..." add row .
+pub fn dashed_add_row(ui: &mut egui::Ui, label: &str, centered: bool) -> egui::Response {
+    let metrics = &crate::style::METRICS;
+    let size = egui::vec2(ui.available_width(), metrics.add_row_height);
+    let left_pad = (!centered).then_some(metrics.padding);
+    dashed_button(ui, size, label, metrics.font_body, left_pad)
+}
+
+/// A small bordered icon button.
+pub fn icon_button(
+    ui: &mut egui::Ui,
+    size: egui::Vec2,
+    glyph: &str,
+    color: egui::Color32,
+    hover_color: egui::Color32,
+    fill: egui::Color32,
+) -> egui::Response {
+    let m = &crate::style::METRICS;
+    let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
+    let hovered = response.hovered();
+    let border =
+        if hovered { hover_color } else { ui.visuals().widgets.noninteractive.bg_stroke.color };
+    let fg = if hovered { hover_color } else { color };
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::same(m.rounding),
+        fill,
+        egui::Stroke::new(1.0, border),
+        egui::StrokeKind::Inside,
+    );
+    ui.painter().text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        glyph,
+        egui::FontId::proportional(m.font_icon),
+        fg,
+    );
+    response.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A `color`-outlined button with the label in that color and a faint tint on
+/// hover.
+pub fn outlined_button(
+    ui: &mut egui::Ui,
+    size: egui::Vec2,
+    label: &str,
+    color: egui::Color32,
+) -> egui::Response {
+    let base = ui.visuals().panel_fill;
+    let (rect, resp) = ui.allocate_exact_size(size, egui::Sense::click());
+    let fill = if resp.hovered() {
+        crate::style::mix(color, base, 0.85)
+    } else {
+        egui::Color32::TRANSPARENT
+    };
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::same(crate::style::METRICS.rounding),
+        fill,
+        egui::Stroke::new(1.0, crate::style::mix(color, base, 0.35)),
+        egui::StrokeKind::Inside,
+    );
+    ui.painter().text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        label,
+        egui::FontId::proportional(crate::style::METRICS.font_label),
+        color,
+    );
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+pub fn style_muted_hscroll(ui: &mut egui::Ui) {
+    let base = ui.visuals().panel_fill;
+    let text = ui.visuals().text_color();
+    let handle = mix(base, text, 0.16);
+    let handle_active = mix(base, text, 0.30);
+    let style = ui.style_mut();
+    style.always_scroll_the_only_direction = true;
+    style.spacing.scroll.floating = false;
+    style.spacing.scroll.bar_width = crate::style::METRICS.gap_small;
+    style.spacing.scroll.foreground_color = false;
+    style.visuals.widgets.inactive.bg_fill = handle;
+    style.visuals.widgets.hovered.bg_fill = handle_active;
+    style.visuals.widgets.active.bg_fill = handle_active;
+}
+
+pub fn panel_header(ui: &mut egui::Ui, add_contents: impl FnOnce(&mut egui::Ui)) {
+    let border = ui.visuals().widgets.noninteractive.bg_stroke.color;
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(
+        egui::vec2(width, crate::style::METRICS.header_height),
+        egui::Sense::hover(),
+    );
+    let pad = crate::style::METRICS.padding;
+    let content = egui::Rect::from_min_max(
+        egui::pos2(rect.left() + pad, rect.top()),
+        egui::pos2(rect.right() - pad, rect.bottom()),
+    );
+    let mut child = ui.new_child(
+        egui::UiBuilder::new()
+            .max_rect(content)
+            .layout(egui::Layout::left_to_right(egui::Align::Center)),
+    );
+    add_contents(&mut child);
+    ui.painter().hline(rect.x_range(), rect.bottom() - 0.5, egui::Stroke::new(1.0, border));
 }
 
 pub fn empty_label(ui: &mut egui::Ui) {
     ui.add(egui::Label::new(egui::RichText::new("Пусто...").weak()).selectable(false));
-}
-
-pub fn danger_button(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) -> egui::Response {
-    ui.scope(|ui| {
-        let error = ui.style().visuals.error_fg_color;
-        let error_bg = error.linear_multiply(0.1);
-
-        ui.style_mut().visuals.widgets.inactive.fg_stroke.color = error;
-        ui.style_mut().visuals.widgets.active.fg_stroke.color = error;
-        ui.style_mut().visuals.widgets.hovered.weak_bg_fill = error_bg;
-        ui.style_mut().visuals.widgets.hovered.bg_fill = error_bg;
-        ui.style_mut().visuals.widgets.hovered.fg_stroke.color = error;
-        ui.add(egui::Button::new(text))
-    })
-    .inner
-}
-
-pub fn unselectable_heading(text: impl Into<String>, ui: &mut egui::Ui) -> egui::Response {
-    let text = egui::RichText::new(text).heading();
-    unselectable_label(text, ui)
-}
-
-pub fn unselectable_label(text: impl Into<egui::WidgetText>, ui: &mut egui::Ui) -> egui::Response {
-    ui.add(egui::Label::new(text).selectable(false))
-}
-
-pub fn string_list(
-    id: impl Into<egui::Id>,
-    list: &mut Vec<String>,
-    ui: &mut egui::Ui,
-) -> egui::Response {
-    ui.push_id(id.into(), |ui| {
-        ui.with_layout(
-            egui::Layout::top_down(egui::Align::Min)
-                .with_cross_justify(true)
-                .with_main_align(egui::Align::Center),
-            |ui| {
-                if !list.is_empty() {
-                    ui.horizontal(|ui| {
-                        let mut deleted_index = None;
-
-                        for (index, item) in list.iter().enumerate() {
-                            egui::Frame::new()
-                                .corner_radius(4)
-                                .inner_margin(egui::Margin { left: 4, ..Default::default() })
-                                .fill(ui.style().visuals.widgets.inactive.bg_fill)
-                                .show(ui, |ui| {
-                                    ui.horizontal(|ui| {
-                                        ui.label(item);
-                                        if ui
-                                            .add(
-                                                egui::Button::new(icon!(X_CIRCLE))
-                                                    .small()
-                                                    .frame(false),
-                                            )
-                                            .clicked()
-                                        {
-                                            deleted_index = Some(index);
-                                        }
-                                    });
-                                });
-                        }
-
-                        if let Some(index) = deleted_index {
-                            list.remove(index);
-                        }
-                    });
-                }
-
-                ui.spacing();
-
-                let new_item_id = ui.id().with("new");
-                let mut text = ui.memory_mut(|memory| {
-                    memory.data.get_temp_mut_or_default::<String>(new_item_id).clone()
-                });
-                egui_extras::StripBuilder::new(ui)
-                    .size(egui_extras::Size::exact(22.0))
-                    .size(egui_extras::Size::remainder())
-                    .horizontal(|mut strip| {
-                        strip.cell(|ui| {
-                            if ui.button(icon!(PLUS_CIRCLE)).clicked() && !text.is_empty() {
-                                list.push(text.clone());
-                                ui.memory_mut(|memory| {
-                                    memory.data.remove_temp::<String>(new_item_id)
-                                });
-                            }
-                        });
-
-                        strip.cell(|ui| {
-                            if ui.text_edit_singleline(&mut text).changed() {
-                                ui.memory_mut(|memory| memory.data.insert_temp(new_item_id, text));
-                            }
-                        });
-                    });
-            },
-        );
-    })
-    .response
-}
-
-pub fn info_edit(info: &mut Option<Info>, ui: &mut egui::Ui) {
-    let Some(info) = info.as_mut() else {
-        if ui.button(icon_str!(LIST_PLUS, "Добавить информацию")).clicked() {
-            *info = Some(Default::default());
-        }
-        return;
-    };
-
-    PropertyTable::new("info-properties").show(ui, |mut properties| {
-        info_properties(info, &mut properties);
-    });
-}
-
-pub fn info_properties(info: &mut Info, properties: &mut Properties) {
-    properties.row(icon!(USERS), "Авторы", |ui| {
-        string_list("info-properties-authors", &mut info.authors, ui)
-    });
-    properties.row(icon!(ARCHIVE), "Источники", |ui| {
-        string_list("info-properties-sources", &mut info.sources, ui)
-    });
-    properties.row(icon!(CHAT_DOTS), "Комментарий", |ui| {
-        ui.text_edit_singleline(&mut info.comments)
-    });
-    properties.row(icon!(PUZZLE_PIECE), "Расширения", |ui| {
-        ui.text_edit_singleline(&mut info.extension)
-    });
 }
