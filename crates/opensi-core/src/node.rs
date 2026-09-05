@@ -50,6 +50,15 @@ impl PackageNode {
             | &PackageNode::Question(QuestionIdx { index, .. }) => index,
         }
     }
+
+    /// The same kind of node under the same parent, but at another index.
+    pub fn with_index(self, index: usize) -> PackageNode {
+        match self {
+            PackageNode::Round(_) => PackageNode::Round(index.into()),
+            PackageNode::Theme(idx) => PackageNode::Theme(idx.parent().theme(index)),
+            PackageNode::Question(idx) => PackageNode::Question(idx.parent().question(index)),
+        }
+    }
 }
 
 impl From<usize> for PackageNode {

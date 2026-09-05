@@ -319,12 +319,29 @@ pub trait NodeContainer {
     fn duplicate_node(&mut self, node: PackageNode);
     fn allocate_node(&mut self, node: PackageNode);
     fn remove_node(&mut self, node: PackageNode);
+    fn prev_node(&self, node: PackageNode) -> Option<PackageNode>;
+    fn next_node(&self, node: PackageNode) -> Option<PackageNode>;
 }
 
 impl<T> NodeContainer for T
 where
     T: RoundContainer + 'static,
 {
+    fn prev_node(&self, node: PackageNode) -> Option<PackageNode> {
+        let index = node.index().checked_sub(1)?;
+        Some(node.with_index(index))
+    }
+
+    fn next_node(&self, node: PackageNode) -> Option<PackageNode> {
+        let count = match node {
+            PackageNode::Round(_) => self.count_rounds(),
+            PackageNode::Theme(idx) => self.count_themes(idx.parent()),
+            PackageNode::Question(idx) => self.count_questions(idx.parent()),
+        };
+        let index = node.index() + 1;
+        (index < count).then(|| node.with_index(index))
+    }
+
     fn duplicate_node(&mut self, node: PackageNode) {
         match node {
             PackageNode::Round(idx) => {
