@@ -97,12 +97,13 @@ pub fn menu_divider(ui: &mut egui::Ui) {
     ui.painter().hline(
         (rect.left() + style::METRICS.gap_small)..=(rect.right() - style::METRICS.gap_small),
         rect.center().y,
-        egui::Stroke::new(1.0, divider),
+        egui::Stroke::new(1.0_f32, divider),
     );
     ui.add_space(style::METRICS.gap_tiny);
 }
 
 /// A non-interactive menu section header: a muted [glyph | label] row.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn menu_label(ui: &mut egui::Ui, glyph: &str, label: &str) {
     let palette = MenuPalette::of(ui);
     let (rect, _) = ui.allocate_exact_size(

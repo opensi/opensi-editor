@@ -85,7 +85,7 @@ fn atom_card(atom: &mut Atom, package_id: &str, ui: &mut egui::Ui) -> bool {
     let mut delete = false;
     egui::Frame::new()
         .fill(raised)
-        .stroke(egui::Stroke::new(1.0, border))
+        .stroke(egui::Stroke::new(1.0_f32, border))
         .corner_radius(METRICS.rounding)
         .inner_margin(METRICS.padding_small as i8)
         .show(ui, |ui| {
@@ -233,7 +233,7 @@ fn answer_row(ui: &mut egui::Ui, answer: &mut String, bar_color: egui::Color32) 
     let mut delete = false;
     let inner = egui::Frame::new()
         .fill(raised)
-        .stroke(egui::Stroke::new(1.0, border))
+        .stroke(egui::Stroke::new(1.0_f32, border))
         .corner_radius(METRICS.rounding)
         .inner_margin(egui::Margin::symmetric(METRICS.padding_small as i8, METRICS.gap as i8))
         .show(ui, |ui| {
@@ -335,7 +335,7 @@ fn badge(ui: &mut egui::Ui, text: &str, accent: egui::Color32) {
         rect,
         egui::CornerRadius::same(METRICS.rounding),
         egui::Color32::TRANSPARENT,
-        egui::Stroke::new(1.0, border),
+        egui::Stroke::new(1.0_f32, border),
         egui::StrokeKind::Inside,
     );
     ui.painter().galley(rect.center() - galley.size() / 2.0, galley, accent);
@@ -363,7 +363,7 @@ fn type_option(ui: &mut egui::Ui, label: &str, selected: bool) -> egui::Response
         rect,
         egui::CornerRadius::same(METRICS.rounding),
         egui::Color32::TRANSPARENT,
-        egui::Stroke::new(1.0, edge),
+        egui::Stroke::new(1.0_f32, edge),
         egui::StrokeKind::Inside,
     );
     let cy = rect.center().y;

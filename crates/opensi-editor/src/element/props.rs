@@ -118,7 +118,7 @@ fn chip(ui: &mut egui::Ui, text: &str, id: &str, index: usize) -> bool {
         rect,
         egui::CornerRadius::same(METRICS.rounding),
         chip_bg,
-        egui::Stroke::new(1.0, chip_border),
+        egui::Stroke::new(1.0_f32, chip_border),
         egui::StrokeKind::Inside,
     );
     let text_pos = egui::pos2(rect.left() + pad.x, rect.center().y - galley.size().y / 2.0);

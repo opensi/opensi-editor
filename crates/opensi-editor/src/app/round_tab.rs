@@ -174,7 +174,7 @@ fn segmented_button(ui: &mut egui::Ui, width: f32, label: &str, selected: bool) 
         rect,
         egui::CornerRadius::same(METRICS.rounding),
         fill,
-        egui::Stroke::new(1.0, bd),
+        egui::Stroke::new(1.0_f32, bd),
         egui::StrokeKind::Inside,
     );
     ui.painter().text(
@@ -214,7 +214,7 @@ fn theme_cell(
         rect,
         egui::CornerRadius::same(METRICS.rounding),
         fill,
-        egui::Stroke::new(1.0, border),
+        egui::Stroke::new(1.0_f32, border),
         egui::StrokeKind::Inside,
     );
     let bar =
@@ -275,7 +275,7 @@ fn question_cell(
         rect,
         egui::CornerRadius::same(METRICS.rounding),
         fill,
-        egui::Stroke::new(1.0, border),
+        egui::Stroke::new(1.0_f32, border),
         egui::StrokeKind::Inside,
     );
 

@@ -164,7 +164,7 @@ fn theme_chip(ui: &mut egui::Ui, name: &str, range: Option<(usize, usize)>) -> e
         rect,
         egui::CornerRadius::same(METRICS.rounding),
         fill,
-        egui::Stroke::new(1.0, edge),
+        egui::Stroke::new(1.0_f32, edge),
         egui::StrokeKind::Inside,
     );
 

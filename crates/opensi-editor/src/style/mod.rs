@@ -288,15 +288,15 @@ impl ColorScheme {
             visuals.panel_fill = self.base;
             visuals.menu_corner_radius = egui::CornerRadius::same(0);
             visuals.faint_bg_color = self.base_weak;
-            visuals.window_stroke = egui::Stroke::new(1.0, border);
+            visuals.window_stroke = egui::Stroke::new(1.0_f32, border);
             visuals.extreme_bg_color = input_bg;
             visuals.code_bg_color = self.base_strong;
 
             visuals.selection.bg_fill = accent_bg;
-            visuals.selection.stroke = egui::Stroke::new(1.0, self.accent);
+            visuals.selection.stroke = egui::Stroke::new(1.0_f32, self.accent);
 
             visuals.text_cursor = egui::style::TextCursorStyle {
-                stroke: egui::Stroke::new(2.0, self.accent),
+                stroke: egui::Stroke::new(2.0_f32, self.accent),
                 preview: false,
                 blink: true,
                 on_duration: 0.66,
@@ -306,37 +306,37 @@ impl ColorScheme {
             visuals.widgets.noninteractive = egui::style::WidgetVisuals {
                 bg_fill: self.base,
                 weak_bg_fill: self.base_weak,
-                bg_stroke: egui::Stroke::new(1.0, border),
-                fg_stroke: egui::Stroke::new(1.0, self.text_weak),
+                bg_stroke: egui::Stroke::new(1.0_f32, border),
+                fg_stroke: egui::Stroke::new(1.0_f32, self.text_weak),
                 corner_radius: radius,
                 expansion: 0.0,
             };
             visuals.widgets.inactive = egui::style::WidgetVisuals {
                 bg_fill: self.base_alt,
                 weak_bg_fill: self.base_alt,
-                bg_stroke: egui::Stroke::new(1.0, border),
-                fg_stroke: egui::Stroke::new(1.0, self.text),
+                bg_stroke: egui::Stroke::new(1.0_f32, border),
+                fg_stroke: egui::Stroke::new(1.0_f32, self.text),
                 corner_radius: radius,
                 expansion: 0.0,
             };
             visuals.widgets.hovered = egui::style::WidgetVisuals {
                 bg_fill: hover_fill,
                 weak_bg_fill: hover_fill,
-                bg_stroke: egui::Stroke::new(1.0, border_strong),
-                fg_stroke: egui::Stroke::new(1.0, self.text_strong),
+                bg_stroke: egui::Stroke::new(1.0_f32, border_strong),
+                fg_stroke: egui::Stroke::new(1.0_f32, self.text_strong),
                 corner_radius: radius,
                 expansion: 0.0,
             };
             visuals.widgets.active = egui::style::WidgetVisuals {
                 bg_fill: active_fill,
                 weak_bg_fill: active_fill,
-                bg_stroke: egui::Stroke::new(1.0, border_strong),
-                fg_stroke: egui::Stroke::new(1.0, self.text_strong),
+                bg_stroke: egui::Stroke::new(1.0_f32, border_strong),
+                fg_stroke: egui::Stroke::new(1.0_f32, self.text_strong),
                 corner_radius: radius,
                 expansion: 0.0,
             };
             visuals.widgets.open = egui::style::WidgetVisuals {
-                bg_stroke: egui::Stroke::new(1.0, border_strong),
+                bg_stroke: egui::Stroke::new(1.0_f32, border_strong),
                 ..visuals.widgets.active.clone()
             };
 

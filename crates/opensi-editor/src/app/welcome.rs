@@ -120,9 +120,9 @@ fn welcome_button(
                 mix(base_weak, text, 0.08),
                 mix(base_weak, text, 0.14),
                 [
-                    egui::Stroke::new(1.0, border),
-                    egui::Stroke::new(1.0, mix(border, text, 0.30)),
-                    egui::Stroke::new(1.0, mix(border, text, 0.35)),
+                    egui::Stroke::new(1.0_f32, border),
+                    egui::Stroke::new(1.0_f32, mix(border, text, 0.30)),
+                    egui::Stroke::new(1.0_f32, mix(border, text, 0.35)),
                 ],
             )
         };

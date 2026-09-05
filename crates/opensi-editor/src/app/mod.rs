@@ -23,8 +23,8 @@ use crate::{
         storage::{EguiPackageBytesLoader, SharedPackageBytesStorage},
     },
     element::{
-        ModalWrapper, empty_label,
-        menu::{menu_divider, menu_item, menu_label, style_menu},
+        ModalWrapper,
+        menu::{menu_divider, menu_item, style_menu},
         navbar::{header_icon_button, navbar_logo, style_navbar_menus},
     },
     icon, style,
@@ -117,11 +117,11 @@ impl EditorApp {
         theme.apply(ctx, self.color_mode);
     }
 
-    pub fn ctx(&mut self) -> AppContext {
+    pub fn ctx(&mut self) -> AppContext<'_> {
         self.into()
     }
 
-    pub fn package_ctx(&mut self) -> Option<PackageContext> {
+    pub fn package_ctx(&mut self) -> Option<PackageContext<'_>> {
         PackageContext::try_new(self)
     }
 
@@ -153,7 +153,7 @@ impl eframe::App for EditorApp {
                 ui.painter().hline(
                     bar.x_range(),
                     bar.bottom() - 0.5,
-                    egui::Stroke::new(1.0, border),
+                    egui::Stroke::new(1.0_f32, border),
                 );
 
                 ui.horizontal_centered(|ui| {
@@ -188,6 +188,8 @@ impl eframe::App for EditorApp {
 
                         #[cfg(not(target_arch = "wasm32"))]
                         {
+                            use crate::element::{empty_label, menu::menu_label};
+
                             menu_divider(ui);
                             menu_label(ui, icon!(CLOCK_COUNTER_CLOCKWISE), "Недавние файлы");
                             self.recent_files.retain(|recent| recent.exists());

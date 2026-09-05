@@ -36,7 +36,7 @@ macro_rules! icon_format {
 pub fn dashed_border(painter: &egui::Painter, rect: egui::Rect, color: egui::Color32) {
     let r = rect.shrink(0.5);
     let points = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
-    painter.extend(egui::Shape::dashed_line(&points, egui::Stroke::new(1.0, color), 4.0, 4.0));
+    painter.extend(egui::Shape::dashed_line(&points, egui::Stroke::new(1.0_f32, color), 4.0, 4.0));
 }
 
 /// A dashed "+ ..." button over an exact `size`.
@@ -114,7 +114,7 @@ pub fn icon_button(
         rect,
         egui::CornerRadius::same(m.rounding),
         fill,
-        egui::Stroke::new(1.0, border),
+        egui::Stroke::new(1.0_f32, border),
         egui::StrokeKind::Inside,
     );
     ui.painter().text(
@@ -146,7 +146,7 @@ pub fn outlined_button(
         rect,
         egui::CornerRadius::same(crate::style::METRICS.rounding),
         fill,
-        egui::Stroke::new(1.0, crate::style::mix(color, base, 0.35)),
+        egui::Stroke::new(1.0_f32, crate::style::mix(color, base, 0.35)),
         egui::StrokeKind::Inside,
     );
     ui.painter().text(
@@ -192,9 +192,10 @@ pub fn panel_header(ui: &mut egui::Ui, add_contents: impl FnOnce(&mut egui::Ui))
             .layout(egui::Layout::left_to_right(egui::Align::Center)),
     );
     add_contents(&mut child);
-    ui.painter().hline(rect.x_range(), rect.bottom() - 0.5, egui::Stroke::new(1.0, border));
+    ui.painter().hline(rect.x_range(), rect.bottom() - 0.5, egui::Stroke::new(1.0_f32, border));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn empty_label(ui: &mut egui::Ui) {
     ui.add(egui::Label::new(egui::RichText::new("Пусто...").weak()).selectable(false));
 }

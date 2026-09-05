@@ -50,7 +50,7 @@ pub fn navbar_logo(ui: &mut egui::Ui, full_height: egui::Rangef) -> egui::Respon
     );
     ui.add_space(METRICS.padding);
     let sep_x = ui.cursor().min.x;
-    ui.painter().vline(sep_x, full_height, egui::Stroke::new(1.0, border));
+    ui.painter().vline(sep_x, full_height, egui::Stroke::new(1.0_f32, border));
 
     (cap | text).on_hover_cursor(egui::CursorIcon::PointingHand)
 }

@@ -15,7 +15,7 @@ impl ModalWrapper {
         let inner = egui::Modal::new(id).frame(
             egui::Frame::new()
                 .fill(ctx.style().visuals.window_fill)
-                .stroke(egui::Stroke::new(1.0, border))
+                .stroke(egui::Stroke::new(1.0_f32, border))
                 .corner_radius(style::METRICS.rounding_large)
                 .shadow(ctx.style().visuals.window_shadow)
                 .inner_margin(egui::Margin::ZERO),
@@ -76,10 +76,18 @@ fn modal_section(
         .response;
     let border = style::current_scheme(ui.ctx()).border();
     if top_divider {
-        ui.painter().hline(resp.rect.x_range(), resp.rect.top(), egui::Stroke::new(1.0, border));
+        ui.painter().hline(
+            resp.rect.x_range(),
+            resp.rect.top(),
+            egui::Stroke::new(1.0_f32, border),
+        );
     }
     if bottom_divider {
-        ui.painter().hline(resp.rect.x_range(), resp.rect.bottom(), egui::Stroke::new(1.0, border));
+        ui.painter().hline(
+            resp.rect.x_range(),
+            resp.rect.bottom(),
+            egui::Stroke::new(1.0_f32, border),
+        );
     }
     resp
 }

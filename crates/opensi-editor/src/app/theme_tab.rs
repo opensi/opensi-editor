@@ -123,7 +123,7 @@ fn question_row(
         rect,
         egui::CornerRadius::same(METRICS.rounding),
         fill,
-        egui::Stroke::new(1.0, edge),
+        egui::Stroke::new(1.0_f32, edge),
         egui::StrokeKind::Inside,
     );
     let bar_color = if filled { accent } else { border };

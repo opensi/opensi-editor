@@ -30,6 +30,7 @@ pub enum FileError {
     NoFileSelected,
     #[error("Archive error: {0}")]
     ArchiveError(std::io::Error),
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("Cannot read {0}: {1}")]
     Io(PathBuf, std::io::Error),
 }
