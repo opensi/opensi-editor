@@ -42,12 +42,10 @@ fn get_packs() -> Vec<PathBuf> {
     let mut packs = Vec::new();
 
     if let Ok(entries) = fs::read_dir(PACKS_DIR) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if path.is_file() && path.extension().unwrap_or_default() == "siq" {
-                    packs.push(path);
-                }
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() && path.extension().unwrap_or_default() == "siq" {
+                packs.push(path);
             }
         }
     }

@@ -56,6 +56,12 @@ pub struct Packagev4 {
     pub resources: HashMap<ResourceIdv4, Arc<[u8]>>,
 }
 
+impl Default for Packagev4 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// # Creation of package.
 impl Packagev4 {
     pub fn new() -> Self {
@@ -171,9 +177,9 @@ impl Packagev4 {
         zip.write_all(Self::CONTENT_TYPE_FILE_CONTENT.as_ref())?;
 
         let resources = &self.resources;
-        for (key, value) in resources.into_iter() {
+        for (key, value) in resources.iter() {
             zip.start_file(key.path(), options)?;
-            zip.write_all(&value)?
+            zip.write_all(value)?
         }
 
         let result = zip.finish()?;
