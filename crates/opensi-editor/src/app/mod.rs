@@ -190,6 +190,7 @@ impl eframe::App for EditorApp {
                         {
                             menu_divider(ui);
                             menu_label(ui, icon!(CLOCK_COUNTER_CLOCKWISE), "Недавние файлы");
+                            self.recent_files.retain(|recent| recent.exists());
                             if self.recent_files.is_empty() {
                                 empty_label(ui);
                             } else {

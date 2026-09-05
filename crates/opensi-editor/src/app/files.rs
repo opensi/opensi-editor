@@ -30,6 +30,8 @@ pub enum FileError {
     NoFileSelected,
     #[error("Archive error: {0}")]
     ArchiveError(std::io::Error),
+    #[error("Cannot read {0}: {1}")]
+    Io(PathBuf, std::io::Error),
 }
 
 /// Async file loader queue that can mutate [`EditorApp`] upon loading.
@@ -79,7 +81,7 @@ where
 pub fn load_file(path: impl AsRef<Path>, loader: impl FileLoader + 'static) -> FilesQueue {
     fn read_file(file: impl AsRef<Path>) -> LoadingFileResult {
         let file = file.as_ref();
-        let buffer = std::fs::read(file).map_err(FileError::ArchiveError)?;
+        let buffer = std::fs::read(file).map_err(|err| FileError::Io(file.to_owned(), err))?;
         Ok((buffer, file.to_owned()))
     }
 
