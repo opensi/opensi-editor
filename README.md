@@ -9,8 +9,7 @@
 [![License](https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-blue)](#лицензия)
 
 </div>
-
-<!-- TODO: добавить скриншот редактора (assets/screenshot.png) после обновления UI -->
+<img width="1706" height="1112" alt="image" src="https://github.com/user-attachments/assets/84f3fc97-12f5-4511-82b7-8e6dd2e3fa17" />
 
 ## О проекте
 
